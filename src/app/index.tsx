@@ -34,9 +34,8 @@ export default function DailyView() {
       />
 
       <View style={styles.footer}>
-        {/* TODO (Sebastian, steg 6 i guiden): "Lägg till" ska öppna
-            formuläret "Skapa en ny syssla" från skissen. */}
-        <PillButton label="⊕  Lägg till" />
+        {/* Öppnar formuläret "Skapa en ny syssla" (område 4, src/app/chore/new.tsx). */}
+        <PillButton label="⊕  Lägg till" onPress={() => router.push("/chore/new")} />
 
         {/* Tillfällig länk till temainställningarna. */}
         <PillButton label="✎  Ändra" onPress={() => router.push("/settings")} />
