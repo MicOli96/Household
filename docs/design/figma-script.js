@@ -73,13 +73,16 @@ const candidates = figma.currentPage.findAll(
   (n) => n.name.startsWith("component/") && n.type !== "COMPONENT" && n.type !== "INSTANCE",
 )
 for (const node of candidates) {
-  const name = node.name.replace(/\/\d+$/, "")
-  const isAvatar = node.name.startsWith("component/Avatar/")
-  const key = isAvatar ? node.name : name
+  // Hoppa över lager som försvunnit när en tidigare komponent skapades
+  if (node.removed) continue
+  // Läs namnet innan lagret görs om, efteråt finns det gamla lagret inte kvar
+  const original = node.name
+  const isAvatar = original.startsWith("component/Avatar/")
+  const key = isAvatar ? original : original.replace(/\/\d+$/, "")
   if (seen.has(key)) continue
   seen.add(key)
   const component = figma.createComponentFromNode(node)
-  component.name = isAvatar ? `Avatar/${node.name.split("/").pop()}` : name.replace("component/", "")
+  component.name = isAvatar ? `Avatar/${original.split("/").pop()}` : key.replace("component/", "")
   componentCount++
 }
 
