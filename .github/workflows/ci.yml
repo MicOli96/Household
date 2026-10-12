@@ -1,0 +1,29 @@
+# Kör typkontroll och lint på varje PR och push till main (issue #8).
+# Om något steg misslyckas blir PR:en röd, så att fel inte hamnar i main.
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Installera paket
+        run: npm ci
+
+      - name: Typkontroll
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
