@@ -1,7 +1,8 @@
+import { AvatarEmoji } from "../theme/avatars";
+
 // Testdata för dagsvyn tills backend finns.
 // När databasen är klar byts den här filen mot riktiga anrop till servern.
 
-export type Avatar = "🦊" | "🐷" | "🐸" | "🐥" | "🐙" | "🐬" | "🦉" | "🦄";
 
 export type Chore = {
   id: string;
@@ -14,7 +15,7 @@ export type Chore = {
   /** När sysslan senast gjordes, eller null om den aldrig gjorts. */
   lastDoneAt: Date | null;
   /** Avatarerna för dem som gjort sysslan idag. */
-  doneTodayBy: Avatar[];
+  doneTodayBy: AvatarEmoji[];
 };
 
 /** Skapar ett datum som ligger ett visst antal dagar bakåt i tiden. */

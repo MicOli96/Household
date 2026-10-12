@@ -30,8 +30,8 @@ Kontroll: "Torka golvet" (24 dagar, intervall 7) ska vara försenad, men "Damma"
 Commit: `git commit -am "Räkna ut om en syssla är försenad"`
 
 ## Steg 3: Röd bricka (`src/components/ChoreCard.tsx`)
-Använd `overdue` för att välja färg: `colors.danger` som bakgrund och vit text när sysslan är försenad, annars som nu.
-Tips: `backgroundColor: overdue ? colors.danger : colors.background`
+Brickan är komponenten `Badge` (`src/components/ui/Badge.tsx`). Den har en prop `overdue` som gör den röd. Skicka in variabeln `overdue` som redan finns i `ChoreCard`.
+Tips: `<Badge label={...} overdue={overdue} />`
 
 Kontroll: "Torka golvet" ska få en röd bricka med 24.
 

@@ -1,15 +1,13 @@
 import { router } from "expo-router";
-import { Alert, FlatList, Pressable, StyleSheet, Text, View } from "react-native";
+import { Alert, FlatList, StyleSheet, View } from "react-native";
 import { ChoreCard } from "../components/ChoreCard";
+import { PillButton } from "../components/ui";
 import { mockChores } from "../data/mockChores";
-import { useTheme } from "../theme/ThemeProvider";
 
 // Dagsvyn: listar hushållets sysslor och visar vad som behöver göras.
 // Krav: "Alla sysslor ska listas i en dagsvy och ge en översikt kring vad
 // som behöver göras."
 export default function DailyView() {
-  const { colors } = useTheme();
-
   return (
     <View style={styles.container}>
       {/* TODO (Sebastian, steg 4 i guiden): raden "‹ idag ›" från skissen.
@@ -33,19 +31,10 @@ export default function DailyView() {
       <View style={styles.footer}>
         {/* TODO (Sebastian, steg 6 i guiden): "Lägg till" ska öppna
             formuläret "Skapa en ny syssla" från skissen. */}
-        <Pressable style={[styles.pill, { backgroundColor: colors.card }]}>
-          <Text style={[styles.pillText, { color: colors.text }]}>
-            ⊕ Lägg till
-          </Text>
-        </Pressable>
+        <PillButton label="⊕  Lägg till" />
 
         {/* Tillfällig länk till temainställningarna. */}
-        <Pressable
-          onPress={() => router.push("/settings")}
-          style={[styles.pill, { backgroundColor: colors.card }]}
-        >
-          <Text style={[styles.pillText, { color: colors.text }]}>✎ Ändra</Text>
-        </Pressable>
+        <PillButton label="✎  Ändra" onPress={() => router.push("/settings")} />
       </View>
     </View>
   );
@@ -64,19 +53,5 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     padding: 16,
     paddingBottom: 32,
-  },
-  pill: {
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 999,
-    shadowColor: "#000",
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
-  },
-  pillText: {
-    fontSize: 16,
-    fontWeight: "500",
   },
 });
