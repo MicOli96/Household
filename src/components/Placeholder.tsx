@@ -64,6 +64,7 @@ const styles = StyleSheet.create({
     marginTop: -12,
   },
   todo: {
+    flex: 1,
     gap: 6,
   },
   label: {
