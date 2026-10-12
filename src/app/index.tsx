@@ -1,39 +1,52 @@
-import { Pressable, StyleSheet, Text, View } from "react-native";
-import { ThemeMode, useTheme } from "../theme/ThemeProvider";
+import { Link } from "expo-router";
+import { Alert, FlatList, Pressable, StyleSheet, Text, View } from "react-native";
+import { ChoreCard } from "../components/ChoreCard";
+import { mockChores } from "../data/mockChores";
+import { useTheme } from "../theme/ThemeProvider";
 
-const modes: { value: ThemeMode; label: string }[] = [
-  { value: "light", label: "Ljust" },
-  { value: "dark", label: "Mörkt" },
-  { value: "auto", label: "Auto" },
-];
-
-export default function Index() {
-  const { mode, setMode, colors } = useTheme();
+// Dagsvyn: listar hushållets sysslor och visar vad som behöver göras.
+// Krav: "Alla sysslor ska listas i en dagsvy och ge en översikt kring vad
+// som behöver göras."
+export default function DailyView() {
+  const { colors } = useTheme();
 
   return (
     <View style={styles.container}>
-      <Text style={[styles.title, { color: colors.text }]}>Utseende</Text>
-      <View style={styles.row}>
-        {modes.map((m) => {
-          const selected = m.value === mode;
-          return (
-            <Pressable
-              key={m.value}
-              onPress={() => setMode(m.value)}
-              style={[
-                styles.pill,
-                {
-                  backgroundColor: selected ? colors.primary : colors.card,
-                  borderColor: colors.border,
-                },
-              ]}
-            >
-              <Text style={{ color: selected ? "#FFFFFF" : colors.text }}>
-                {m.label}
-              </Text>
-            </Pressable>
-          );
-        })}
+      {/* TODO (Sebastian, steg 4 i guiden): raden "‹ idag ›" från skissen.
+          Pilarna ska byta mellan idag och statistikvyerna senare, så de
+          behöver inte göra något än. */}
+
+      <FlatList
+        data={mockChores}
+        keyExtractor={(chore) => chore.id}
+        contentContainerStyle={styles.list}
+        renderItem={({ item }) => (
+          <ChoreCard
+            chore={item}
+            // TODO (Sebastian, steg 5 i guiden): öppna en detaljvy för
+            // sysslan i stället för en Alert.
+            onPress={() => Alert.alert(item.name, item.description)}
+          />
+        )}
+      />
+
+      <View style={styles.footer}>
+        {/* TODO (Sebastian, steg 6 i guiden): "Lägg till" ska öppna
+            formuläret "Skapa en ny syssla" från skissen. */}
+        <Pressable style={[styles.pill, { backgroundColor: colors.card }]}>
+          <Text style={[styles.pillText, { color: colors.text }]}>
+            ⊕ Lägg till
+          </Text>
+        </Pressable>
+
+        {/* Tillfällig länk till temainställningarna. */}
+        <Link href="/settings" asChild>
+          <Pressable style={[styles.pill, { backgroundColor: colors.card }]}>
+            <Text style={[styles.pillText, { color: colors.text }]}>
+              ✎ Ändra
+            </Text>
+          </Pressable>
+        </Link>
       </View>
     </View>
   );
@@ -42,22 +55,29 @@ export default function Index() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 16,
   },
-  title: {
-    fontSize: 20,
-    fontWeight: "600",
+  list: {
+    padding: 16,
+    gap: 12,
   },
-  row: {
+  footer: {
     flexDirection: "row",
-    gap: 8,
+    justifyContent: "space-between",
+    padding: 16,
+    paddingBottom: 32,
   },
   pill: {
     paddingHorizontal: 20,
-    paddingVertical: 10,
+    paddingVertical: 12,
     borderRadius: 999,
-    borderWidth: 1,
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
+  pillText: {
+    fontSize: 16,
+    fontWeight: "500",
   },
 });

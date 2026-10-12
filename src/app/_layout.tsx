@@ -15,7 +15,10 @@ function ThemedStack() {
           headerShadowVisible: false,
           contentStyle: { backgroundColor: colors.background },
         }}
-      />
+      >
+        <Stack.Screen name="index" options={{ title: "Sysslor" }} />
+        <Stack.Screen name="settings" options={{ title: "Utseende" }} />
+      </Stack>
     </>
   );
 }
