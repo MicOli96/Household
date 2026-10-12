@@ -54,7 +54,7 @@ Krav som uppfylls: "När en användare väljer en syssla ska beskrivningen av sy
 Commit: `git add . && git commit -m "Lägg till detaljvy för syssla"`
 
 ## Steg 6: Knappen "Lägg till"
-Gör en skärm `src/app/new-chore.tsx` med fälten från skissen: titel, beskrivning, återkommer (dagar) och värde (1, 2, 4, 6, 8). Länka dit med `<Link href="/new-chore" asChild>` runt knappen, på samma sätt som "Ändra".
+Gör en skärm `src/app/new-chore.tsx` med fälten från skissen: titel, beskrivning, återkommer (dagar) och värde (1, 2, 4, 6, 8). Öppna den med `onPress={() => router.push("/new-chore")}` på knappen, på samma sätt som "Ändra".
 Tips: lägg till `<Stack.Screen name="new-chore" options={{ presentation: "modal", title: "Skapa en ny syssla" }} />` i `_layout.tsx` så öppnas den som en ruta, som i skissen.
 
 Commit: `git add . && git commit -m "Lägg till formulär för ny syssla"`

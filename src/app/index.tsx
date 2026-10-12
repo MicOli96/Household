@@ -1,4 +1,4 @@
-import { Link } from "expo-router";
+import { router } from "expo-router";
 import { Alert, FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 import { ChoreCard } from "../components/ChoreCard";
 import { mockChores } from "../data/mockChores";
@@ -40,13 +40,12 @@ export default function DailyView() {
         </Pressable>
 
         {/* Tillfällig länk till temainställningarna. */}
-        <Link href="/settings" asChild>
-          <Pressable style={[styles.pill, { backgroundColor: colors.card }]}>
-            <Text style={[styles.pillText, { color: colors.text }]}>
-              ✎ Ändra
-            </Text>
-          </Pressable>
-        </Link>
+        <Pressable
+          onPress={() => router.push("/settings")}
+          style={[styles.pill, { backgroundColor: colors.card }]}
+        >
+          <Text style={[styles.pillText, { color: colors.text }]}>✎ Ändra</Text>
+        </Pressable>
       </View>
     </View>
   );
