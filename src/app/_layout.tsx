@@ -1,5 +1,6 @@
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import { BrandSplash } from "../components/BrandSplash";
 import { ThemeProvider, useTheme } from "../theme/ThemeProvider";
 
 function ThemedStack() {
@@ -27,6 +28,7 @@ export default function RootLayout() {
   return (
     <ThemeProvider>
       <ThemedStack />
+      <BrandSplash />
     </ThemeProvider>
   );
 }
