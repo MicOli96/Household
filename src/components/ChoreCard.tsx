@@ -24,10 +24,7 @@ export function ChoreCard({ chore, onPress }: Props) {
       {chore.doneTodayBy.length > 0 ? (
         <Text style={styles.avatars}>{chore.doneTodayBy.join("")}</Text>
       ) : (
-        // TODO (Sebastian, steg 3 i guiden): brickan ska bli röd när sysslan
-        // är försenad. Badge har en prop `overdue` för det, och variabeln
-        // `overdue` ovanför är redan uträknad åt dig.
-        <Badge label={days ?? "–"} />
+        <Badge label={days ?? "–"} overdue={overdue} />
       )}
     </Card>
   );
