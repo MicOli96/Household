@@ -67,7 +67,12 @@ for (const t of textStyles) {
 }
 
 // Komponenter: bara första förekomsten av varje namn, i ljusa halvan
-const seen = new Set()
+// Namn på komponenter som redan finns, så att en ny körning inte skapar dubbletter
+const seen = new Set(
+  figma.currentPage
+    .findAll((n) => n.type === "COMPONENT")
+    .map((n) => `component/${n.name}`),
+)
 let componentCount = 0
 const candidates = figma.currentPage.findAll(
   (n) => n.name.startsWith("component/") && n.type !== "COMPONENT" && n.type !== "INSTANCE",
