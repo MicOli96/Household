@@ -1,5 +1,5 @@
 import { router } from "expo-router";
-import { Alert, FlatList, StyleSheet, Text, View } from "react-native";
+import { FlatList, StyleSheet, Text, View } from "react-native";
 import { ChoreCard } from "../components/ChoreCard";
 import { PillButton } from "../components/ui";
 import { mockChores } from "../data/mockChores";
@@ -28,9 +28,7 @@ export default function DailyView() {
         renderItem={({ item }) => (
           <ChoreCard
             chore={item}
-            // TODO (Sebastian, steg 5 i guiden): öppna en detaljvy för
-            // sysslan i stället för en Alert.
-            onPress={() => Alert.alert(item.name, item.description)}
+            onPress={() => router.push(`/chore/${item.id}`)}
           />
         )}
       />
