@@ -14,14 +14,12 @@ type Props = {
    */
   variant?: Variant;
   style?: StyleProp<ViewStyle>;
+  /** Gör knappen halvgenomskinlig och omöjlig att trycka på. */
+  disabled?: boolean;
 };
 
 // Den runda knappen från skisserna.
-//
-// TODO (Sebastian): lägg till en prop `disabled?: boolean`. När den är true
-// ska knappen vara halvgenomskinlig (opacity 0.4) och inte gå att trycka på.
-// Tips: Pressable har redan en egen `disabled`-prop som du kan skicka vidare.
-export function PillButton({ label, onPress, variant = "default", style }: Props) {
+export function PillButton({ label, onPress, variant = "default", style, disabled = false }: Props) {
   const { colors } = useTheme();
 
   const background = variant === "primary" ? colors.primary : colors.card;
@@ -32,10 +30,12 @@ export function PillButton({ label, onPress, variant = "default", style }: Props
   return (
     <Pressable
       onPress={onPress}
+      disabled={disabled}
       style={({ pressed }) => [
         styles.button,
         { backgroundColor: background, borderColor },
         pressed && styles.pressed,
+        disabled && styles.disabled,
         style,
       ]}
     >
@@ -55,6 +55,9 @@ const styles = StyleSheet.create({
   },
   pressed: {
     opacity: 0.7,
+  },
+  disabled: {
+    opacity: 0.4,
   },
   label: {
     fontSize: 16,

@@ -28,6 +28,7 @@ export default function ComponentGallery() {
         <PillButton label="⊕  Lägg till" />
         <PillButton label="Spara" variant="primary" />
         <PillButton label="Ta bort" variant="danger" />
+        <PillButton label="Inaktiv" variant="primary" disabled />
       </View>
 
       <Text style={heading}>AVATARER</Text>
