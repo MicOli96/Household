@@ -1,4 +1,6 @@
+import { router } from "expo-router";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { PillButton } from "../components/ui";
 import { ThemeMode, useTheme } from "../theme/ThemeProvider";
 
 const modes: { value: ThemeMode; label: string }[] = [
@@ -35,6 +37,7 @@ export default function Settings() {
           );
         })}
       </View>
+      <PillButton label="Visa komponenter" onPress={() => router.push("/components")} />
     </View>
   );
 }

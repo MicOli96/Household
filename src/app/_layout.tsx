@@ -19,6 +19,7 @@ function ThemedStack() {
       >
         <Stack.Screen name="index" options={{ title: "Sysslor" }} />
         <Stack.Screen name="settings" options={{ title: "Utseende" }} />
+        <Stack.Screen name="components" options={{ title: "Komponenter" }} />
       </Stack>
     </>
   );
