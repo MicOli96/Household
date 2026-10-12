@@ -41,6 +41,7 @@ export default function ComponentGallery() {
       <Text style={heading}>TEXTFÄLT</Text>
       <TextField placeholder="Titel" />
       <TextField placeholder="Beskrivning" multiline />
+      <TextField placeholder="Titel" error="Titel måste fyllas i" />
 
       <Text style={heading}>MODAL</Text>
       <PillButton label="Öppna modal" onPress={() => setModalOpen(true)} />
@@ -57,6 +58,7 @@ export default function ComponentGallery() {
       >
         <TextField placeholder="Titel" />
         <TextField placeholder="Beskrivning" multiline />
+      <TextField placeholder="Titel" error="Titel måste fyllas i" />
       </AppModal>
     </ScrollView>
   );
