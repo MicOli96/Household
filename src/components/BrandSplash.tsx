@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Animated, Image, StyleSheet, Text } from "react-native";
 
 // Loggan på orange bakgrund när appen startar, sedan tonar den bort.
@@ -8,7 +8,7 @@ const SHOW_MS = 1000;
 const FADE_MS = 400;
 
 export function BrandSplash() {
-  const opacity = useRef(new Animated.Value(1)).current;
+  const [opacity] = useState(() => new Animated.Value(1));
   const [visible, setVisible] = useState(true);
 
   useEffect(() => {
