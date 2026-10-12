@@ -9,13 +9,11 @@ export function daysSinceDone(chore: Chore): number | null {
 }
 
 /**
- * Är sysslan försenad?
- *
- * TODO (Sebastian, steg 2 i guiden): just nu returnerar funktionen alltid false.
- * En syssla är försenad när det har gått FLER dagar än intervalDays sedan
- * den gjordes senast. En syssla som aldrig gjorts räknas också som försenad.
- * Tips: använd daysSinceDone(chore) ovanför.
+ * Är sysslan försenad? Det är den när det gått fler dagar än intervalDays
+ * sedan den gjordes senast, eller om den aldrig har gjorts.
  */
 export function isOverdue(chore: Chore): boolean {
-  return false;
+  const days = daysSinceDone(chore);
+  if (days === null) return true;
+  return days > chore.intervalDays;
 }
