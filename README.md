@@ -17,6 +17,18 @@ npx expo start
 
 Skanna QR-koden med kameran (iPhone) eller i Expo Go (Android). Tryck `w` i terminalen för att öppna appen i webbläsaren i stället.
 
+### Backend (Supabase)
+
+Appen använder [Supabase](https://supabase.com) som backend: databas, inloggning och filer. Kopiera `.env.example` till `.env.local` och fyll i projektets adress och publishable key (Supabase → Project Settings → API Keys). `.env.local` checkas inte in.
+
+Databasen beskrivs av filerna i `supabase/migrations/`. Ändra inte tabeller direkt i Supabase, lägg till en ny migration i stället så att alla har samma databas. Så här kopplar du terminalen till projektet och skickar upp migrationerna:
+
+```bash
+npx supabase login
+npx supabase link --project-ref <projekt-id>
+npx supabase db push
+```
+
 ### Kontroller
 
 Samma kontroller körs automatiskt i GitHub Actions på varje PR mot `main`. Kör dem gärna själv innan du pushar:
@@ -35,7 +47,9 @@ npm run lint        # ESLint
 | `src/components/` | Komponenter för en viss vy, t.ex. `ChoreCard`. |
 | `src/theme/` | Färger för ljust och mörkt läge, `useTheme()` och avatarerna. |
 | `src/utils/` | Uträkningar, t.ex. dagar sedan en syssla gjordes och om den är försenad. |
+| `src/lib/` | Supabase-klienten (`supabase.ts`). |
 | `src/data/` | Testdata tills backend är på plats. |
+| `supabase/migrations/` | Databasens tabeller, regler och funktioner (SQL). |
 | `docs/design/` | Designsystem, skärmar och Figma-skript. |
 | `assets/images/` | Logga, appikon och splash. |
 
