@@ -38,6 +38,7 @@ export default function Settings() {
         })}
       </View>
       <PillButton label="Visa komponenter" onPress={() => router.push("/components")} />
+      <PillButton label="Visa alla skärmar" onPress={() => router.push("/screens")} />
     </View>
   );
 }

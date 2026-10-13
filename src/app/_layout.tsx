@@ -21,6 +21,30 @@ function ThemedStack() {
         <Stack.Screen name="settings" options={{ title: "Utseende" }} />
         <Stack.Screen name="components" options={{ title: "Komponenter" }} />
         <Stack.Screen name="chore/[id]" options={{ title: "" }} />
+
+        {/* Område 2: Konto & Profil */}
+        <Stack.Screen name="(auth)/login" options={{ title: "Logga in" }} />
+        <Stack.Screen name="(auth)/register" options={{ title: "Skapa konto" }} />
+        <Stack.Screen name="profile" options={{ title: "Profil" }} />
+        <Stack.Screen name="households/join" options={{ title: "Gå med i hushåll" }} />
+        <Stack.Screen name="households/pending" options={{ title: "Väntar på godkännande" }} />
+
+        {/* Område 3: Hushåll */}
+        <Stack.Screen name="households/index" options={{ title: "Mina hushåll" }} />
+        <Stack.Screen name="household" options={{ title: "Hushåll" }} />
+
+        {/* Område 4: Sysslor */}
+        <Stack.Screen
+          name="chore/new"
+          options={{ title: "Skapa en ny syssla", presentation: "modal" }}
+        />
+        <Stack.Screen name="chore/[id]/edit" options={{ title: "Redigera syssla" }} />
+
+        {/* Område 6: Statistik */}
+        <Stack.Screen name="statistics" options={{ title: "Statistik" }} />
+
+        {/* Översikt över alla skärmar, bara under utvecklingen */}
+        <Stack.Screen name="screens" options={{ title: "Alla skärmar" }} />
       </Stack>
     </>
   );
