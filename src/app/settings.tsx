@@ -37,7 +37,7 @@ export default function Settings() {
           );
         })}
       </View>
-      {/* Länkar som i Figma-skärmen "8 Inställningar". Temat ska sparas i profiles.theme (#7). */}
+      {/* Länkar som i Figma-skärmen "8 Inställningar". */}
       <PillButton label="Hushåll och medlemmar" onPress={() => router.push("/household")} />
       <PillButton label="Rotationsgrupper (ägare)" onPress={() => router.push("/groups")} />
       <PillButton label="Visa komponenter" onPress={() => router.push("/components")} />

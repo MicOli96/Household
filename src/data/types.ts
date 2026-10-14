@@ -3,9 +3,9 @@ import { AvatarEmoji } from "../theme/avatars";
 // Typerna följer tabellerna i Supabase, så att testdatan kan bytas mot
 // riktiga anrop utan att skärmarna behöver ändras.
 
-/** household_members + profiles */
+/** household_members (namnet finns per hushåll) */
 export type Member = {
-  profileId: string;
+  userId: string;
   name: string;
   avatar: AvatarEmoji;
   isOwner: boolean;
@@ -24,17 +24,17 @@ export type ChoreRow = {
   choreGroupId: string | null;
 };
 
-/** completions */
+/** completions (created_at är när sysslan gjordes) */
 export type Completion = {
   id: string;
   choreId: string;
-  profileId: string;
-  doneAt: Date;
+  userId: string;
+  createdAt: Date;
 };
 
 /** chore_assignments */
 export type Assignment = {
-  profileId: string;
+  userId: string;
   choreId: string;
 };
 

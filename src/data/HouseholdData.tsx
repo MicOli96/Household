@@ -1,7 +1,7 @@
 import { createContext, ReactNode, useContext, useMemo, useState } from "react";
 import { currentRotationMember } from "../utils/rotation";
 import {
-  CURRENT_PROFILE_ID,
+  CURRENT_USER_ID,
   mockAssignments,
   mockChoreRows,
   mockCompletions,
@@ -20,7 +20,7 @@ type HouseholdDataValue = {
   chores: Chore[];
   groups: ChoreGroup[];
   markDone: (choreId: string) => void;
-  setAssignees: (choreId: string, profileIds: string[]) => void;
+  setAssignees: (choreId: string, userIds: string[]) => void;
   addGroup: (name: string, rotationDays: number, choreIds: string[]) => void;
 };
 
@@ -36,15 +36,15 @@ export function HouseholdDataProvider({ children }: { children: ReactNode }) {
   const [assignments, setAssignments] = useState<Assignment[]>(mockAssignments);
   const [groups, setGroups] = useState<ChoreGroup[]>(mockGroups);
   const members = mockMembers;
-  const currentMember = members.find((m) => m.profileId === CURRENT_PROFILE_ID)!;
+  const currentMember = members.find((m) => m.userId === CURRENT_USER_ID)!;
 
   const chores = useMemo(() => {
     const today = new Date();
     return choreRows.map((row): Chore => {
       const done = completions
         .filter((c) => c.choreId === row.id)
-        .sort((a, b) => b.doneAt.getTime() - a.doneAt.getTime());
-      const doneToday = done.filter((c) => isSameDay(c.doneAt, today));
+        .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+      const doneToday = done.filter((c) => isSameDay(c.createdAt, today));
 
       // Sysslor i en rotationsgrupp har den som har gruppen just nu.
       const group = groups.find((g) => g.id === row.choreGroupId);
@@ -52,14 +52,14 @@ export function HouseholdDataProvider({ children }: { children: ReactNode }) {
       const assignees = rotating
         ? [rotating]
         : members.filter((m) =>
-            assignments.some((a) => a.choreId === row.id && a.profileId === m.profileId),
+            assignments.some((a) => a.choreId === row.id && a.userId === m.userId),
           );
 
       return {
         ...row,
-        lastDoneAt: done[0]?.doneAt ?? null,
+        lastDoneAt: done[0]?.createdAt ?? null,
         doneTodayBy: doneToday
-          .map((c) => members.find((m) => m.profileId === c.profileId)?.avatar)
+          .map((c) => members.find((m) => m.userId === c.userId)?.avatar)
           .filter((a) => a !== undefined),
         assignees,
       };
@@ -77,15 +77,15 @@ export function HouseholdDataProvider({ children }: { children: ReactNode }) {
         {
           id: `c${Date.now()}`,
           choreId,
-          profileId: currentMember.profileId,
-          doneAt: new Date(),
+          userId: currentMember.userId,
+          createdAt: new Date(),
         },
       ]);
     },
-    setAssignees(choreId, profileIds) {
+    setAssignees(choreId, userIds) {
       setAssignments((prev) => [
         ...prev.filter((a) => a.choreId !== choreId),
-        ...profileIds.map((profileId) => ({ profileId, choreId })),
+        ...userIds.map((userId) => ({ userId, choreId })),
       ]);
     },
     addGroup(name, rotationDays, choreIds) {

@@ -15,7 +15,7 @@ type ThemeContextValue = {
 const STORAGE_KEY = "themeMode";
 
 // Läser det sparade läget så att valet finns kvar efter omstart (#7).
-// Ska flyttas till profiles.theme i Supabase när inloggningen finns.
+// Temat sparas bara i telefonen, inte i Supabase.
 function loadMode(): ThemeMode {
   const saved = localStorage.getItem(STORAGE_KEY);
   return saved === "light" || saved === "dark" ? saved : "auto";

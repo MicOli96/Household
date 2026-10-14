@@ -10,15 +10,15 @@ function daysAgo(days: number): Date {
 }
 
 /** Den inloggade användaren tills inloggningen finns. Anna är ägare. */
-export const CURRENT_PROFILE_ID = "anna";
+export const CURRENT_USER_ID = "anna";
 
 export const mockMembers: Member[] = [
-  { profileId: "anna", name: "Anna", avatar: "🦊", isOwner: true },
-  { profileId: "erik", name: "Erik", avatar: "🐬", isOwner: false },
-  { profileId: "lisa", name: "Lisa", avatar: "🐷", isOwner: false },
-  { profileId: "olle", name: "Olle", avatar: "🐥", isOwner: false },
-  { profileId: "maja", name: "Maja", avatar: "🐸", isOwner: false },
-  { profileId: "sam", name: "Sam", avatar: "🐙", isOwner: false },
+  { userId: "anna", name: "Anna", avatar: "🦊", isOwner: true },
+  { userId: "erik", name: "Erik", avatar: "🐬", isOwner: false },
+  { userId: "lisa", name: "Lisa", avatar: "🐷", isOwner: false },
+  { userId: "olle", name: "Olle", avatar: "🐥", isOwner: false },
+  { userId: "maja", name: "Maja", avatar: "🐸", isOwner: false },
+  { userId: "sam", name: "Sam", avatar: "🐙", isOwner: false },
 ];
 
 export const mockGroups: ChoreGroup[] = [
@@ -35,22 +35,22 @@ export const mockChoreRows: ChoreRow[] = [
 ];
 
 export const mockCompletions: Completion[] = [
-  { id: "c1", choreId: "1", profileId: "anna", doneAt: daysAgo(0) },
-  { id: "c2", choreId: "1", profileId: "erik", doneAt: daysAgo(0) },
-  { id: "c3", choreId: "1", profileId: "lisa", doneAt: daysAgo(0) },
-  { id: "c4", choreId: "2", profileId: "erik", doneAt: daysAgo(7) },
-  { id: "c5", choreId: "3", profileId: "olle", doneAt: daysAgo(0) },
-  { id: "c6", choreId: "3", profileId: "maja", doneAt: daysAgo(0) },
-  { id: "c7", choreId: "4", profileId: "lisa", doneAt: daysAgo(0) },
-  { id: "c8", choreId: "5", profileId: "anna", doneAt: daysAgo(24) },
-  { id: "c9", choreId: "6", profileId: "sam", doneAt: daysAgo(0) },
+  { id: "c1", choreId: "1", userId: "anna", createdAt: daysAgo(0) },
+  { id: "c2", choreId: "1", userId: "erik", createdAt: daysAgo(0) },
+  { id: "c3", choreId: "1", userId: "lisa", createdAt: daysAgo(0) },
+  { id: "c4", choreId: "2", userId: "erik", createdAt: daysAgo(7) },
+  { id: "c5", choreId: "3", userId: "olle", createdAt: daysAgo(0) },
+  { id: "c6", choreId: "3", userId: "maja", createdAt: daysAgo(0) },
+  { id: "c7", choreId: "4", userId: "lisa", createdAt: daysAgo(0) },
+  { id: "c8", choreId: "5", userId: "anna", createdAt: daysAgo(24) },
+  { id: "c9", choreId: "6", userId: "sam", createdAt: daysAgo(0) },
 ];
 
 export const mockAssignments: Assignment[] = [
-  { profileId: "anna", choreId: "1" },
-  { profileId: "erik", choreId: "1" },
-  { profileId: "anna", choreId: "2" },
-  { profileId: "erik", choreId: "2" },
-  { profileId: "anna", choreId: "4" },
-  { profileId: "erik", choreId: "6" },
+  { userId: "anna", choreId: "1" },
+  { userId: "erik", choreId: "1" },
+  { userId: "anna", choreId: "2" },
+  { userId: "erik", choreId: "2" },
+  { userId: "anna", choreId: "4" },
+  { userId: "erik", choreId: "6" },
 ];

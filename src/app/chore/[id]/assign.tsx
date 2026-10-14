@@ -13,7 +13,7 @@ export default function AssignChore() {
   const chore = useChore(id);
   const { members, groups, setAssignees } = useHouseholdData();
   const [selected, setSelected] = useState(
-    () => new Set(chore?.assignees.map((m) => m.profileId) ?? []),
+    () => new Set(chore?.assignees.map((m) => m.userId) ?? []),
   );
 
   if (!chore) {
@@ -39,11 +39,11 @@ export default function AssignChore() {
     );
   }
 
-  function toggle(profileId: string) {
+  function toggle(userId: string) {
     setSelected((prev) => {
       const next = new Set(prev);
-      if (next.has(profileId)) next.delete(profileId);
-      else next.add(profileId);
+      if (next.has(userId)) next.delete(userId);
+      else next.add(userId);
       return next;
     });
   }
@@ -61,11 +61,11 @@ export default function AssignChore() {
       </Text>
 
       {members.map((member) => {
-        const isSelected = selected.has(member.profileId);
+        const isSelected = selected.has(member.userId);
         return (
           <Pressable
-            key={member.profileId}
-            onPress={() => toggle(member.profileId)}
+            key={member.userId}
+            onPress={() => toggle(member.userId)}
             style={[
               styles.row,
               {
