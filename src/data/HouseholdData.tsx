@@ -7,6 +7,7 @@ import {
   mockCompletions,
   mockGroups,
   mockMembers,
+  timestamps,
 } from "./mockData";
 import { Assignment, Chore, ChoreGroup, Completion, Member } from "./types";
 
@@ -26,6 +27,11 @@ type HouseholdDataValue = {
 
 const HouseholdDataContext = createContext<HouseholdDataValue | null>(null);
 
+/** Rader som inte är borttagna, som .is("deleted_at", null) i Supabase. */
+function active<T extends { deletedAt: Date | null }>(rows: T[]): T[] {
+  return rows.filter((r) => r.deletedAt === null);
+}
+
 function isSameDay(a: Date, b: Date) {
   return a.toDateString() === b.toDateString();
 }
@@ -35,24 +41,26 @@ export function HouseholdDataProvider({ children }: { children: ReactNode }) {
   const [completions, setCompletions] = useState<Completion[]>(mockCompletions);
   const [assignments, setAssignments] = useState<Assignment[]>(mockAssignments);
   const [groups, setGroups] = useState<ChoreGroup[]>(mockGroups);
-  const members = mockMembers;
+  const members = useMemo(() => active(mockMembers), []);
   const currentMember = members.find((m) => m.userId === CURRENT_USER_ID)!;
 
   const chores = useMemo(() => {
     const today = new Date();
-    return choreRows.map((row): Chore => {
-      const done = completions
+    const liveGroups = active(groups);
+    const liveAssignments = active(assignments);
+    return active(choreRows).filter((row) => !row.isArchived).map((row): Chore => {
+      const done = active(completions)
         .filter((c) => c.choreId === row.id)
         .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
       const doneToday = done.filter((c) => isSameDay(c.createdAt, today));
 
       // Sysslor i en rotationsgrupp har den som har gruppen just nu.
-      const group = groups.find((g) => g.id === row.choreGroupId);
+      const group = liveGroups.find((g) => g.id === row.choreGroupId);
       const rotating = group ? currentRotationMember(group, members, today) : null;
       const assignees = rotating
         ? [rotating]
         : members.filter((m) =>
-            assignments.some((a) => a.choreId === row.id && a.userId === m.userId),
+            liveAssignments.some((a) => a.choreId === row.id && a.userId === m.userId),
           );
 
       return {
@@ -70,7 +78,7 @@ export function HouseholdDataProvider({ children }: { children: ReactNode }) {
     members,
     currentMember,
     chores,
-    groups,
+    groups: active(groups),
     markDone(choreId) {
       setCompletions((prev) => [
         ...prev,
@@ -78,21 +86,38 @@ export function HouseholdDataProvider({ children }: { children: ReactNode }) {
           id: `c${Date.now()}`,
           choreId,
           userId: currentMember.userId,
-          createdAt: new Date(),
+          ...timestamps(),
         },
       ]);
     },
     setAssignees(choreId, userIds) {
-      setAssignments((prev) => [
-        ...prev.filter((a) => a.choreId !== choreId),
-        ...userIds.map((userId) => ({ userId, choreId })),
-      ]);
+      // Inget raderas: borttagna tilldelningar får deletedAt, nya läggs till.
+      const now = new Date();
+      setAssignments((prev) => {
+        const kept = prev.map((a) =>
+          a.choreId === choreId && a.deletedAt === null && !userIds.includes(a.userId)
+            ? { ...a, deletedAt: now, updatedAt: now }
+            : a,
+        );
+        const added = userIds
+          .filter((userId) =>
+            !kept.some((a) => a.choreId === choreId && a.userId === userId && a.deletedAt === null),
+          )
+          .map((userId) => ({ id: `a${now.getTime()}${userId}`, userId, choreId, ...timestamps(now) }));
+        return [...kept, ...added];
+      });
     },
     addGroup(name, rotationDays, choreIds) {
       const id = `g${Date.now()}`;
-      setGroups((prev) => [...prev, { id, name, rotationDays, startDate: new Date() }]);
+      const now = new Date();
+      setGroups((prev) => [
+        ...prev,
+        { id, householdId: currentMember.householdId, name, rotationDays, startDate: now, ...timestamps(now) },
+      ]);
       setChoreRows((prev) =>
-        prev.map((c) => (choreIds.includes(c.id) ? { ...c, choreGroupId: id } : c)),
+        prev.map((c) =>
+          choreIds.includes(c.id) ? { ...c, choreGroupId: id, updatedAt: now } : c,
+        ),
       );
     },
   };

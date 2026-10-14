@@ -3,44 +3,78 @@ import { AvatarEmoji } from "../theme/avatars";
 // Typerna följer tabellerna i Supabase, så att testdatan kan bytas mot
 // riktiga anrop utan att skärmarna behöver ändras.
 
-/** household_members (namnet finns per hushåll) */
-export type Member = {
+/**
+ * Kolumnerna som finns i alla tabeller. Inget raderas på riktigt:
+ * att ta bort något betyder att deletedAt sätts. Filtrera därför bort
+ * rader där deletedAt inte är null, i Supabase med .is("deleted_at", null).
+ */
+export type Timestamps = {
+  createdAt: Date;
+  updatedAt: Date;
+  deletedAt: Date | null;
+};
+
+/** households */
+export type Household = Timestamps & {
+  id: string;
+  name: string;
+  code: string;
+};
+
+/** household_members. Namnet finns per hushåll. deletedAt sätts när man lämnar. */
+export type Member = Timestamps & {
   userId: string;
+  householdId: string;
   name: string;
   avatar: AvatarEmoji;
   isOwner: boolean;
+  isApproved: boolean;
+};
+
+/** pauses */
+export type Pause = Timestamps & {
+  id: string;
+  userId: string;
+  householdId: string;
+  startDate: Date;
+  endDate: Date | null;
 };
 
 /** chores */
-export type ChoreRow = {
+export type ChoreRow = Timestamps & {
   id: string;
+  householdId: string;
+  /** Rotationsgruppen sysslan ingår i (chore_group_id), eller null. */
+  choreGroupId: string | null;
   name: string;
   description: string;
   /** Hur ofta sysslan ska göras, i dagar (interval_days). */
   intervalDays: number;
   /** Hur energikrävande sysslan är: 1, 2, 4, 6 eller 8. */
   weight: 1 | 2 | 4 | 6 | 8;
-  /** Rotationsgruppen sysslan ingår i (chore_group_id), eller null. */
-  choreGroupId: string | null;
+  imagePath: string | null;
+  audioPath: string | null;
+  isArchived: boolean;
 };
 
-/** completions (created_at är när sysslan gjordes) */
-export type Completion = {
+/** completions. createdAt är när sysslan gjordes. */
+export type Completion = Timestamps & {
   id: string;
   choreId: string;
   userId: string;
-  createdAt: Date;
 };
 
 /** chore_assignments */
-export type Assignment = {
+export type Assignment = Timestamps & {
+  id: string;
   userId: string;
   choreId: string;
 };
 
 /** chore_groups */
-export type ChoreGroup = {
+export type ChoreGroup = Timestamps & {
   id: string;
+  householdId: string;
   name: string;
   /** Hur många dagar varje person har gruppen innan den roterar. */
   rotationDays: number;
