@@ -1,7 +1,7 @@
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { Avatar, PillButton } from "../../../components/ui";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { Avatar, CheckRow, PillButton } from "../../../components/ui";
 import { useChore, useHouseholdData } from "../../../data/HouseholdData";
 import { useTheme } from "../../../theme/ThemeProvider";
 
@@ -60,28 +60,15 @@ export default function AssignChore() {
         Välj vilka som ska göra sysslan.
       </Text>
 
-      {members.map((member) => {
-        const isSelected = selected.has(member.userId);
-        return (
-          <Pressable
-            key={member.userId}
-            onPress={() => toggle(member.userId)}
-            style={[
-              styles.row,
-              {
-                backgroundColor: colors.card,
-                borderColor: isSelected ? colors.primary : colors.border,
-              },
-            ]}
-          >
-            <Avatar emoji={member.avatar} size={32} />
-            <Text style={[styles.name, { color: colors.text }]}>{member.name}</Text>
-            <Text style={[styles.check, { color: colors.primary }]}>
-              {isSelected ? "✓" : ""}
-            </Text>
-          </Pressable>
-        );
-      })}
+      {members.map((member) => (
+        <CheckRow
+          key={member.userId}
+          label={member.name}
+          checked={selected.has(member.userId)}
+          onPress={() => toggle(member.userId)}
+          left={<Avatar emoji={member.avatar} size={32} />}
+        />
+      ))}
 
       <PillButton label="Spara" variant="primary" onPress={save} />
     </ScrollView>
@@ -99,21 +86,5 @@ const styles = StyleSheet.create({
   },
   info: {
     fontSize: 15,
-  },
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    padding: 10,
-    borderRadius: 10,
-    borderWidth: 2,
-  },
-  name: {
-    flex: 1,
-    fontSize: 16,
-  },
-  check: {
-    fontSize: 20,
-    fontWeight: "700",
   },
 });
