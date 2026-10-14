@@ -4,6 +4,7 @@ import { StyleSheet, Text, View } from "react-native";
 import { HouseholdHeader, HouseholdTitle } from "../components/HouseholdHeader";
 import { MemberList } from "../components/MemberList";
 import { MemberMenu } from "../components/MemberMenu";
+import { RenameHouseholdDialog } from "../components/RenameHouseholdDialog";
 import { Placeholder } from "../components/Placeholder";
 import {
   getHousehold,
@@ -49,6 +50,15 @@ export default function Household() {
   // Testhushållet (utan id) visar pennan så att den går att se under utvecklingen.
   const isOwner = householdId ? members.some((m) => m.isMe && m.isOwner) : true;
 
+  // Om dialogen "Byt namn på hushållet" är öppen.
+  const [renaming, setRenaming] = useState(false);
+
+  // Byter namnet i appen. Sparas inte i Supabase än (nästa steg).
+  function rename(name: string) {
+    setHousehold((current) => (current ? { ...current, name } : current));
+    setRenaming(false);
+  }
+
   // Medlemmen vars meny (⋯) är öppen, eller null när menyn är stängd.
   const [menuMember, setMenuMember] = useState<MemberSummary | null>(null);
   const closeMenu = () => setMenuMember(null);
@@ -81,7 +91,13 @@ export default function Household() {
       {/* Rubriken högst upp visar hushållets namn i stället för "Hushåll", som i Figma. */}
       <Stack.Screen
         options={{
-          headerTitle: () => <HouseholdTitle name={household.name} isOwner={isOwner} />,
+          headerTitle: () => (
+            <HouseholdTitle
+              name={household.name}
+              isOwner={isOwner}
+              onEdit={() => setRenaming(true)}
+            />
+          ),
           headerTitleAlign: "center",
         }}
       />
@@ -90,6 +106,14 @@ export default function Household() {
         <HouseholdHeader code={household.code} />
         <MemberList members={members} canManage={isOwner} onOpenMenu={setMenuMember} />
       </View>
+
+      {renaming && (
+        <RenameHouseholdDialog
+          currentName={household.name}
+          onClose={() => setRenaming(false)}
+          onSave={rename}
+        />
+      )}
 
       <MemberMenu
         member={menuMember}
@@ -103,7 +127,7 @@ export default function Household() {
         area={3}
         issues="#15, #17–#20, #26"
         todo={[
-          "✎ i rubriken öppnar modalen \"Byt namn\" (#15, ägare)",
+          "Spara det nya namnet i Supabase (#15)",
           "⋯ på en medlem öppnar menyn: gör till ägare, pausa (#19, #20, ägare)",
           "Pausade medlemmar markeras \"Pausad\" (#20)",
           "Förfrågningar: acceptera eller neka (#17, #18, ägare)",

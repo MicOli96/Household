@@ -6,10 +6,12 @@ type TitleProps = {
   name: string;
   /** Bara ägare får byta namn, därför visas pennan bara för dem. */
   isOwner: boolean;
+  /** Anropas när ägaren trycker på pennan. */
+  onEdit: () => void;
 };
 
 // Hushållets namn i rubriken högst upp, med en penna för ägare (#15).
-export function HouseholdTitle({ name, isOwner }: TitleProps) {
+export function HouseholdTitle({ name, isOwner, onEdit }: TitleProps) {
   const { colors } = useTheme();
 
   return (
@@ -17,9 +19,8 @@ export function HouseholdTitle({ name, isOwner }: TitleProps) {
       <Text style={[styles.name, { color: colors.text }]} numberOfLines={1}>
         {name}
       </Text>
-      {/* Gör inget än, öppnar dialogen "Byt namn" i nästa steg. */}
       {isOwner && (
-        <Pressable hitSlop={8} accessibilityLabel="Byt namn">
+        <Pressable onPress={onEdit} hitSlop={8} accessibilityLabel="Byt namn">
           <Text style={[styles.pen, { color: colors.primary }]}>✎</Text>
         </Pressable>
       )}
