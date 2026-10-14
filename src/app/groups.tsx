@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { Card, PillButton, TextField } from "../components/ui";
+import { Avatar, Card, PillButton, TextField } from "../components/ui";
 import { useHouseholdData } from "../data/HouseholdData";
 import { useTheme } from "../theme/ThemeProvider";
 import { currentRotationMember, daysUntilRotation } from "../utils/rotation";
@@ -51,7 +51,7 @@ export default function Groups() {
                 {left === 1 ? "dag" : "dagar"}
               </Text>
             </View>
-            {holder && <Text style={styles.emoji}>{holder.avatar}</Text>}
+            {holder && <Avatar emoji={holder.avatar} size={32} />}
           </Card>
         );
       })}
@@ -95,9 +95,6 @@ export default function Groups() {
 }
 
 const styles = StyleSheet.create({
-  emoji: {
-    fontSize: 26,
-  },
   container: {
     padding: 16,
     gap: 12,
