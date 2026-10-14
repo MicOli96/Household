@@ -1,9 +1,15 @@
+import { useLocalSearchParams } from "expo-router";
+import { HouseholdDetails } from "../components/HouseholdDetails";
 import { Placeholder } from "../components/Placeholder";
 
 // TODO (område 3): Hushåll, se #15–#21 och #26.
 // Byt ut Placeholder mot den riktiga vyn.
 // Byt namn och medlemsmenyn (gör till ägare, pausa) är modaler (AppModal), inte egna skärmar.
 export default function Household() {
+  const { id } = useLocalSearchParams<{ id?: string | string[] }>();
+  const householdId = Array.isArray(id) ? id[0] : id;
+  if (householdId) return <HouseholdDetails key={householdId} id={householdId} />;
+
   return (
     <Placeholder
       title="Hushåll"
