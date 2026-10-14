@@ -2,6 +2,8 @@ import { Stack, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { HouseholdHeader, HouseholdTitle } from "../components/HouseholdHeader";
+import { MemberList } from "../components/MemberList";
+import { MemberMenu } from "../components/MemberMenu";
 import { Placeholder } from "../components/Placeholder";
 import {
   getHousehold,
@@ -47,6 +49,23 @@ export default function Household() {
   // Testhushållet (utan id) visar pennan så att den går att se under utvecklingen.
   const isOwner = householdId ? members.some((m) => m.isMe && m.isOwner) : true;
 
+  // Medlemmen vars meny (⋯) är öppen, eller null när menyn är stängd.
+  const [menuMember, setMenuMember] = useState<MemberSummary | null>(null);
+  const closeMenu = () => setMenuMember(null);
+
+  // TODO (#19): Gör till ägare. Sätt is_owner = true på medlemmens rad i
+  // household_members (lägg funktionen i data/households.ts) och hämta om medlemmarna
+  // så att "Ägare" visas i listan. Databasen tillåter bara ägare att göra det.
+  function makeOwner(member: MemberSummary) {
+    closeMenu();
+  }
+
+  // TODO (#20): Pausa medlem. Lägg till en rad i pauses (user_id, household_id,
+  // start_date) och visa "Pausad" i listan. Pausade räknas inte med i statistiken.
+  function pauseMember(member: MemberSummary) {
+    closeMenu();
+  }
+
   if (!household) {
     return (
       <View style={styles.message}>
@@ -69,21 +88,29 @@ export default function Household() {
 
       <View style={styles.header}>
         <HouseholdHeader code={household.code} />
+        <MemberList members={members} canManage={isOwner} onOpenMenu={setMenuMember} />
       </View>
 
+      <MemberMenu
+        member={menuMember}
+        onClose={closeMenu}
+        onMakeOwner={makeOwner}
+        onPause={pauseMember}
+      />
+
       <Placeholder
-        title="Medlemmar och förfrågningar"
+        title="Kvar att bygga"
         area={3}
-        issues="#16–#21, #26"
+        issues="#15, #17–#20, #26"
         todo={[
           "✎ i rubriken öppnar modalen \"Byt namn\" (#15, ägare)",
-          "Medlemslista med avatarer, pausade markeras",
-          "⋯ på en medlem öppnar modal: gör till ägare, pausa (ägare)",
-          "Förfrågningar: acceptera eller neka (ägare)",
+          "⋯ på en medlem öppnar menyn: gör till ägare, pausa (#19, #20, ägare)",
+          "Pausade medlemmar markeras \"Pausad\" (#20)",
+          "Förfrågningar: acceptera eller neka (#17, #18, ägare)",
           "Lämna hushåll (#26)",
         ]}
         tables={[
-          "households",
+          "households (name)",
           "household_members (is_owner, is_approved, deleted_at)",
           "pauses",
         ]}
@@ -99,6 +126,7 @@ const styles = StyleSheet.create({
   header: {
     padding: 16,
     paddingBottom: 0,
+    gap: 24,
   },
   message: {
     padding: 24,
