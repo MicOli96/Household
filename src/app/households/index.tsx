@@ -13,6 +13,7 @@ export default function Households() {
         "Tryck på ett hushåll för att byta till det",
         "Knappar för att skapa nytt hushåll och gå med i ett",
       ]}
+      tables={["households", "household_members"]}
       links={[
         { label: "Familjen Svensson (exempel)", href: "/" },
         { label: "Gå med i hushåll", href: "/households/join" },

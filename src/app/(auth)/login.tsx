@@ -14,6 +14,7 @@ export default function Login() {
         "Felmeddelande vid fel uppgifter (TextField error)",
         "Länk till \"Skapa konto\"",
       ]}
+      tables={["auth.users"]}
       links={[
         { label: "Logga in", href: "/households" },
         { label: "Skapa konto", href: "/register" },
