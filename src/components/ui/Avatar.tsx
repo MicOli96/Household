@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View } from "react-native";
-import { AvatarEmoji, avatars } from "../../theme/avatars";
+import { AvatarEmoji } from "../../theme/avatars";
 import { useTheme } from "../../theme/ThemeProvider";
 
 type Props = {
@@ -12,7 +12,8 @@ type Props = {
   disabled?: boolean;
 };
 
-// Djur-emoji i en färgad cirkel. Används överallt där appen visar vem som gjort något.
+// Djur-emoji, med ring när den är vald. Avatarens färg används i statistikens
+// diagram, inte som bakgrund (se src/theme/avatars.ts).
 export function Avatar({ emoji, size = 40, selected = false, disabled = false }: Props) {
   const { colors } = useTheme();
 
@@ -36,7 +37,6 @@ export function Avatar({ emoji, size = 40, selected = false, disabled = false }:
             width: size,
             height: size,
             borderRadius: size / 2,
-            backgroundColor: avatars[emoji],
           },
         ]}
       >
