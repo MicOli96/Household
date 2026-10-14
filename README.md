@@ -162,3 +162,35 @@ Alla komponenter visas i appen under **Ändra → Visa komponenter**.
 |---|---|
 | ✅ | Git och GitHub används. |
 | ✅ | CI med GitHub Actions kör typkontroll och lint på varje PR. (VG) |
+
+
+### Issue #23: Skapa ett nytt hushåll
+
+Implementationen använder befintliga UI-komponenter, temat och Supabase-funktionen
+`create_household(p_name)`. Funktionen skapar hushållet och medlemskapet i samma
+transaktion; den inloggade användaren blir godkänd ägare. Inga nya paket eller
+ändringar i databasschemat behövs för denna issue.
+
+- `/households`: namnformulär, validering (1–100 tecken efter trimning),
+  laddningsläge, skydd mot dubbla anrop och fel-/framgångsåterkoppling.
+- Hushåll hämtas från backend så att det skapade hushållet går att öppna även
+  efter omstart. Detta är inte samma sak som att byta aktivt hushåll i dagsvyn (#38).
+- `/household?id=<uuid>`: läsvy som hämtar hushållets namn och kod. Den befintliga
+  platshållaren för medlemsadministration finns kvar när id saknas.
+- Backendåtkomst följer befintliga medlemskap och RLS-regler.
+
+**Verifieringsstatus:** typkontroll, lint och isolerade kontroller av validering,
+RPC-parametrar, inloggningskrav och felhantering har körts. Flödet mot gruppens
+riktiga Supabase-projekt och telefonens layout återstår att verifiera med giltig
+`.env.local`. Kravet ska inte markeras som slutverifierat före detta test.
+
+Manuell kontroll:
+1. Fyll i gruppens URL och publishable key i `.env.local` (ska inte committas),
+   starta om Expo och logga in med ett testkonto.
+2. Kontrollera att tomt namn, mellanslag och över 100 tecken inte kan sparas.
+3. Skapa ett hushåll. Kontrollera återkopplingen, att det visas som ett kort och
+   att endast ett hushåll skapas vid snabba upprepade tryck.
+4. Öppna kortet och kontrollera namn och kod. Starta om appen, gå till
+   Mina hushåll och öppna samma hushåll igen.
+5. Kontrollera i backend att medlemskapets user_id är rätt och att is_owner och
+   is_approved är true. Kontrollera även fel vid utloggat läge och nätverksfel.
