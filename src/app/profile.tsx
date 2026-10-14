@@ -14,7 +14,7 @@ export default function Profile() {
         "Avatarer som är upptagna i hushållet är utgråade (Avatar disabled)",
         "Knapp \"Spara\"",
       ]}
-      tables={["profiles.name", "household_members.avatar_id", "avatars"]}
+      tables={["household_members (name, avatar_id)", "avatars"]}
       links={[
         { label: "Spara", href: "/households" },
       ]}
