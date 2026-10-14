@@ -112,6 +112,13 @@ export const mockCompletions: Completion[] = [
   completion("c7", "4", "lisa", 0),
   completion("c8", "5", "anna", 24),
   completion("c9", "6", "sam", 0),
+  // Fler under veckan, så att statistiken har något att visa.
+  completion("c10", "1", "olle", 1),
+  completion("c11", "3", "anna", 1),
+  completion("c12", "4", "lisa", 2),
+  completion("c13", "1", "maja", 2),
+  completion("c14", "6", "erik", 3),
+  completion("c15", "4", "anna", 3),
 ];
 
 function assignment(id: string, userId: string, choreId: string): Assignment {

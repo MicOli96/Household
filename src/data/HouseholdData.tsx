@@ -20,6 +20,8 @@ type HouseholdDataValue = {
   currentMember: Member;
   chores: Chore[];
   groups: ChoreGroup[];
+  /** Alla gjorda sysslor, används av statistiken. */
+  completions: Completion[];
   markDone: (choreId: string) => void;
   setAssignees: (choreId: string, userIds: string[]) => void;
   addGroup: (name: string, rotationDays: number, choreIds: string[]) => void;
@@ -79,6 +81,7 @@ export function HouseholdDataProvider({ children }: { children: ReactNode }) {
     currentMember,
     chores,
     groups: active(groups),
+    completions: active(completions),
     markDone(choreId) {
       setCompletions((prev) => [
         ...prev,
