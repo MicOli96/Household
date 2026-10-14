@@ -7,7 +7,14 @@ import { AppModal, TextField, PillButton } from "../../components/ui";
 export default function Households() {
   const [householdName, setHouseholdName] = useState("");
   const [showCreateModal, setShowCreateModal] = useState(false);
-
+  const [nameError, setNameError] = useState("");
+  function handleCreate() {
+    if (householdName.trim() === "") {
+      setNameError("Ange ett namn för hushållet.");
+      return;
+    }
+    setNameError("");
+  }
   return (
     <>
       <Placeholder
@@ -40,7 +47,14 @@ export default function Households() {
           placeholder="Hushållets namn"
           value={householdName}
           onChangeText={setHouseholdName}
+          error={nameError}
         />
+
+        <PillButton
+          label="Skapa"
+          onPress={handleCreate}
+        />
+
       </AppModal>
     </>
   );
