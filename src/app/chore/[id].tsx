@@ -31,7 +31,8 @@ export default function ChoreDetail() {
   // Sparas i testdatan just nu. När backend finns blir det en rad i
   // completions (issue #12).
   function markAsDone() {
-    if (!chore) return;
+    // Bara ett tryck räknas, annars blir det flera rader i completions.
+    if (!chore || done) return;
     markDone(chore.id);
     setDone(true);
     setTimeout(() => router.back(), 600);
