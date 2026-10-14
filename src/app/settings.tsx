@@ -1,6 +1,6 @@
 import { router } from "expo-router";
-import { Pressable, StyleSheet, Text, View } from "react-native";
-import { PillButton } from "../components/ui";
+import { StyleSheet, Text, View } from "react-native";
+import { PillButton, SegmentedControl } from "../components/ui";
 import { ThemeMode, useTheme } from "../theme/ThemeProvider";
 
 const modes: { value: ThemeMode; label: string }[] = [
@@ -15,29 +15,8 @@ export default function Settings() {
   return (
     <View style={styles.container}>
       <Text style={[styles.title, { color: colors.text }]}>Utseende</Text>
-      <View style={styles.row}>
-        {modes.map((m) => {
-          const selected = m.value === mode;
-          return (
-            <Pressable
-              key={m.value}
-              onPress={() => setMode(m.value)}
-              style={[
-                styles.pill,
-                {
-                  backgroundColor: selected ? colors.primary : colors.card,
-                  borderColor: colors.border,
-                },
-              ]}
-            >
-              <Text style={{ color: selected ? "#FFFFFF" : colors.text }}>
-                {m.label}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
-      {/* Länkar som i Figma-skärmen "8 Inställningar". Temat ska sparas i profiles.theme (#7). */}
+      <SegmentedControl options={modes} value={mode} onChange={setMode} />
+      {/* Länkar som i Figma-skärmen "8 Inställningar". */}
       <PillButton label="Hushåll och medlemmar" onPress={() => router.push("/household")} />
       <PillButton label="Rotationsgrupper (ägare)" onPress={() => router.push("/groups")} />
       <PillButton label="Visa komponenter" onPress={() => router.push("/components")} />
@@ -56,15 +35,5 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: "600",
-  },
-  row: {
-    flexDirection: "row",
-    gap: 8,
-  },
-  pill: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 999,
-    borderWidth: 1,
   },
 });

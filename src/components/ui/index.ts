@@ -6,3 +6,6 @@ export { Badge } from "./Badge";
 export { Card } from "./Card";
 export { PillButton } from "./PillButton";
 export { TextField } from "./TextField";
+export { CheckRow } from "./CheckRow";
+export { ConfirmDialog } from "./ConfirmDialog";
+export { SegmentedControl } from "./SegmentedControl";

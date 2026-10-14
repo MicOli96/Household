@@ -1,3 +1,4 @@
+import "expo-sqlite/localStorage/install";
 import { createContext, ReactNode, useContext, useState } from "react";
 import { useColorScheme } from "react-native";
 import { colors, ColorScheme, ThemeColors } from "./colors";
@@ -11,10 +12,25 @@ type ThemeContextValue = {
   colors: ThemeColors;
 };
 
+const STORAGE_KEY = "themeMode";
+
+// Läser det sparade läget så att valet finns kvar efter omstart (#7).
+// Temat sparas bara i telefonen, inte i Supabase.
+function loadMode(): ThemeMode {
+  const saved = localStorage.getItem(STORAGE_KEY);
+  return saved === "light" || saved === "dark" ? saved : "auto";
+}
+
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [mode, setMode] = useState<ThemeMode>("auto");
+  const [mode, setModeState] = useState<ThemeMode>(loadMode);
+
+  function setMode(next: ThemeMode) {
+    setModeState(next);
+    localStorage.setItem(STORAGE_KEY, next);
+  }
+
   const system = useColorScheme();
   const scheme: ColorScheme =
     mode === "auto" ? (system === "dark" ? "dark" : "light") : mode;

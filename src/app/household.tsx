@@ -38,7 +38,7 @@ export default function Household() {
         ]}
         tables={[
           "households",
-          "household_members (is_owner, is_approved, left_at)",
+          "household_members (is_owner, is_approved, deleted_at)",
           "pauses",
         ]}
       />
