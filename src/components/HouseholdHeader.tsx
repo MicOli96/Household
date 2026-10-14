@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View } from "react-native";
+import { Pressable, Share, StyleSheet, Text, View } from "react-native";
 import { useTheme } from "../theme/ThemeProvider";
 import { Card } from "./ui";
 
@@ -10,6 +10,16 @@ type Props = {
 // Översta delen av hushållsvyn: hushållets namn och koden för att gå med (#15).
 export function HouseholdHeader({ name, code }: Props) {
   const { colors } = useTheme();
+
+  // Öppnar telefonens dela-meny (sms, Messenger, kopiera m.m.) med bara koden,
+  // så att mottagaren kan kopiera den rakt in i "Gå med i hushåll".
+  async function shareCode() {
+    try {
+      await Share.share({ message: code });
+    } catch {
+      // Delning finns inte överallt (t.ex. vissa webbläsare), då händer inget.
+    }
+  }
 
   return (
     <View style={styles.container}>
@@ -25,6 +35,9 @@ export function HouseholdHeader({ name, code }: Props) {
           <Text style={[styles.label, { color: colors.textMuted }]}>Kod för att gå med</Text>
           <Text style={[styles.code, { color: colors.text }]}>{code}</Text>
         </View>
+        <Pressable onPress={shareCode} hitSlop={8}>
+          <Text style={[styles.action, { color: colors.primary }]}>Dela</Text>
+        </Pressable>
       </Card>
     </View>
   );
@@ -49,5 +62,9 @@ const styles = StyleSheet.create({
     fontSize: 30,
     fontWeight: "700",
     letterSpacing: 2,
+  },
+  action: {
+    fontSize: 15,
+    fontWeight: "500",
   },
 });
