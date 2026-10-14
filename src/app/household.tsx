@@ -12,6 +12,7 @@ import {
   householdError,
   HouseholdSummary,
   MemberSummary,
+  renameHousehold,
 } from "../data/households";
 import { useTheme } from "../theme/ThemeProvider";
 
@@ -53,9 +54,14 @@ export default function Household() {
   // Om dialogen "Byt namn på hushållet" är öppen.
   const [renaming, setRenaming] = useState(false);
 
-  // Byter namnet i appen. Sparas inte i Supabase än (nästa steg).
-  function rename(name: string) {
-    setHousehold((current) => (current ? { ...current, name } : current));
+  // Sparar det nya namnet i Supabase och visar det när databasen har svarat.
+  // Testhushållet (utan id) finns inte i databasen, där byts namnet bara i appen.
+  async function rename(name: string) {
+    if (householdId) {
+      setHousehold(await renameHousehold(householdId, name));
+    } else {
+      setHousehold((current) => (current ? { ...current, name } : current));
+    }
     setRenaming(false);
   }
 
@@ -125,9 +131,8 @@ export default function Household() {
       <Placeholder
         title="Kvar att bygga"
         area={3}
-        issues="#15, #17–#20, #26"
+        issues="#17–#20, #26"
         todo={[
-          "Spara det nya namnet i Supabase (#15)",
           "⋯ på en medlem öppnar menyn: gör till ägare, pausa (#19, #20, ägare)",
           "Pausade medlemmar markeras \"Pausad\" (#20)",
           "Förfrågningar: acceptera eller neka (#17, #18, ägare)",

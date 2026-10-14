@@ -53,6 +53,19 @@ export async function getHousehold(id: string): Promise<HouseholdSummary> {
   return data;
 }
 
+// Byter namn på hushållet. Databasen släpper bara igenom ägare: för andra
+// ändras ingen rad, och då kommer inget hushåll tillbaka.
+export async function renameHousehold(id: string, name: string): Promise<HouseholdSummary> {
+  const validation = validateHouseholdName(name);
+  if (validation) throw new Error(validation);
+  const { supabase } = await client();
+  const { data, error } = await supabase.from("households")
+    .update({ name: name.trim() }).eq("id", id)
+    .select("id, name, code").maybeSingle();
+  if (error || !data) throw new Error("Kunde inte byta namn. Bara ägare kan byta namn på hushållet.");
+  return data;
+}
+
 // Medlemmar och förfrågningar (is_approved = false) som inte har lämnat, äldst först.
 export async function getMembers(householdId: string): Promise<MemberSummary[]> {
   const { supabase, userId } = await client();

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Pressable, StyleSheet, Text } from "react-native";
-import { validateHouseholdName } from "../data/households";
+import { householdError, validateHouseholdName } from "../data/households";
 import { useTheme } from "../theme/ThemeProvider";
 import { AppModal, PillButton, TextField } from "./ui";
 
@@ -8,8 +8,11 @@ type Props = {
   /** Namnet som står i fältet när dialogen öppnas. */
   currentName: string;
   onClose: () => void;
-  /** Anropas med det nya namnet när det är godkänt. */
-  onSave: (name: string) => void;
+  /**
+   * Anropas med det nya namnet när det är godkänt. Dialogen väntar tills
+   * sparandet är klart och visar felet om det misslyckas.
+   */
+  onSave: (name: string) => Promise<void>;
 };
 
 // Dialogen "Byt namn på hushållet" (7c i Figma). Öppnas med pennan i rubriken (#15).
@@ -19,14 +22,22 @@ export function RenameHouseholdDialog({ currentName, onClose, onSave }: Props) {
   const { colors } = useTheme();
   const [name, setName] = useState(currentName);
   const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
 
-  function save() {
+  async function save() {
+    if (saving) return;
     const message = validateHouseholdName(name);
     if (message) {
       setError(message);
       return;
     }
-    onSave(name.trim());
+    setSaving(true);
+    try {
+      await onSave(name.trim());
+    } catch (reason) {
+      setError(householdError(reason));
+      setSaving(false);
+    }
   }
 
   return (
@@ -44,7 +55,12 @@ export function RenameHouseholdDialog({ currentName, onClose, onSave }: Props) {
         onSubmitEditing={save}
         error={error || undefined}
       />
-      <PillButton label="Spara" variant="primary" onPress={save} />
+      <PillButton
+        label={saving ? "Sparar..." : "Spara"}
+        variant="primary"
+        onPress={save}
+        disabled={saving}
+      />
       <Pressable onPress={onClose} hitSlop={8} style={styles.cancel}>
         <Text style={[styles.cancelText, { color: colors.textMuted }]}>Avbryt</Text>
       </Pressable>
