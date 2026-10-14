@@ -1,5 +1,5 @@
 import { router } from "expo-router";
-import { FlatList, StyleSheet, Text, View } from "react-native";
+import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 import { ChoreCard } from "../components/ChoreCard";
 import { PillButton } from "../components/ui";
 import { useHouseholdData } from "../data/HouseholdData";
@@ -10,7 +10,7 @@ import { useTheme } from "../theme/ThemeProvider";
 // som behöver göras."
 export default function DailyView() {
   const { colors } = useTheme();
-  const { chores, currentMember } = useHouseholdData();
+  const { chores, currentMember, householdId, loading, error, reload } = useHouseholdData();
 
   return (
     <View style={styles.container}>
@@ -22,6 +22,26 @@ export default function DailyView() {
         <Text style={[styles.arrow, { color: colors.text }]}>›</Text>
       </View>
 
+      {!householdId && (
+        <Pressable onPress={() => router.push("/households")} style={styles.notice}>
+          <Text style={{ color: colors.textMuted }}>
+            Testdata visas. Tryck här och öppna ett hushåll för att se riktiga sysslor.
+          </Text>
+        </Pressable>
+      )}
+      {loading && <Text style={[styles.notice, { color: colors.textMuted }]}>Hämtar sysslor...</Text>}
+      {error ? (
+        <View style={styles.notice}>
+          <Text accessibilityRole="alert" style={{ color: colors.danger }}>{error}</Text>
+          <PillButton label="Försök igen" onPress={reload} />
+        </View>
+      ) : null}
+      {householdId && !loading && !error && chores.length === 0 && (
+        <Text style={[styles.notice, { color: colors.textMuted }]}>
+          Hushållet har inga sysslor ännu.
+        </Text>
+      )}
+
       <FlatList
         data={chores}
         keyExtractor={(chore) => chore.id}
@@ -31,7 +51,7 @@ export default function DailyView() {
             chore={item}
             onPress={() => router.push(`/chore/${item.id}`)}
             onManage={
-              currentMember.isOwner
+              currentMember?.isOwner
                 ? () => router.push(`/chore/${item.id}/assign`)
                 : undefined
             }
@@ -67,6 +87,11 @@ const styles = StyleSheet.create({
   dateText: {
     fontSize: 16,
     fontWeight: "600",
+  },
+  notice: {
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    gap: 8,
   },
   list: {
     padding: 16,

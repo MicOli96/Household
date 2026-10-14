@@ -1,6 +1,7 @@
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { useHouseholdData } from "../data/HouseholdData";
 import { getHousehold, householdError } from "../data/households";
 import type { HouseholdSummary } from "../data/households";
 import { useTheme } from "../theme/ThemeProvider";
@@ -9,6 +10,7 @@ import { Card, PillButton } from "./ui";
 // Avgränsad läsvy för #23. Medlemsadministrationen byggs i sina egna issues.
 export function HouseholdDetails({ id }: { id: string }) {
   const { colors } = useTheme();
+  const { openHousehold } = useHouseholdData();
   const [household, setHousehold] = useState<HouseholdSummary | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
@@ -35,6 +37,10 @@ export function HouseholdDetails({ id }: { id: string }) {
           <Text selectable style={{ color: colors.text }}>Hushållskod: {household.code}</Text>
         </View>
       </Card> : null}
+      {household ? <PillButton label="Visa sysslor" variant="primary" onPress={() => {
+        openHousehold(household.id);
+        router.dismissTo("/");
+      }} /> : null}
       <PillButton label="Mina hushåll" onPress={() => router.replace("/households")} />
     </ScrollView>
   );
