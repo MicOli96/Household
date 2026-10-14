@@ -43,12 +43,12 @@ npm run lint        # ESLint
 | Mapp | Innehåll |
 |---|---|
 | `src/app/` | Skärmar. Varje fil är en route (Expo Router), `_layout.tsx` styr navigeringen. |
-| `src/components/ui/` | Gemensamma komponenter: `PillButton`, `Card`, `Badge`, `Avatar`, `TextField`, `AppModal`. |
+| `src/components/ui/` | Gemensamma komponenter: `PillButton`, `Card`, `Badge`, `Avatar`, `TextField`, `AppModal`, `ConfirmDialog`, `CheckRow`, `SegmentedControl`. |
 | `src/components/` | Komponenter för en viss vy, t.ex. `ChoreCard`. |
 | `src/theme/` | Färger för ljust och mörkt läge, `useTheme()` och avatarerna. |
-| `src/utils/` | Uträkningar, t.ex. dagar sedan en syssla gjordes och om den är försenad. |
+| `src/utils/` | Uträkningar, t.ex. om en syssla är försenad och vem som har en rotationsgrupp (`rotation.ts`). |
 | `src/lib/` | Supabase-klienten (`supabase.ts`). |
-| `src/data/` | Testdata tills backend är på plats. |
+| `src/data/` | Typer som följer tabellerna i Supabase (`types.ts`), testdata (`mockData.ts`) och `HouseholdData` med hooks som `useChores()`. Skärmarna läser data via hooksen, så testdatan kan bytas mot Supabase utan att skärmarna ändras. |
 | `supabase/migrations/` | Databasens tabeller, regler och funktioner (SQL). |
 | `docs/design/` | Designsystem, skärmar och Figma-skript. |
 | `assets/images/` | Logga, appikon och splash. |
@@ -81,6 +81,18 @@ Alla komponenter visas i appen under **Ändra → Visa komponenter**.
 | 5. Dagsvy & Schemaläggning | Dagsvy, markera som gjord, tilldela och rotera sysslor |
 | 6. Statistik | Fördelning, vikter, vecko- och månadsvyer |
 
+## Klart hittills
+
+Mergat till `main`:
+
+- Logga, appikon, splash, tema (ljust, mörkt, auto, sparas mellan starter) och gemensamma UI-komponenter (#36, #55).
+- CI med typkontroll och lint på varje PR (#45).
+- Supabase som backend med tabeller, regler och tidsstämplar på alla tabeller (#48, #51).
+- Skärmskelett och navigering för alla delar av appen (#47, #49).
+- Dagsvy, tilldelning av sysslor och rotationsgrupper med testdata (#50).
+
+Statistik (#39–#41) ligger i PR #56.
+
 ## Krav
 
 ✅ klar · 🟡 påbörjad · ⬜ inte påbörjad. Krav med \* är obligatoriska för G. VG kräver 32 av 40 krav och CI.
@@ -91,7 +103,7 @@ Alla komponenter visas i appen under **Ändra → Visa komponenter**.
 | ✅ | En logga, splashscreen och appikon ska designas och användas. \* | #3, #4 |
 | ✅ | Applikationen ska byggas med RN, Expo & TS. \* | #5 |
 | 🟡 | Designen av appen ska utgå ifrån befintliga skisser. \* | #1, #2, #9 |
-| ⬜ | Information ska kommuniceras till och från en server. | #6 |
+| ✅ | Information ska kommuniceras till och från en server. | #6 |
 
 ### Hushåll
 | | Krav | Issue |
@@ -120,7 +132,7 @@ Alla komponenter visas i appen under **Ändra → Visa komponenter**.
 | ⬜ | En användare ska kunna välja en avatar (emoji-djur + färg) från en fördefinierad lista. \* | #29 |
 | ⬜ | Valda avatarer ska inte kunna väljas av andra användare i hushållet. \* | #30 |
 | 🟡 | Avataren ska användas i appen för att visa vad användaren har gjort. \* | #32 |
-| 🟡 | En användare ska kunna ställa in appens utseende (mörkt, ljust, auto). | #7 |
+| ✅ | En användare ska kunna ställa in appens utseende (mörkt, ljust, auto). | #7 |
 | ⬜ | En användare som tillhör flera hushåll ska kunna byta mellan dem. | #38 |
 
 ### Sysslor
@@ -153,9 +165,9 @@ Alla komponenter visas i appen under **Ändra → Visa komponenter**.
 ### Schemaläggning
 | | Krav | Issue |
 |---|---|---|
-| ⬜ | En ägare ska kunna tilldela och ta bort sysslor från användare i hushållet. | #13 |
-| ⬜ | Användare ska kunna se de tilldelade sysslorna i sitt gränssnitt. | #13 |
-| ⬜ | En ägare ska kunna skapa grupper av sysslor som roteras automatiskt mellan användarna. | #14 |
+| ✅ | En ägare ska kunna tilldela och ta bort sysslor från användare i hushållet. | #13 |
+| ✅ | Användare ska kunna se de tilldelade sysslorna i sitt gränssnitt. | #13 |
+| ✅ | En ägare ska kunna skapa grupper av sysslor som roteras automatiskt mellan användarna. | #14 |
 
 ### Övrigt
 | | Krav |
