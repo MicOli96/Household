@@ -31,10 +31,13 @@ const sections: { title: string; screens: { label: string; href: Href }[] }[] = 
     ],
   },
   {
-    title: "Område 5: Dagsvy",
+    title: "Område 5: Dagsvy & Schemaläggning",
     screens: [
       { label: "Dagsvy", href: "/" },
       { label: "Detaljvy", href: "/chore/1" },
+      { label: "Tilldela (modal)", href: "/chore/1/assign" },
+      { label: "Rotationsgrupper", href: "/groups" },
+      { label: "Inställningar", href: "/settings" },
     ],
   },
   {

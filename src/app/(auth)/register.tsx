@@ -13,6 +13,7 @@ export default function Register() {
         "Knapp \"Skapa konto\" som registrerar via backend",
         "Skicka vidare till profilen efteråt",
       ]}
+      tables={["auth.users", "profiles"]}
       links={[
         { label: "Skapa konto", href: "/profile" },
       ]}

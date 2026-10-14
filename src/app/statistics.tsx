@@ -14,6 +14,7 @@ export default function Statistics() {
         "Perioder: nuvarande vecka, förra veckan, förra månaden",
         "Dölj perioder utan statistik",
       ]}
+      tables={["completions", "chores.weight", "pauses"]}
     />
   );
 }

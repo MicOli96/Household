@@ -12,13 +12,15 @@ type Props = {
   issues: string;
   /** Kort beskrivning av vad som ska byggas. */
   todo: string[];
+  /** Tabeller i Supabase som skärmen läser eller skriver, t.ex. "chores". */
+  tables?: string[];
   /** Knappar till nästa skärmar i flödet (som i Figma-prototypen). */
   links?: { label: string; href: Href }[];
 };
 
 // Tillfällig skärm som visar vad som ska byggas och var.
 // Byt ut hela innehållet i skärmfilen mot den riktiga vyn när ni bygger den.
-export function Placeholder({ title, area, issues, todo, links = [] }: Props) {
+export function Placeholder({ title, area, issues, todo, tables = [], links = [] }: Props) {
   const { colors } = useTheme();
 
   return (
@@ -38,6 +40,12 @@ export function Placeholder({ title, area, issues, todo, links = [] }: Props) {
           ))}
         </View>
       </Card>
+
+      {tables.length > 0 && (
+        <Text style={[styles.meta, { color: colors.textMuted }]}>
+          Supabase: {tables.join(", ")}
+        </Text>
+      )}
 
       {links.map((link) => (
         <PillButton

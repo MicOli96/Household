@@ -18,7 +18,7 @@ function ThemedStack() {
         }}
       >
         <Stack.Screen name="index" options={{ title: "Sysslor" }} />
-        <Stack.Screen name="settings" options={{ title: "Utseende" }} />
+        <Stack.Screen name="settings" options={{ title: "Inställningar" }} />
         <Stack.Screen name="components" options={{ title: "Komponenter" }} />
         <Stack.Screen name="chore/[id]" options={{ title: "" }} />
 
@@ -39,6 +39,13 @@ function ThemedStack() {
           options={{ title: "Skapa en ny syssla", presentation: "modal" }}
         />
         <Stack.Screen name="chore/[id]/edit" options={{ title: "Redigera syssla" }} />
+
+        {/* Område 5: Schemaläggning */}
+        <Stack.Screen
+          name="chore/[id]/assign"
+          options={{ title: "Tilldela", presentation: "modal" }}
+        />
+        <Stack.Screen name="groups" options={{ title: "Rotationsgrupper" }} />
 
         {/* Område 6: Statistik */}
         <Stack.Screen name="statistics" options={{ title: "Statistik" }} />

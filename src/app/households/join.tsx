@@ -13,6 +13,7 @@ export default function JoinHousehold() {
         "Skicka förfrågan till ägaren via backend",
         "Skicka vidare till \"Väntar på godkännande\"",
       ]}
+      tables={["households.code", "household_members (is_approved = false)"]}
       links={[
         { label: "Skicka förfrågan", href: "/households/pending" },
       ]}

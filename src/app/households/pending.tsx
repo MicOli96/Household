@@ -13,6 +13,7 @@ export default function PendingHousehold() {
         "Gå vidare automatiskt när förfrågan godkänts",
         "Knapp tillbaka till mina hushåll",
       ]}
+      tables={["household_members.is_approved"]}
       links={[
         { label: "Tillbaka till mina hushåll", href: "/households" },
       ]}
