@@ -1,7 +1,7 @@
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
-import { Avatar, CheckRow, PillButton } from "../../../components/ui";
+import { CheckRow, PillButton } from "../../../components/ui";
 import { useChore, useHouseholdData } from "../../../data/HouseholdData";
 import { useTheme } from "../../../theme/ThemeProvider";
 
@@ -66,7 +66,7 @@ export default function AssignChore() {
           label={member.name}
           checked={selected.has(member.userId)}
           onPress={() => toggle(member.userId)}
-          left={<Avatar emoji={member.avatar} size={32} />}
+          left={<Text style={styles.emoji}>{member.avatar}</Text>}
         />
       ))}
 
@@ -76,6 +76,9 @@ export default function AssignChore() {
 }
 
 const styles = StyleSheet.create({
+  emoji: {
+    fontSize: 26,
+  },
   container: {
     padding: 16,
     gap: 12,
