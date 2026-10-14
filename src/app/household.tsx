@@ -1,24 +1,36 @@
+import { Stack } from "expo-router";
 import { StyleSheet, View } from "react-native";
-import { HouseholdHeader } from "../components/HouseholdHeader";
+import { HouseholdHeader, HouseholdTitle } from "../components/HouseholdHeader";
 import { Placeholder } from "../components/Placeholder";
 
-// TODO (område 3): Hushåll, se #15–#21 och #26.
+// Hårdkodat tills hushållet kan hämtas (Sebastians datalager, sedan Supabase).
+const household = { name: "Familjen Svensson", code: "4F7K2P" };
+const isOwner = true;
+
+// TODO (område 3): Resten av hushållsvyn, se #16–#21 och #26.
 // Byt ut Placeholder mot den riktiga vyn.
 // Byt namn och medlemsmenyn (gör till ägare, pausa) är modaler (AppModal), inte egna skärmar.
 export default function Household() {
   return (
     <View style={styles.container}>
-      {/* Hårdkodat tills hushållet kan hämtas (Sebastians datalager, sedan Supabase). */}
+      {/* Rubriken högst upp visar hushållets namn i stället för "Hushåll", som i Figma. */}
+      <Stack.Screen
+        options={{
+          headerTitle: () => <HouseholdTitle name={household.name} isOwner={isOwner} />,
+          headerTitleAlign: "center",
+        }}
+      />
+
       <View style={styles.header}>
-        <HouseholdHeader name="Familjen Svensson" code="4F7K2P" />
+        <HouseholdHeader code={household.code} />
       </View>
 
       <Placeholder
-        title="Hushåll"
+        title="Medlemmar och förfrågningar"
         area={3}
-        issues="#15–#21, #26"
+        issues="#16–#21, #26"
         todo={[
-          "Hushållets namn och kod, ✎ öppnar modalen \"Byt namn\" (ägare)",
+          "✎ i rubriken öppnar modalen \"Byt namn\" (#15, ägare)",
           "Medlemslista med avatarer, pausade markeras",
           "⋯ på en medlem öppnar modal: gör till ägare, pausa (ägare)",
           "Förfrågningar: acceptera eller neka (ägare)",
