@@ -1,5 +1,6 @@
-import { Stack } from "expo-router";
+import { Stack, useLocalSearchParams } from "expo-router";
 import { StyleSheet, View } from "react-native";
+import { HouseholdDetails } from "../components/HouseholdDetails";
 import { HouseholdHeader, HouseholdTitle } from "../components/HouseholdHeader";
 import { Placeholder } from "../components/Placeholder";
 
@@ -11,6 +12,10 @@ const isOwner = true;
 // Byt ut Placeholder mot den riktiga vyn.
 // Byt namn och medlemsmenyn (gör till ägare, pausa) är modaler (AppModal), inte egna skärmar.
 export default function Household() {
+  const { id } = useLocalSearchParams<{ id?: string | string[] }>();
+  const householdId = Array.isArray(id) ? id[0] : id;
+  if (householdId) return <HouseholdDetails key={householdId} id={householdId} />;
+
   return (
     <View style={styles.container}>
       {/* Rubriken högst upp visar hushållets namn i stället för "Hushåll", som i Figma. */}
