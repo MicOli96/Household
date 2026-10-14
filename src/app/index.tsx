@@ -2,7 +2,7 @@ import { router } from "expo-router";
 import { FlatList, StyleSheet, Text, View } from "react-native";
 import { ChoreCard } from "../components/ChoreCard";
 import { PillButton } from "../components/ui";
-import { mockChores } from "../data/mockChores";
+import { useHouseholdData } from "../data/HouseholdData";
 import { useTheme } from "../theme/ThemeProvider";
 
 // Dagsvyn: listar hushållets sysslor och visar vad som behöver göras.
@@ -10,6 +10,7 @@ import { useTheme } from "../theme/ThemeProvider";
 // som behöver göras."
 export default function DailyView() {
   const { colors } = useTheme();
+  const { chores, currentMember } = useHouseholdData();
 
   return (
     <View style={styles.container}>
@@ -22,13 +23,18 @@ export default function DailyView() {
       </View>
 
       <FlatList
-        data={mockChores}
+        data={chores}
         keyExtractor={(chore) => chore.id}
         contentContainerStyle={styles.list}
         renderItem={({ item }) => (
           <ChoreCard
             chore={item}
             onPress={() => router.push(`/chore/${item.id}`)}
+            onManage={
+              currentMember.isOwner
+                ? () => router.push(`/chore/${item.id}/assign`)
+                : undefined
+            }
           />
         )}
       />
