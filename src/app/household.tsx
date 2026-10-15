@@ -1,10 +1,12 @@
-import { Stack, useLocalSearchParams } from "expo-router";
+import { router, Stack, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { HouseholdHeader, HouseholdTitle } from "../components/HouseholdHeader";
 import { MemberList } from "../components/MemberList";
 import { MemberMenu } from "../components/MemberMenu";
 import { RenameHouseholdDialog } from "../components/RenameHouseholdDialog";
+import { PillButton } from "../components/ui";
+import { useHouseholdData } from "../data/HouseholdData";
 import { Placeholder } from "../components/Placeholder";
 import {
   getHousehold,
@@ -24,6 +26,7 @@ const testHousehold: HouseholdSummary = { id: "test", name: "Familjen Svensson",
 // Byt namn och medlemsmenyn (gör till ägare, pausa) är modaler (AppModal), inte egna skärmar.
 export default function Household() {
   const { colors } = useTheme();
+  const { openHousehold } = useHouseholdData();
   const { id } = useLocalSearchParams<{ id?: string | string[] }>();
   const householdId = Array.isArray(id) ? id[0] : id;
   const [household, setHousehold] = useState<HouseholdSummary | null>(
@@ -111,6 +114,19 @@ export default function Household() {
       <View style={styles.header}>
         <HouseholdHeader code={household.code} />
         <MemberList members={members} canManage={isOwner} onOpenMenu={setMenuMember} />
+
+        {/* Väljer hushållet för dagsvyn och går dit (#12). Testhushållet finns
+            inte i databasen och kan därför inte öppnas. */}
+        {householdId && (
+          <PillButton
+            label="Visa sysslor"
+            variant="primary"
+            onPress={() => {
+              openHousehold(householdId);
+              router.dismissTo("/");
+            }}
+          />
+        )}
       </View>
 
       {renaming && (
