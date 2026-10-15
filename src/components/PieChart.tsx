@@ -1,7 +1,13 @@
 import { Text, View } from "react-native";
 import Svg, { Circle, Path } from "react-native-svg";
 import { avatars } from "../theme/avatars";
+import { Member } from "../data/types";
 import { Slice } from "../utils/statistics";
+
+/** Avatarens färg, grå för den som inte valt avatar än. */
+function colorOf(member: Member) {
+  return member.avatar ? avatars[member.avatar] : "#9E9E9E";
+}
 
 type Props = {
   slices: Slice[];
@@ -20,7 +26,7 @@ export function PieChart({ slices, size, showAvatars = false }: Props) {
   if (slices.length === 1) {
     return (
       <Svg width={size} height={size}>
-        <Circle cx={r} cy={r} r={r} fill={avatars[slices[0].member.avatar]} />
+        <Circle cx={r} cy={r} r={r} fill={colorOf(slices[0].member)} />
       </Svg>
     );
   }
@@ -48,7 +54,7 @@ export function PieChart({ slices, size, showAvatars = false }: Props) {
     <View style={{ width: size, height: size }}>
       <Svg width={size} height={size}>
         {parts.map((p) => (
-          <Path key={p.slice.member.userId} d={p.d} fill={avatars[p.slice.member.avatar]} />
+          <Path key={p.slice.member.userId} d={p.d} fill={colorOf(p.slice.member)} />
         ))}
       </Svg>
       {showAvatars &&

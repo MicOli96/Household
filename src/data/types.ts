@@ -26,7 +26,8 @@ export type Member = Timestamps & {
   userId: string;
   householdId: string;
   name: string;
-  avatar: AvatarEmoji;
+  /** Avatar från avatars (avatar_id), null tills medlemmen valt en. */
+  avatar: AvatarEmoji | null;
   isOwner: boolean;
   isApproved: boolean;
 };

@@ -2,6 +2,7 @@ import { router, Stack, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { Card, PillButton } from "../../components/ui";
+import { choreError } from "../../data/chores";
 import { useChore, useHouseholdData } from "../../data/HouseholdData";
 import { useTheme } from "../../theme/ThemeProvider";
 import { daysSinceDone, isOverdue } from "../../utils/chores";
@@ -13,6 +14,7 @@ export default function ChoreDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { colors } = useTheme();
   const [done, setDone] = useState(false);
+  const [error, setError] = useState("");
   const chore = useChore(id);
   const { markDone } = useHouseholdData();
 
@@ -28,14 +30,19 @@ export default function ChoreDetail() {
   const lastDone =
     days === null ? "Aldrig" : days === 0 ? "Idag" : `För ${days} dagar sedan`;
 
-  // Sparas i testdatan just nu. När backend finns blir det en rad i
-  // completions (issue #12).
-  function markAsDone() {
+  // Blir en rad i completions i Supabase (#12).
+  async function markAsDone() {
     // Bara ett tryck räknas, annars blir det flera rader i completions.
     if (!chore || done) return;
-    markDone(chore.id);
     setDone(true);
-    setTimeout(() => router.back(), 600);
+    setError("");
+    try {
+      await markDone(chore.id);
+      setTimeout(() => router.back(), 600);
+    } catch (reason) {
+      setError(choreError(reason));
+      setDone(false);
+    }
   }
 
   return (
@@ -71,6 +78,7 @@ export default function ChoreDetail() {
         </Text>
       </View>
 
+      {error ? <Text style={{ color: colors.danger }}>{error}</Text> : null}
       <PillButton
         label={done ? "✓  Markerad som gjord" : "✓  Markera som gjord"}
         variant="primary"
