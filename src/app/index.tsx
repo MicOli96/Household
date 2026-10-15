@@ -61,11 +61,17 @@ export default function DailyView() {
       />
 
       <View style={styles.footer}>
-        {/* Öppnar formuläret "Skapa en ny syssla" (område 4, src/app/chore/new.tsx). */}
-        <PillButton label="⊕  Lägg till" onPress={() => router.push("/chore/new")} />
+        {/* Vänta tills hushållet är hämtat, annars syns testdatans ägare en kort stund. */}
+        {!loading && currentMember?.isOwner && (
+          <PillButton label="⊕  Lägg till" onPress={() => router.push("/chore/new")} />
+        )}
 
         {/* Tillfällig länk till temainställningarna. */}
-        <PillButton label="✎  Ändra" onPress={() => router.push("/settings")} />
+        <PillButton
+          label="✎  Ändra"
+          onPress={() => router.push("/settings")}
+          style={styles.alignRight}
+        />
       </View>
     </View>
   );
@@ -88,6 +94,9 @@ const styles = StyleSheet.create({
   dateText: {
     fontSize: 16,
     fontWeight: "600",
+  },
+  alignRight: {
+    marginLeft: "auto",
   },
   notice: {
     paddingHorizontal: 16,
