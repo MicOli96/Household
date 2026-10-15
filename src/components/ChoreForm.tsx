@@ -1,13 +1,19 @@
 import { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import type { ChoreRow } from "../data/types";
 import { useTheme } from "../theme/ThemeProvider";
-import { TextField } from "./ui";
+import { IntervalPicker, WeightPicker } from "./ChorePickers";
+import { Badge, Card, TextField } from "./ui";
 
 /** Det som fylls i i formuläret. */
 export type ChoreFormValues = {
   name: string;
   description: string;
+  /** Hur ofta sysslan ska göras, i dagar. */
+  intervalDays: number;
+  /** Hur energikrävande sysslan är. */
+  weight: ChoreRow["weight"];
 };
 
 type Props = {
@@ -36,6 +42,11 @@ export function ChoreForm({ initial, onSave, onClose }: Props) {
   const insets = useSafeAreaInsets();
   const [name, setName] = useState(initial?.name ?? "");
   const [description, setDescription] = useState(initial?.description ?? "");
+  // Samma startvärden som i Figma: var 7:e dag, värde 2.
+  const [intervalDays, setIntervalDays] = useState(initial?.intervalDays ?? 7);
+  const [weight, setWeight] = useState<ChoreRow["weight"]>(initial?.weight ?? 2);
+  // Vilket kort som visar sin väljare i stället för värdet, eller null.
+  const [picking, setPicking] = useState<"interval" | "weight" | null>(null);
 
   return (
     <View style={styles.container}>
@@ -47,6 +58,51 @@ export function ChoreForm({ initial, onSave, onClose }: Props) {
           onChangeText={setDescription}
           multiline
         />
+
+        {/* Ett tryck på kortet visar väljaren i kortet, ett val visar värdet igen. */}
+        {picking === "interval" ? (
+          <Card>
+            <IntervalPicker
+              selected={intervalDays}
+              onSelect={(days) => {
+                setIntervalDays(days);
+                setPicking(null);
+              }}
+            />
+          </Card>
+        ) : (
+          <Card onPress={() => setPicking("interval")}>
+            <Text style={[styles.rowLabel, { color: colors.text }]}>Återkommer:</Text>
+            <View style={styles.interval}>
+              <Text style={[styles.intervalText, { color: colors.text }]}>var</Text>
+              {/* Röd som i Figma. */}
+              <Badge label={intervalDays} overdue />
+              <Text style={[styles.intervalText, { color: colors.text }]}>dag</Text>
+            </View>
+          </Card>
+        )}
+
+        {picking === "weight" ? (
+          <Card>
+            <WeightPicker
+              selected={weight}
+              onSelect={(value) => {
+                setWeight(value);
+                setPicking(null);
+              }}
+            />
+          </Card>
+        ) : (
+          <Card onPress={() => setPicking("weight")}>
+            <View>
+              <Text style={[styles.rowLabel, { color: colors.text }]}>Värde:</Text>
+              <Text style={[styles.rowHint, { color: colors.textMuted }]}>
+                Hur energikrävande är sysslan?
+              </Text>
+            </View>
+            <Badge label={weight} />
+          </Card>
+        )}
       </ScrollView>
 
       {/* Listen längst ner med Spara och Stäng, som i Figma. */}
@@ -58,7 +114,7 @@ export function ChoreForm({ initial, onSave, onClose }: Props) {
       >
         <Pressable
           style={({ pressed }) => [styles.footerButton, pressed && styles.pressed]}
-          onPress={() => onSave({ name, description })}
+          onPress={() => onSave({ name, description, intervalDays, weight })}
         >
           <CircleIcon symbol="+" color={colors.text} />
           <Text style={[styles.footerText, { color: colors.text }]}>Spara</Text>
@@ -83,6 +139,22 @@ const styles = StyleSheet.create({
   fields: {
     padding: 16,
     gap: 16,
+  },
+  rowLabel: {
+    fontSize: 18,
+    fontWeight: "700",
+  },
+  rowHint: {
+    fontSize: 13,
+    marginTop: 2,
+  },
+  interval: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  intervalText: {
+    fontSize: 18,
   },
   footer: {
     flexDirection: "row",
