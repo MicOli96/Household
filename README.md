@@ -96,12 +96,12 @@ Alla komponenter visas i appen under **Ändra → Visa komponenter**.
 ### Hushåll
 | | Krav | Issue |
 |---|---|---|
-| ⬜ | Ett hushåll ska ha ett namn och en genererad (enkel) kod så andra kan gå med, namnet ska gå att ändra. \* | #15 |
-| ⬜ | Alla användare i ett hushåll ska kunna se vilka som tillhör hushållet. | #16 |
+| ✅ | Ett hushåll ska ha ett namn och en genererad (enkel) kod så andra kan gå med, namnet ska gå att ändra. \* | #15 |
+| ✅ | Alla användare i ett hushåll ska kunna se vilka som tillhör hushållet. | #16 |
 | ⬜ | En ägare ska kunna se förfrågningar om att gå med i hushållet. | #17 |
 | ⬜ | En ägare ska kunna acceptera eller neka förfrågningar. | #18 |
-| ⬜ | En ägare ska kunna göra andra till ägare. | #19 |
-| ⬜ | En ägare ska kunna pausa en användare, och pausade perioder tas inte med i statistiken. | #20 |
+| 🟡 | En ägare ska kunna göra andra till ägare. | #19 |
+| 🟡 | En ägare ska kunna pausa en användare, och pausade perioder tas inte med i statistiken. | #20 |
 | ⬜ | Om en användare har pausats under en del av en period ska graferna normaliseras. | #21 |
 
 ### Konto

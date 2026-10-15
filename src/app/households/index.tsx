@@ -1,5 +1,5 @@
-import { router } from "expo-router";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { router, useFocusEffect } from "expo-router";
+import { useCallback, useRef, useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { AppModal, Card, PillButton, TextField } from "../../components/ui";
 import { createHousehold, householdError, listHouseholds, validateHouseholdName } from "../../data/households";
@@ -30,13 +30,15 @@ export default function Households() {
     }
   }, []);
 
-  useEffect(() => {
+  // Hämtar listan varje gång sidan visas, inte bara första gången, så att t.ex.
+  // ett nytt namn på ett hushåll syns när man kommer tillbaka hit.
+  useFocusEffect(useCallback(() => {
     let active = true;
     listHouseholds().then((result) => { if (active) setHouseholds(result); })
       .catch((error: unknown) => { if (active) setLoadError(householdError(error)); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, []);
+  }, []));
 
   function closeModal() {
     if (submitting.current) return;

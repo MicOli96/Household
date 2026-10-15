@@ -1,6 +1,14 @@
-import type { Household } from "./types";
+import type { AvatarEmoji } from "../theme/avatars";
+import type { Household, Member } from "./types";
 
 export type HouseholdSummary = Pick<Household, "id" | "name" | "code">;
+
+/** En medlem som hushållsvyn visar den. Avataren saknas tills medlemmen har valt en. */
+export type MemberSummary = Pick<Member, "userId" | "name" | "isOwner" | "isApproved"> & {
+  avatar: AvatarEmoji | null;
+  /** Om det är den inloggade användaren. */
+  isMe: boolean;
+};
 
 export function validateHouseholdName(value: string): string {
   if (!value.trim()) return "Ange ett namn för hushållet.";
@@ -43,6 +51,37 @@ export async function getHousehold(id: string): Promise<HouseholdSummary> {
     .select("id, name, code").eq("id", id).is("deleted_at", null).single();
   if (error || !data) throw new Error("Hushållet kunde inte öppnas. Det kanske inte finns eller så saknar du åtkomst.");
   return data;
+}
+
+// Byter namn på hushållet. Databasen släpper bara igenom ägare: för andra
+// ändras ingen rad, och då kommer inget hushåll tillbaka.
+export async function renameHousehold(id: string, name: string): Promise<HouseholdSummary> {
+  const validation = validateHouseholdName(name);
+  if (validation) throw new Error(validation);
+  const { supabase } = await client();
+  const { data, error } = await supabase.from("households")
+    .update({ name: name.trim() }).eq("id", id)
+    .select("id, name, code").maybeSingle();
+  if (error || !data) throw new Error("Kunde inte byta namn. Bara ägare kan byta namn på hushållet.");
+  return data;
+}
+
+// Medlemmar och förfrågningar (is_approved = false) som inte har lämnat, äldst först.
+export async function getMembers(householdId: string): Promise<MemberSummary[]> {
+  const { supabase, userId } = await client();
+  const { data, error } = await supabase.from("household_members")
+    .select("user_id, name, is_owner, is_approved, avatars(emoji)")
+    .eq("household_id", householdId)
+    .is("deleted_at", null).order("created_at");
+  if (error) throw new Error("Kunde inte hämta medlemmarna. Försök igen.");
+  return (data ?? []).map((row) => ({
+    userId: row.user_id,
+    name: row.name,
+    isOwner: row.is_owner,
+    isApproved: row.is_approved,
+    avatar: (row.avatars as unknown as { emoji: AvatarEmoji } | null)?.emoji ?? null,
+    isMe: row.user_id === userId,
+  }));
 }
 
 export function householdError(error: unknown): string {
