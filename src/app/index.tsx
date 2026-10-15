@@ -14,12 +14,13 @@ export default function DailyView() {
 
   return (
     <View style={styles.container}>
-      {/* Raden "‹ idag ›" från skissen. Pilarna ska senare byta till
-          statistikvyerna, därför gör de inget än. */}
+      {/* Raden "‹ idag ›" från skissen. › går till statistiken (#41). */}
       <View style={styles.dateRow}>
         <Text style={[styles.arrow, { color: colors.text }]}>‹</Text>
         <Text style={[styles.dateText, { color: colors.text }]}>idag</Text>
-        <Text style={[styles.arrow, { color: colors.text }]}>›</Text>
+        <Pressable onPress={() => router.push("/statistics")} hitSlop={12}>
+          <Text style={[styles.arrow, { color: colors.text }]}>›</Text>
+        </Pressable>
       </View>
 
       {!householdId && (

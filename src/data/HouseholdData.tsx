@@ -12,7 +12,7 @@ import {
   mockMembers,
   timestamps,
 } from "./mockData";
-import { Chore, ChoreGroup, Member } from "./types";
+import { Chore, ChoreGroup, Completion, Member } from "./types";
 
 // Hushållets data för skärmarna. När ett hushåll är öppnat hämtas allt från
 // Supabase (src/data/chores.ts). Innan dess visas testdatan, så att skärmarna
@@ -31,6 +31,8 @@ type HouseholdDataValue = {
   currentMember: Member | null;
   chores: Chore[];
   groups: ChoreGroup[];
+  /** Gjorda sysslor som inte är ångrade, för statistiken. */
+  completions: Completion[];
   markDone: (choreId: string) => Promise<void>;
   setAssignees: (choreId: string, userIds: string[]) => Promise<void>;
   addGroup: (name: string, rotationDays: number, choreIds: string[]) => Promise<void>;
@@ -138,6 +140,7 @@ export function HouseholdDataProvider({ children }: { children: ReactNode }) {
     currentMember,
     chores,
     groups,
+    completions: active(rows.completions),
     async markDone(choreId) {
       if (householdId) {
         await insertCompletion(choreId);
