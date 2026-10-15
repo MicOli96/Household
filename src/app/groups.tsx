@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Avatar, Card, PillButton, TextField } from "../components/ui";
+import { choreError } from "../data/chores";
 import { useHouseholdData } from "../data/HouseholdData";
 import { useTheme } from "../theme/ThemeProvider";
 import { currentRotationMember, daysUntilRotation } from "../utils/rotation";
@@ -21,16 +22,20 @@ export default function Groups() {
     setChoreIds((prev) => (prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]));
   }
 
-  function save() {
+  async function save() {
     const rotationDays = Number(days);
     if (!name.trim()) return setError("Gruppen behöver ett namn");
     if (!Number.isInteger(rotationDays) || rotationDays < 1)
       return setError("Ange antal dagar, minst 1");
     if (choreIds.length === 0) return setError("Välj minst en syssla");
-    addGroup(name.trim(), rotationDays, choreIds);
-    setName("");
-    setChoreIds([]);
-    setError(undefined);
+    try {
+      await addGroup(name.trim(), rotationDays, choreIds);
+      setName("");
+      setChoreIds([]);
+      setError(undefined);
+    } catch (reason) {
+      setError(choreError(reason));
+    }
   }
 
   return (
@@ -51,12 +56,12 @@ export default function Groups() {
                 {left === 1 ? "dag" : "dagar"}
               </Text>
             </View>
-            {holder && <Avatar emoji={holder.avatar} size={32} />}
+            {holder?.avatar && <Avatar emoji={holder.avatar} size={32} />}
           </Card>
         );
       })}
 
-      {currentMember.isOwner && (
+      {currentMember?.isOwner && (
         <>
           <Text style={[styles.heading, { color: colors.textMuted }]}>NY GRUPP</Text>
           <TextField placeholder="Namn, t.ex. Köket" value={name} onChangeText={setName} />

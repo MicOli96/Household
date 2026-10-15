@@ -1,0 +1,161 @@
+import { avatars, AvatarEmoji } from "../theme/avatars";
+import type { Assignment, ChoreGroup, ChoreRow, Completion, Member } from "./types";
+
+// Läser och sparar dagsvyns data i Supabase: medlemmar, sysslor,
+// rotationsgrupper, tilldelningar och gjorda sysslor (#11, #12, #13, #14).
+// Inget raderas, borttaget får deleted_at och filtreras bort här.
+
+export type HouseholdRows = {
+  userId: string;
+  members: Member[];
+  choreRows: ChoreRow[];
+  groups: ChoreGroup[];
+  assignments: Assignment[];
+  completions: Completion[];
+};
+
+async function client() {
+  const { supabase } = await import("../lib/supabase");
+  const { data, error } = await supabase.auth.getUser();
+  if (error || !data.user) throw new Error("Du måste vara inloggad. Öppna Logga in och försök igen.");
+  return { supabase, userId: data.user.id };
+}
+
+// avatars.id 1–8 är samma ordning som i src/theme/avatars.ts.
+const avatarEmojis = Object.keys(avatars) as AvatarEmoji[];
+
+type TimestampColumns = { created_at: string; updated_at: string; deleted_at: string | null };
+
+function timestamps(row: TimestampColumns) {
+  return {
+    createdAt: new Date(row.created_at),
+    updatedAt: new Date(row.updated_at),
+    deletedAt: row.deleted_at ? new Date(row.deleted_at) : null,
+  };
+}
+
+/** Kolumner av typen date ("2026-10-14") läses som lokal midnatt. */
+function localDate(value: string): Date {
+  const [year, month, day] = value.split("-").map(Number);
+  return new Date(year, month - 1, day);
+}
+
+export async function fetchHouseholdRows(householdId: string): Promise<HouseholdRows> {
+  const { supabase, userId } = await client();
+  const [members, chores, groups, assignments, completions] = await Promise.all([
+    supabase.from("household_members").select("*")
+      .eq("household_id", householdId).eq("is_approved", true).is("deleted_at", null)
+      .order("created_at"),
+    supabase.from("chores").select("*")
+      .eq("household_id", householdId).eq("is_archived", false).is("deleted_at", null)
+      .order("created_at"),
+    supabase.from("chore_groups").select("*")
+      .eq("household_id", householdId).is("deleted_at", null).order("created_at"),
+    supabase.from("chore_assignments").select("*, chores!inner(household_id)")
+      .eq("chores.household_id", householdId).is("deleted_at", null),
+    supabase.from("completions").select("*, chores!inner(household_id)")
+      .eq("chores.household_id", householdId).is("deleted_at", null),
+  ]);
+  if (members.error || chores.error || groups.error || assignments.error || completions.error) {
+    throw new Error("Kunde inte hämta sysslorna. Försök igen.");
+  }
+
+  return {
+    userId,
+    members: members.data.map((m) => ({
+      userId: m.user_id,
+      householdId: m.household_id,
+      name: m.name,
+      avatar: m.avatar_id ? (avatarEmojis[m.avatar_id - 1] ?? null) : null,
+      isOwner: m.is_owner,
+      isApproved: m.is_approved,
+      ...timestamps(m),
+    })),
+    choreRows: chores.data.map((c) => ({
+      id: c.id,
+      householdId: c.household_id,
+      choreGroupId: c.chore_group_id,
+      name: c.name,
+      description: c.description,
+      intervalDays: c.interval_days,
+      weight: c.weight,
+      imagePath: c.image_path,
+      audioPath: c.audio_path,
+      isArchived: c.is_archived,
+      ...timestamps(c),
+    })),
+    groups: groups.data.map((g) => ({
+      id: g.id,
+      householdId: g.household_id,
+      name: g.name,
+      rotationDays: g.rotation_days,
+      startDate: localDate(g.start_date),
+      ...timestamps(g),
+    })),
+    assignments: assignments.data.map((a) => ({
+      id: a.id,
+      userId: a.user_id,
+      choreId: a.chore_id,
+      ...timestamps(a),
+    })),
+    completions: completions.data.map((c) => ({
+      id: c.id,
+      choreId: c.chore_id,
+      userId: c.user_id,
+      ...timestamps(c),
+    })),
+  };
+}
+
+/** Markerar en syssla som gjord av den inloggade (en rad i completions). */
+export async function insertCompletion(choreId: string): Promise<void> {
+  const { supabase, userId } = await client();
+  const { error } = await supabase.from("completions").insert({ chore_id: choreId, user_id: userId });
+  if (error) throw new Error("Kunde inte markera sysslan som gjord. Försök igen.");
+}
+
+/** Sätter vilka som har sysslan. Borttagna tilldelningar får deleted_at. */
+export async function saveAssignees(
+  choreId: string,
+  current: Assignment[],
+  userIds: string[],
+): Promise<void> {
+  const { supabase } = await client();
+  const removed = current.filter((a) => a.choreId === choreId && !userIds.includes(a.userId));
+  const added = userIds.filter((id) => !current.some((a) => a.choreId === choreId && a.userId === id));
+
+  if (removed.length > 0) {
+    const { error } = await supabase.from("chore_assignments")
+      .update({ deleted_at: new Date().toISOString() })
+      .in("id", removed.map((a) => a.id));
+    if (error) throw new Error("Kunde inte spara tilldelningen. Försök igen.");
+  }
+  if (added.length > 0) {
+    const { error } = await supabase.from("chore_assignments")
+      .insert(added.map((userId) => ({ chore_id: choreId, user_id: userId })));
+    if (error) throw new Error("Kunde inte spara tilldelningen. Försök igen.");
+  }
+}
+
+/** Skapar en rotationsgrupp och flyttar in sysslorna i den. */
+export async function insertGroup(
+  householdId: string,
+  name: string,
+  rotationDays: number,
+  choreIds: string[],
+): Promise<void> {
+  const { supabase } = await client();
+  const { data, error } = await supabase.from("chore_groups")
+    .insert({ household_id: householdId, name, rotation_days: rotationDays })
+    .select("id").single();
+  if (error || !data) throw new Error("Kunde inte skapa gruppen. Försök igen.");
+
+  const { error: choreError } = await supabase.from("chores")
+    .update({ chore_group_id: data.id }).in("id", choreIds);
+  if (choreError) throw new Error("Gruppen skapades men sysslorna kunde inte läggas till. Försök igen.");
+}
+
+export function choreError(error: unknown): string {
+  return error instanceof Error && /^(Du måste|Kunde inte|Gruppen)/.test(error.message)
+    ? error.message : "Kunde inte ansluta. Kontrollera anslutningen och appens inställningar.";
+}
