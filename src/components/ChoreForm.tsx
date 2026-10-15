@@ -19,11 +19,19 @@ export type ChoreFormValues = {
 type Props = {
   /** Startvärden, t.ex. sysslan som redigeras (#34). Tomt för en ny syssla. */
   initial?: ChoreFormValues;
-  onSave: (values: ChoreFormValues) => void;
+  /**
+   * Anropas med värdena när titeln är ifylld. Formuläret väntar tills
+   * sparandet är klart och visar felet om det misslyckas.
+   */
+  onSave: (values: ChoreFormValues) => Promise<void>;
   onClose: () => void;
 };
 
 const ICON_SIZE = 28;
+// Titeln får vara högst lika lång som chores.name (varchar(100)). Beskrivningen
+// har ingen gräns i databasen (text), men så att ingen klistrar in hur mycket som helst.
+const NAME_MAX_LENGTH = 100;
+const DESCRIPTION_MAX_LENGTH = 500;
 
 // Ikonen i Spara och Stäng: ett + eller × i en ring, som i Figma. Ritas själv
 // i stället för tecknen ⊕ och ⊗, som blir för små och för täta i typsnittet.
@@ -47,15 +55,44 @@ export function ChoreForm({ initial, onSave, onClose }: Props) {
   const [weight, setWeight] = useState<ChoreRow["weight"]>(initial?.weight ?? 2);
   // Vilket kort som visar sin väljare i stället för värdet, eller null.
   const [picking, setPicking] = useState<"interval" | "weight" | null>(null);
+  const [nameError, setNameError] = useState("");
+  const [saveError, setSaveError] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  async function save() {
+    if (saving) return;
+    if (!name.trim()) {
+      setNameError("Sysslan behöver en titel");
+      return;
+    }
+    setSaving(true);
+    setSaveError("");
+    try {
+      await onSave({ name, description, intervalDays, weight });
+    } catch (reason) {
+      setSaveError(reason instanceof Error ? reason.message : "Kunde inte spara sysslan.");
+      setSaving(false);
+    }
+  }
 
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.fields} keyboardShouldPersistTaps="handled">
-        <TextField placeholder="Titel" value={name} onChangeText={setName} maxLength={100} />
+        <TextField
+          placeholder="Titel"
+          value={name}
+          onChangeText={(text) => {
+            setName(text);
+            setNameError("");
+          }}
+          maxLength={NAME_MAX_LENGTH}
+          error={nameError || undefined}
+        />
         <TextField
           placeholder="Beskrivning"
           value={description}
           onChangeText={setDescription}
+          maxLength={DESCRIPTION_MAX_LENGTH}
           multiline
         />
 
@@ -103,6 +140,10 @@ export function ChoreForm({ initial, onSave, onClose }: Props) {
             <Badge label={weight} />
           </Card>
         )}
+
+        {saveError ? (
+          <Text accessibilityRole="alert" style={{ color: colors.danger }}>{saveError}</Text>
+        ) : null}
       </ScrollView>
 
       {/* Listen längst ner med Spara och Stäng, som i Figma. */}
@@ -113,11 +154,17 @@ export function ChoreForm({ initial, onSave, onClose }: Props) {
         ]}
       >
         <Pressable
-          style={({ pressed }) => [styles.footerButton, pressed && styles.pressed]}
-          onPress={() => onSave({ name, description, intervalDays, weight })}
+          style={({ pressed }) => [
+            styles.footerButton,
+            (pressed || saving) && styles.pressed,
+          ]}
+          onPress={save}
+          disabled={saving}
         >
           <CircleIcon symbol="+" color={colors.text} />
-          <Text style={[styles.footerText, { color: colors.text }]}>Spara</Text>
+          <Text style={[styles.footerText, { color: colors.text }]}>
+            {saving ? "Sparar..." : "Spara"}
+          </Text>
         </Pressable>
         <View style={[styles.divider, { backgroundColor: colors.border }]} />
         <Pressable
