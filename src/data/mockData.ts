@@ -96,6 +96,8 @@ export const mockChoreRows: ChoreRow[] = [
   chore("4", "Ta hand om My", "Mata katten och byt kattsand.", 1, 2),
   chore("5", "Torka golvet", "Moppa golven i kök och hall.", 7, 6, "kok"),
   chore("6", "Vattna blommorna", "Vattna alla krukväxter.", 3, 1),
+  // Arkiverad: syns inte i dagsvyn men finns kvar i statistiken (#63).
+  { ...chore("7", "Klippa gräset", "Klipp gräsmattan på framsidan.", 7, 4), isArchived: true },
 ];
 
 function completion(id: string, choreId: string, userId: string, days: number): Completion {
@@ -112,6 +114,7 @@ export const mockCompletions: Completion[] = [
   completion("c7", "4", "lisa", 0),
   completion("c8", "5", "anna", 24),
   completion("c9", "6", "sam", 0),
+  completion("c10", "7", "olle", 0),
   // Fler under veckan, så att statistiken har något att visa.
   completion("c10", "1", "olle", 1),
   completion("c11", "3", "anna", 1),

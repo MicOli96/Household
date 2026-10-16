@@ -1,5 +1,6 @@
 import { router } from "expo-router";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { MockDataNotice } from "../components/MockDataNotice";
 import { PieChart } from "../components/PieChart";
 import { useHouseholdData } from "../data/HouseholdData";
 import { useTheme } from "../theme/ThemeProvider";
@@ -10,9 +11,9 @@ import { currentWeek, distribution } from "../utils/statistics";
 // läggs till som fler perioder, och tomma perioder ska döljas (#44).
 export default function Statistics() {
   const { colors } = useTheme();
-  const { completions, chores, members } = useHouseholdData();
+  const { completions, allChores, members } = useHouseholdData();
   const period = currentWeek();
-  const { total, perChore } = distribution(completions, chores, members, period);
+  const { total, perChore } = distribution(completions, allChores, members, period);
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -24,6 +25,8 @@ export default function Statistics() {
         <Text style={[styles.period, { color: colors.text }]}>{period.label}</Text>
         <Text style={[styles.arrow, { color: colors.textMuted, opacity: 0 }]}>›</Text>
       </View>
+
+      <MockDataNotice />
 
       {total.length === 0 ? (
         <Text style={[styles.empty, { color: colors.textMuted }]}>

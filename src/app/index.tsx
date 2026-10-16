@@ -1,6 +1,7 @@
 import { router } from "expo-router";
 import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 import { ChoreCard } from "../components/ChoreCard";
+import { MockDataNotice } from "../components/MockDataNotice";
 import { PillButton } from "../components/ui";
 import { useHouseholdData } from "../data/HouseholdData";
 import { useTheme } from "../theme/ThemeProvider";
@@ -23,13 +24,7 @@ export default function DailyView() {
         </Pressable>
       </View>
 
-      {!householdId && (
-        <Pressable onPress={() => router.push("/households")} style={styles.notice}>
-          <Text style={{ color: colors.textMuted }}>
-            Testdata visas. Tryck här och öppna ett hushåll för att se riktiga sysslor.
-          </Text>
-        </Pressable>
-      )}
+      <MockDataNotice />
       {loading && <Text style={[styles.notice, { color: colors.textMuted }]}>Hämtar sysslor...</Text>}
       {error ? (
         <View style={styles.notice}>
