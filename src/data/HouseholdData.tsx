@@ -1,7 +1,15 @@
 import "expo-sqlite/localStorage/install";
 import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { currentRotationMember } from "../utils/rotation";
-import { fetchHouseholdRows, HouseholdRows, insertCompletion, insertGroup, saveAssignees } from "./chores";
+import {
+  fetchHouseholdRows,
+  HouseholdRows,
+  insertChore,
+  insertCompletion,
+  insertGroup,
+  NewChore,
+  saveAssignees,
+} from "./chores";
 import {
   CURRENT_USER_ID,
   mockAssignments,
@@ -36,6 +44,7 @@ type HouseholdDataValue = {
   markDone: (choreId: string) => Promise<void>;
   setAssignees: (choreId: string, userIds: string[]) => Promise<void>;
   addGroup: (name: string, rotationDays: number, choreIds: string[]) => Promise<void>;
+  addChore: (chore: NewChore) => Promise<void>;
 };
 
 const HouseholdDataContext = createContext<HouseholdDataValue | null>(null);
@@ -191,6 +200,32 @@ export function HouseholdDataProvider({ children }: { children: ReactNode }) {
         choreRows: prev.choreRows.map((c) =>
           choreIds.includes(c.id) ? { ...c, choreGroupId: id, updatedAt: now } : c,
         ),
+      }));
+    },
+    async addChore(chore) {
+      if (householdId) {
+        await insertChore(householdId, chore);
+        return reload();
+      }
+      const now = new Date();
+      setRows((prev) => ({
+        ...prev,
+        choreRows: [
+          ...prev.choreRows,
+          {
+            id: `ch${now.getTime()}`,
+            householdId: mockHousehold.id,
+            choreGroupId: null,
+            name: chore.name.trim(),
+            description: chore.description.trim(),
+            intervalDays: chore.intervalDays,
+            weight: chore.weight,
+            imagePath: null,
+            audioPath: null,
+            isArchived: false,
+            ...timestamps(now),
+          },
+        ],
       }));
     },
   };

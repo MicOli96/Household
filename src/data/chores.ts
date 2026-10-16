@@ -137,6 +137,29 @@ export async function saveAssignees(
   }
 }
 
+/** Det som behövs för att skapa en syssla, i appens namn (camelCase). */
+export type NewChore = Pick<ChoreRow, "name" | "description" | "intervalDays" | "weight">;
+
+/**
+ * Skapar en syssla i hushållet (#28). Värdena skickas som data, aldrig som
+ * SQL-text, så SQL-injektion är inte möjlig. Databasen släpper bara igenom
+ * ägare och kontrollerar weight (1, 2, 4, 6, 8), interval_days (> 0) och
+ * name (max 100 tecken).
+ */
+export async function insertChore(householdId: string, chore: NewChore): Promise<void> {
+  if (!chore.name.trim()) throw new Error("Kunde inte skapa sysslan utan titel.");
+  if (chore.description.length > 500) throw new Error("Kunde inte skapa sysslan, beskrivningen är för lång.");
+  const { supabase } = await client();
+  const { error } = await supabase.from("chores").insert({
+    household_id: householdId,
+    name: chore.name.trim(),
+    description: chore.description.trim(),
+    interval_days: chore.intervalDays,
+    weight: chore.weight,
+  });
+  if (error) throw new Error("Kunde inte skapa sysslan. Bara ägare kan lägga till sysslor.");
+}
+
 /** Skapar en rotationsgrupp och flyttar in sysslorna i den. */
 export async function insertGroup(
   householdId: string,
