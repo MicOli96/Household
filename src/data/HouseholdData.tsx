@@ -20,7 +20,7 @@ import {
   mockMembers,
   timestamps,
 } from "./mockData";
-import { Chore, ChoreGroup, Completion, Member } from "./types";
+import { Chore, ChoreGroup, ChoreRow, Completion, Member } from "./types";
 
 // Hushållets data för skärmarna. När ett hushåll är öppnat hämtas allt från
 // Supabase (src/data/chores.ts). Innan dess visas testdatan, så att skärmarna
@@ -37,7 +37,10 @@ type HouseholdDataValue = {
   reload: () => void;
   members: Member[];
   currentMember: Member | null;
+  /** Sysslorna i dagsvyn, utan de arkiverade. */
   chores: Chore[];
+  /** Alla sysslor, även arkiverade, så att statistiken behåller dem (#63). */
+  allChores: ChoreRow[];
   groups: ChoreGroup[];
   /** Gjorda sysslor som inte är ångrade, för statistiken. */
   completions: Completion[];
@@ -148,6 +151,7 @@ export function HouseholdDataProvider({ children }: { children: ReactNode }) {
     members,
     currentMember,
     chores,
+    allChores: active(rows.choreRows),
     groups,
     completions: active(rows.completions),
     async markDone(choreId) {
