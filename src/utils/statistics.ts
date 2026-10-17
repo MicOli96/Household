@@ -18,6 +18,28 @@ export function currentWeek(today: Date = new Date()): Period {
   return { label: "nuvarande vecka", start, end };
 }
 
+/** Förra veckan: måndag till och med söndag veckan innan (#42). */
+export function lastWeek(today: Date = new Date()): Period {
+  const end = currentWeek(today).start;
+  const start = new Date(end);
+  start.setDate(start.getDate() - 7);
+  return { label: "förra veckan", start, end };
+}
+
+/** Förra månaden: hela kalendermånaden innan den nuvarande (#43). */
+export function lastMonth(today: Date = new Date()): Period {
+  const start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+  const end = new Date(today.getFullYear(), today.getMonth(), 1);
+  return { label: "förra månaden", start, end };
+}
+
+/** Perioderna som har gjorda sysslor, i ordningen pilarna går (#44). */
+export function periodsWithStatistics(completions: Completion[], today: Date = new Date()): Period[] {
+  return [currentWeek(today), lastWeek(today), lastMonth(today)].filter((period) =>
+    completions.some((c) => inPeriod(c, period)),
+  );
+}
+
 export type Slice = { member: Member; value: number };
 
 function inPeriod(completion: Completion, period: Period) {

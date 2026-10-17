@@ -1,33 +1,46 @@
 import { router } from "expo-router";
+import { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { PieChart } from "../components/PieChart";
 import { useHouseholdData } from "../data/HouseholdData";
 import { useTheme } from "../theme/ThemeProvider";
-import { currentWeek, distribution } from "../utils/statistics";
+import { distribution, periodsWithStatistics } from "../utils/statistics";
 
-// Statistik (#39, #40, #41): ett stort diagram med den viktade fördelningen
-// och ett litet diagram per syssla. Förra veckan och förra månaden (#42, #43)
-// läggs till som fler perioder, och tomma perioder ska döljas (#44).
+// Statistik (#39–#44): ett stort diagram med den viktade fördelningen och ett
+// litet diagram per syssla. Pilarna går mellan nuvarande vecka, förra veckan
+// och förra månaden. Perioder utan gjorda sysslor visas inte (#44).
 export default function Statistics() {
   const { colors } = useTheme();
   const { completions, chores, members } = useHouseholdData();
-  const period = currentWeek();
-  const { total, perChore } = distribution(completions, chores, members, period);
+  const periods = periodsWithStatistics(completions);
+  const [index, setIndex] = useState(0);
+  const period = periods[Math.min(index, periods.length - 1)];
+  const { total, perChore } = period
+    ? distribution(completions, chores, members, period)
+    : { total: [], perChore: [] };
+  const hasNext = index < periods.length - 1;
+
+  function previous() {
+    if (index === 0) router.back();
+    else setIndex(index - 1);
+  }
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      {/* Pilarna går mellan perioderna, ‹ tillbaka till dagsvyn. */}
+      {/* Pilarna går mellan perioderna, ‹ på den första tillbaka till dagsvyn. */}
       <View style={styles.periodRow}>
-        <Pressable onPress={() => router.back()} hitSlop={12}>
+        <Pressable onPress={previous} hitSlop={12}>
           <Text style={[styles.arrow, { color: colors.text }]}>‹</Text>
         </Pressable>
-        <Text style={[styles.period, { color: colors.text }]}>{period.label}</Text>
-        <Text style={[styles.arrow, { color: colors.textMuted, opacity: 0 }]}>›</Text>
+        <Text style={[styles.period, { color: colors.text }]}>{period?.label ?? "statistik"}</Text>
+        <Pressable onPress={() => setIndex(index + 1)} disabled={!hasNext} hitSlop={12}>
+          <Text style={[styles.arrow, { color: colors.text, opacity: hasNext ? 1 : 0 }]}>›</Text>
+        </Pressable>
       </View>
 
       {total.length === 0 ? (
         <Text style={[styles.empty, { color: colors.textMuted }]}>
-          Inga gjorda sysslor den här veckan än.
+          Ingen statistik än. Den visas när någon har gjort en syssla.
         </Text>
       ) : (
         <>
