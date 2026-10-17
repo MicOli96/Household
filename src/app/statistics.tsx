@@ -1,6 +1,7 @@
 import { router, Stack } from "expo-router";
 import { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { MockDataNotice } from "../components/MockDataNotice";
 import { PieChart } from "../components/PieChart";
 import { Card } from "../components/ui";
 import { useHouseholdData } from "../data/HouseholdData";
@@ -12,12 +13,12 @@ import { distribution, periodsWithStatistics } from "../utils/statistics";
 // och förra månaden. Perioder utan gjorda sysslor visas inte (#44).
 export default function Statistics() {
   const { colors } = useTheme();
-  const { completions, chores, members } = useHouseholdData();
+  const { completions, allChores, members } = useHouseholdData();
   const periods = periodsWithStatistics(completions);
   const [index, setIndex] = useState(0);
   const period = periods[Math.min(index, periods.length - 1)];
   const { total, perChore } = period
-    ? distribution(completions, chores, members, period)
+    ? distribution(completions, allChores, members, period)
     : { total: [], perChore: [] };
   const hasNext = index < periods.length - 1;
   // ? i rubriken visar vad diagrammen räknar, föreslaget av Hannes.
@@ -54,6 +55,8 @@ export default function Statistics() {
           <Text style={[styles.arrow, { color: colors.text, opacity: hasNext ? 1 : 0 }]}>›</Text>
         </Pressable>
       </View>
+
+      <MockDataNotice />
 
       {showHelp && (
         <Card style={styles.help}>

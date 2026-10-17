@@ -47,7 +47,7 @@ export async function fetchHouseholdRows(householdId: string): Promise<Household
       .eq("household_id", householdId).eq("is_approved", true).is("deleted_at", null)
       .order("created_at"),
     supabase.from("chores").select("*")
-      .eq("household_id", householdId).eq("is_archived", false).is("deleted_at", null)
+      .eq("household_id", householdId).is("deleted_at", null)
       .order("created_at"),
     supabase.from("chore_groups").select("*")
       .eq("household_id", householdId).is("deleted_at", null).order("created_at"),
