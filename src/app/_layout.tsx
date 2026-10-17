@@ -1,7 +1,8 @@
-import { Stack } from "expo-router";
+import { Stack, router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { BrandSplash } from "../components/BrandSplash";
 import { ThemeProvider, useTheme } from "../theme/ThemeProvider";
+import { Pressable, Text } from "react-native";
 
 function ThemedStack() {
   const { scheme, colors } = useTheme();
@@ -25,7 +26,15 @@ function ThemedStack() {
         {/* Område 2: Konto & Profil */}
         <Stack.Screen name="(auth)/login" options={{ title: "Logga in" }} />
         <Stack.Screen name="(auth)/register" options={{ title: "Skapa konto" }} />
-        <Stack.Screen name="profile" options={{ title: "Profil" }} />
+        <Stack.Screen name="profile" options={{ title: "Din Profil", headerTitleAlign: "center", headerLeft: () => (
+            <Pressable
+              onPress={() => router.back()}
+              hitSlop={12}
+              style={{ marginLeft: 25 }}> 
+              <Text style={{ color: "#fff", fontSize: 28 }}>{"‹"}</Text>
+            </Pressable> )}} />
+
+
         <Stack.Screen name="households/join" options={{ title: "Gå med i hushåll" }} />
         <Stack.Screen name="households/pending" options={{ title: "Väntar på godkännande" }} />
 
