@@ -1,4 +1,4 @@
-import "expo-sqlite/localStorage/install";
+import "@/lib/localStorage";
 import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { currentRotationMember } from "../utils/rotation";
 import {

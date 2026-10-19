@@ -1,4 +1,4 @@
-import "expo-sqlite/localStorage/install";
+import "@/lib/localStorage";
 import { createContext, ReactNode, useContext, useState } from "react";
 import { useColorScheme } from "react-native";
 import { colors, ColorScheme, ThemeColors } from "./colors";
