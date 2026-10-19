@@ -49,6 +49,14 @@ export default function Household() {
   // Den inloggade är ägare om dess egen rad bland medlemmarna har isOwner.
   const isOwner = members.some((m) => m.isMe && m.isOwner);
 
+  // Den som inte är godkänd än kommer inte in i hushållet, utan ser sin förfrågan (#25).
+  const isPending = members.some((m) => m.isMe && !m.isApproved);
+  useEffect(() => {
+    if (isPending && householdId) {
+      router.replace({ pathname: "/households/pending", params: { id: householdId } });
+    }
+  }, [isPending, householdId]);
+
   // Om dialogen "Byt namn på hushållet" är öppen.
   const [renaming, setRenaming] = useState(false);
 
