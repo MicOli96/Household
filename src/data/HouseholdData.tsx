@@ -70,16 +70,17 @@ const mockRows: HouseholdRows = {
   completions: mockCompletions,
 };
 
-function savedHouseholdId(): string | null {
+function savedHouseholdId(userId: string | null): string | null {
+  if (!userId) return null;
   try {
-    return localStorage.getItem(STORAGE_KEY);
+    return localStorage.getItem(`${STORAGE_KEY}:${userId}`);
   } catch {
     return null;
   }
 }
 
-export function HouseholdDataProvider({ children }: { children: ReactNode }) {
-  const [householdId, setHouseholdId] = useState<string | null>(savedHouseholdId);
+export function HouseholdDataProvider({ children, userId }: { children: ReactNode; userId: string | null }) {
+  const [householdId, setHouseholdId] = useState<string | null>(() => savedHouseholdId(userId));
   const [rows, setRows] = useState<HouseholdRows>(mockRows);
   const [loading, setLoading] = useState(householdId !== null);
   const [error, setError] = useState("");
@@ -100,13 +101,15 @@ export function HouseholdDataProvider({ children }: { children: ReactNode }) {
   const reload = useCallback(() => setAttempt((n) => n + 1), []);
 
   const openHousehold = useCallback((id: string | null) => {
-    if (id) localStorage.setItem(STORAGE_KEY, id);
-    else localStorage.removeItem(STORAGE_KEY);
+    if (!userId) return;
+    const storageKey = `${STORAGE_KEY}:${userId}`;
+    if (id) localStorage.setItem(storageKey, id);
+    else localStorage.removeItem(storageKey);
     if (!id) setRows(mockRows);
     setLoading(id !== null);
     setError("");
     setHouseholdId(id);
-  }, []);
+  }, [userId]);
 
   const members = useMemo(() => active(rows.members), [rows.members]);
   const currentMember = members.find((m) => m.userId === rows.userId) ?? null;

@@ -1,4 +1,7 @@
 import { Stack } from "expo-router";
+import { ActivityIndicator, Text, View } from "react-native";
+import { PillButton } from "../components/ui";
+import { AuthProvider, useAuth } from "../data/AuthProvider";
 import { StatusBar } from "expo-status-bar";
 import { BrandSplash } from "../components/BrandSplash";
 import { HouseholdDataProvider } from "../data/HouseholdData";
@@ -6,6 +9,23 @@ import { ThemeProvider, useTheme } from "../theme/ThemeProvider";
 
 function ThemedStack() {
   const { scheme, colors } = useTheme();
+  const { session, loading, error, retry } = useAuth();
+
+  if (loading || error) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", gap: 16, padding: 24, backgroundColor: colors.background }}>
+        <StatusBar style={scheme === "dark" ? "light" : "dark"} />
+        {loading ? (
+          <ActivityIndicator accessibilityLabel="Kontrollerar inloggning" color={colors.primary} />
+        ) : (
+          <>
+            <Text accessibilityRole="alert" style={{ color: colors.danger }}>{error}</Text>
+            <PillButton label="Försök igen" onPress={retry} />
+          </>
+        )}
+      </View>
+    );
+  }
 
   return (
     <>
@@ -18,52 +38,67 @@ function ThemedStack() {
           contentStyle: { backgroundColor: colors.background },
         }}
       >
-        <Stack.Screen name="index" options={{ title: "Sysslor" }} />
-        <Stack.Screen name="settings" options={{ title: "Inställningar" }} />
-        <Stack.Screen name="components" options={{ title: "Komponenter" }} />
-        <Stack.Screen name="chore/[id]" options={{ title: "" }} />
+        <Stack.Protected guard={!session}>
+          <Stack.Screen name="(auth)/login" options={{ title: "Logga in" }} />
+          <Stack.Screen name="(auth)/register" options={{ title: "Skapa konto" }} />
+        </Stack.Protected>
 
-        {/* Område 2: Konto & Profil */}
-        <Stack.Screen name="(auth)/login" options={{ title: "Logga in" }} />
-        <Stack.Screen name="(auth)/register" options={{ title: "Skapa konto" }} />
-        <Stack.Screen name="profile" options={{ title: "Profil" }} />
-        <Stack.Screen name="households/join" options={{ title: "Gå med i hushåll" }} />
-        <Stack.Screen name="households/pending" options={{ title: "Väntar på godkännande" }} />
+        <Stack.Protected guard={!!session}>
+          <Stack.Screen name="households/index" options={{ title: "Mina hushåll" }} />
+          <Stack.Screen name="index" options={{ title: "Sysslor" }} />
+          <Stack.Screen name="settings" options={{ title: "Inställningar" }} />
+          <Stack.Screen name="components" options={{ title: "Komponenter" }} />
+          <Stack.Screen name="chore/[id]" options={{ title: "" }} />
 
-        {/* Område 3: Hushåll */}
-        <Stack.Screen name="households/index" options={{ title: "Mina hushåll" }} />
-        <Stack.Screen name="household" options={{ title: "Hushåll" }} />
+          {/* Område 2: Konto & Profil */}
+          <Stack.Screen name="profile" options={{ title: "Profil" }} />
+          <Stack.Screen name="households/join" options={{ title: "Gå med i hushåll" }} />
+          <Stack.Screen name="households/pending" options={{ title: "Väntar på godkännande" }} />
 
-        {/* Område 4: Sysslor */}
-        <Stack.Screen
-          name="chore/new"
-          options={{ title: "Skapa en ny syssla", presentation: "modal" }}
-        />
-        <Stack.Screen name="chore/[id]/edit" options={{ title: "Redigera syssla" }} />
+          {/* Område 3: Hushåll */}
+          <Stack.Screen name="household" options={{ title: "Hushåll" }} />
 
-        {/* Område 5: Schemaläggning */}
-        <Stack.Screen
-          name="chore/[id]/assign"
-          options={{ title: "Tilldela", presentation: "modal" }}
-        />
-        <Stack.Screen name="groups" options={{ title: "Rotationsgrupper" }} />
+          {/* Område 4: Sysslor */}
+          <Stack.Screen
+            name="chore/new"
+            options={{ title: "Skapa en ny syssla", presentation: "modal" }}
+          />
+          <Stack.Screen name="chore/[id]/edit" options={{ title: "Redigera syssla" }} />
 
-        {/* Område 6: Statistik */}
-        <Stack.Screen name="statistics" options={{ title: "Statistik" }} />
+          {/* Område 5: Schemaläggning */}
+          <Stack.Screen
+            name="chore/[id]/assign"
+            options={{ title: "Tilldela", presentation: "modal" }}
+          />
+          <Stack.Screen name="groups" options={{ title: "Rotationsgrupper" }} />
 
-        {/* Översikt över alla skärmar, bara under utvecklingen */}
-        <Stack.Screen name="screens" options={{ title: "Alla skärmar" }} />
+          {/* Område 6: Statistik */}
+          <Stack.Screen name="statistics" options={{ title: "Statistik" }} />
+
+          {/* Översikt över alla skärmar, bara under utvecklingen */}
+          <Stack.Screen name="screens" options={{ title: "Alla skärmar" }} />
+        </Stack.Protected>
       </Stack>
     </>
+  );
+}
+
+function SessionApp() {
+  const { session } = useAuth();
+
+  return (
+    <HouseholdDataProvider key={session?.user.id ?? "signed-out"} userId={session?.user.id ?? null}>
+      <ThemedStack />
+    </HouseholdDataProvider>
   );
 }
 
 export default function RootLayout() {
   return (
     <ThemeProvider>
-      <HouseholdDataProvider>
-        <ThemedStack />
-      </HouseholdDataProvider>
+      <AuthProvider>
+        <SessionApp />
+      </AuthProvider>
       <BrandSplash />
     </ThemeProvider>
   );
