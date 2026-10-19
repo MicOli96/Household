@@ -1,6 +1,7 @@
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useRef, useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { SignOutButton } from "../../components/SignOutButton";
 import { AppModal, Card, PillButton, TextField } from "../../components/ui";
 import { createHousehold, householdError, listHouseholds, listPendingHouseholds, validateHouseholdName } from "../../data/households";
 import type { HouseholdSummary } from "../../data/households";
@@ -114,6 +115,7 @@ export default function Households() {
       }} />
       <PillButton label="Gå med i hushåll" onPress={() => router.push("/households/join")} />
       <PillButton label="Profil" onPress={() => router.push("/profile")} />
+      <SignOutButton />
       <AppModal visible={showCreateModal} title="Skapa nytt hushåll" onClose={closeModal}
         footer={<>
           <PillButton label="Avbryt" onPress={closeModal} disabled={isCreating} />
