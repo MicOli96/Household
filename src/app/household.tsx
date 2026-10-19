@@ -15,6 +15,7 @@ import {
   HouseholdSummary,
   MemberSummary,
   renameHousehold,
+  setMemberOwner,
 } from "../data/households";
 import { useTheme } from "../theme/ThemeProvider";
 
@@ -71,12 +72,21 @@ export default function Household() {
   // Medlemmen vars meny (⋯) är öppen, eller null när menyn är stängd.
   const [menuMember, setMenuMember] = useState<MemberSummary | null>(null);
   const closeMenu = () => setMenuMember(null);
+  // Fel från valen i menyn, visas under medlemslistan.
+  const [memberError, setMemberError] = useState("");
 
-  // TODO (#19): Gör till ägare. Sätt is_owner = true på medlemmens rad i
-  // household_members (lägg funktionen i data/households.ts) och hämta om medlemmarna
-  // så att "Ägare" visas i listan. Databasen tillåter bara ägare att göra det.
-  function makeOwner(member: MemberSummary) {
+  // Gör medlemmen till ägare, eller tar bort ägarrollen om man råkat ge den (#19).
+  // Hämtar sedan om listan så att "Ägare" stämmer.
+  async function toggleOwner(member: MemberSummary) {
     closeMenu();
+    if (!householdId) return;
+    setMemberError("");
+    try {
+      await setMemberOwner(householdId, member.userId, !member.isOwner);
+      setMembers(await getMembers(householdId));
+    } catch (reason) {
+      setMemberError(householdError(reason));
+    }
   }
 
   // TODO (#20): Pausa medlem. Lägg till en rad i pauses (user_id, household_id,
@@ -114,6 +124,9 @@ export default function Household() {
       <View style={styles.header}>
         <HouseholdHeader code={household.code} />
         <MemberList members={members} canManage={isOwner} onOpenMenu={setMenuMember} />
+        {memberError ? (
+          <Text accessibilityRole="alert" style={{ color: colors.danger }}>{memberError}</Text>
+        ) : null}
 
         {/* Väljer hushållet för dagsvyn och går dit (#12). Testhushållet finns
             inte i databasen och kan därför inte öppnas. */}
@@ -140,7 +153,7 @@ export default function Household() {
       <MemberMenu
         member={menuMember}
         onClose={closeMenu}
-        onMakeOwner={makeOwner}
+        onToggleOwner={toggleOwner}
         onPause={pauseMember}
       />
 

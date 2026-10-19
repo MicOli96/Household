@@ -66,6 +66,21 @@ export async function renameHousehold(id: string, name: string): Promise<Househo
   return data;
 }
 
+// Gör en medlem till ägare eller tar bort ägarrollen (#19). Databasen släpper
+// bara igenom ägare: för andra ändras ingen rad, och då kommer inget tillbaka.
+export async function setMemberOwner(
+  householdId: string,
+  userId: string,
+  isOwner: boolean,
+): Promise<void> {
+  const { supabase } = await client();
+  const { data, error } = await supabase.from("household_members")
+    .update({ is_owner: isOwner })
+    .eq("household_id", householdId).eq("user_id", userId)
+    .select("user_id").maybeSingle();
+  if (error || !data) throw new Error("Kunde inte ändra ägarrollen. Bara ägare kan utse ägare.");
+}
+
 // Medlemmar och förfrågningar (is_approved = false) som inte har lämnat, äldst först.
 export async function getMembers(householdId: string): Promise<MemberSummary[]> {
   const { supabase, userId } = await client();

@@ -5,7 +5,7 @@ import { Avatar, Card } from "./ui";
 
 type Props = {
   members: MemberSummary[];
-  /** Om den inloggade är ägare. Då visas ⋯ på medlemmar som inte är ägare. */
+  /** Om den inloggade är ägare. Då visas ⋯ på alla utom en själv. */
   canManage: boolean;
   /** Anropas när ägaren trycker på ⋯ på en medlem. */
   onOpenMenu: (member: MemberSummary) => void;
@@ -38,18 +38,21 @@ export function MemberList({ members, canManage, onOpenMenu }: Props) {
               {member.name || "Inget namn"}
             </Text>
           </View>
-          {member.isOwner && (
-            <Text style={[styles.role, { color: colors.textMuted }]}>Ägare</Text>
-          )}
-          {canManage && !member.isOwner && (
-            <Pressable
-              onPress={() => onOpenMenu(member)}
-              hitSlop={12}
-              accessibilityLabel={`Val för ${member.name || "medlemmen"}`}
-            >
-              <Text style={[styles.more, { color: colors.textMuted }]}>⋯</Text>
-            </Pressable>
-          )}
+          <View style={styles.right}>
+            {member.isOwner && (
+              <Text style={[styles.role, { color: colors.textMuted }]}>Ägare</Text>
+            )}
+            {/* Inte på en själv, så att det alltid finns minst en ägare kvar. */}
+            {canManage && !member.isMe && (
+              <Pressable
+                onPress={() => onOpenMenu(member)}
+                hitSlop={12}
+                accessibilityLabel={`Val för ${member.name || "medlemmen"}`}
+              >
+                <Text style={[styles.more, { color: colors.textMuted }]}>⋯</Text>
+              </Pressable>
+            )}
+          </View>
         </Card>
       ))}
     </View>
@@ -83,6 +86,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     flexShrink: 1,
+  },
+  right: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
   },
   role: {
     fontSize: 13,

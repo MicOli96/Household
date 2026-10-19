@@ -1,4 +1,5 @@
 import { avatars, AvatarEmoji } from "../theme/avatars";
+import { validateChore } from "../utils/choreValidation";
 import type { Assignment, ChoreGroup, ChoreRow, Completion, Member } from "./types";
 
 // Läser och sparar dagsvyns data i Supabase: medlemmar, sysslor,
@@ -47,7 +48,7 @@ export async function fetchHouseholdRows(householdId: string): Promise<Household
       .eq("household_id", householdId).eq("is_approved", true).is("deleted_at", null)
       .order("created_at"),
     supabase.from("chores").select("*")
-      .eq("household_id", householdId).eq("is_archived", false).is("deleted_at", null)
+      .eq("household_id", householdId).is("deleted_at", null)
       .order("created_at"),
     supabase.from("chore_groups").select("*")
       .eq("household_id", householdId).is("deleted_at", null).order("created_at"),
@@ -147,8 +148,8 @@ export type NewChore = Pick<ChoreRow, "name" | "description" | "intervalDays" | 
  * name (max 100 tecken).
  */
 export async function insertChore(householdId: string, chore: NewChore): Promise<void> {
-  if (!chore.name.trim()) throw new Error("Kunde inte skapa sysslan utan titel.");
-  if (chore.description.length > 500) throw new Error("Kunde inte skapa sysslan, beskrivningen är för lång.");
+  const invalid = Object.values(validateChore(chore))[0];
+  if (invalid) throw new Error(`Kunde inte skapa sysslan. ${invalid}`);
   const { supabase } = await client();
   const { error } = await supabase.from("chores").insert({
     household_id: householdId,

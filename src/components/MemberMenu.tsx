@@ -8,13 +8,14 @@ type Props = {
   /** Medlemmen som menyn gäller, eller null när menyn är stängd. */
   member: MemberSummary | null;
   onClose: () => void;
-  onMakeOwner: (member: MemberSummary) => void;
+  /** Gör medlemmen till ägare, eller tar bort ägarrollen om medlemmen redan är ägare. */
+  onToggleOwner: (member: MemberSummary) => void;
   onPause: (member: MemberSummary) => void;
 };
 
 // Menyn som glider upp nerifrån när en ägare trycker på ⋯ på en medlem,
 // som "7b Medlem – meny" i Figma. Vad knapparna gör bestämmer skärmen.
-export function MemberMenu({ member, onClose, onMakeOwner, onPause }: Props) {
+export function MemberMenu({ member, onClose, onToggleOwner, onPause }: Props) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
 
@@ -38,7 +39,10 @@ export function MemberMenu({ member, onClose, onMakeOwner, onPause }: Props) {
               </Text>
 
               <View style={styles.buttons}>
-                <PillButton label="Gör till ägare" onPress={() => onMakeOwner(member)} />
+                <PillButton
+                  label={member.isOwner ? "Ta bort som ägare" : "Gör till ägare"}
+                  onPress={() => onToggleOwner(member)}
+                />
                 <PillButton label="Pausa medlem" onPress={() => onPause(member)} />
               </View>
 
