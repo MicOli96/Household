@@ -78,7 +78,6 @@ export default function Households() {
         <View style={styles.section}>
           <Text accessibilityRole="alert" style={{ color: colors.danger }}>{loadError}</Text>
           <PillButton label="Försök igen" onPress={load} disabled={loading} />
-          <PillButton label="Logga in" onPress={() => router.push("/login")} />
         </View>
       ) : null}
       {!loading && !loadError && households.length === 0 ? (

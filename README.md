@@ -48,7 +48,7 @@ npm run lint        # ESLint
 | `src/theme/` | Färger för ljust och mörkt läge, `useTheme()` och avatarerna. |
 | `src/utils/` | Uträkningar, t.ex. dagar sedan en syssla gjordes och om den är försenad. |
 | `src/lib/` | Supabase-klienten (`supabase.ts`). |
-| `src/data/` | Anrop till Supabase (`households.ts`, `chores.ts`), typer som följer tabellerna (`types.ts`) och `HouseholdData` med hooks som `useChores()`. Innan ett hushåll är öppnat visar dagsvyn testdata (`mockData.ts`). |
+| `src/data/` | Anrop till Supabase (`households.ts`, `chores.ts`), typer som följer tabellerna (`types.ts`) `HouseholdData` med hooks som `useChores()` och `AuthSession` med den inloggade användaren. Den som inte är inloggad kommer bara åt Logga in och Skapa konto, och utan öppnat hushåll skickar dagsvyn vidare till Mina hushåll. |
 | `supabase/migrations/` | Databasens tabeller, regler och funktioner (SQL). |
 | `docs/design/` | Designsystem, skärmar och Figma-skript. |
 | `assets/images/` | Logga, appikon och splash. |
@@ -61,8 +61,6 @@ import { useTheme } from "../theme/ThemeProvider";
 
 const { colors } = useTheme();
 ```
-
-Alla komponenter visas i appen under **Ändra → Visa komponenter**.
 
 ## Så jobbar vi
 

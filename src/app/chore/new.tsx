@@ -19,7 +19,7 @@ export default function NewChore() {
     );
   }
 
-  // Man kan komma hit utan knappen, t.ex. via "Alla skärmar".
+  // Man kan komma hit utan knappen, t.ex. via en direktlänk.
   if (!currentMember?.isOwner) {
     return (
       <View style={styles.message}>

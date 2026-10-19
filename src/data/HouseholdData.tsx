@@ -11,26 +11,17 @@ import {
   NewChore,
   saveAssignees,
 } from "./chores";
-import {
-  CURRENT_USER_ID,
-  mockAssignments,
-  mockChoreRows,
-  mockCompletions,
-  mockGroups,
-  mockHousehold,
-  mockMembers,
-  timestamps,
-} from "./mockData";
+import { useAuthSession } from "./AuthSession";
 import { Chore, ChoreGroup, ChoreRow, Completion, Member } from "./types";
 
 // Hushållets data för skärmarna. När ett hushåll är öppnat hämtas allt från
-// Supabase (src/data/chores.ts). Innan dess visas testdatan, så att skärmarna
-// går att prova utan konto. Hooksen längst ner ser likadana ut i båda fallen.
+// Supabase (src/data/chores.ts). Utan öppnat hushåll är listorna tomma och
+// dagsvyn skickar vidare till Mina hushåll.
 
 const STORAGE_KEY = "householdId";
 
 type HouseholdDataValue = {
-  /** Hushållet som är öppnat, eller null när testdatan visas. */
+  /** Hushållet som är öppnat, eller null när inget är valt. */
   householdId: string | null;
   openHousehold: (id: string | null) => void;
   loading: boolean;
@@ -63,13 +54,13 @@ function isSameDay(a: Date, b: Date) {
   return a.toDateString() === b.toDateString();
 }
 
-const mockRows: HouseholdRows = {
-  userId: CURRENT_USER_ID,
-  members: mockMembers,
-  choreRows: mockChoreRows,
-  groups: mockGroups,
-  assignments: mockAssignments,
-  completions: mockCompletions,
+const emptyRows: HouseholdRows = {
+  userId: "",
+  members: [],
+  choreRows: [],
+  groups: [],
+  assignments: [],
+  completions: [],
 };
 
 function savedHouseholdId(): string | null {
@@ -82,13 +73,15 @@ function savedHouseholdId(): string | null {
 
 export function HouseholdDataProvider({ children }: { children: ReactNode }) {
   const [householdId, setHouseholdId] = useState<string | null>(savedHouseholdId);
-  const [rows, setRows] = useState<HouseholdRows>(mockRows);
+  const [rows, setRows] = useState<HouseholdRows>(emptyRows);
+  const { session } = useAuthSession();
+  const userId = session?.user.id;
   const [loading, setLoading] = useState(householdId !== null);
   const [error, setError] = useState("");
   const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
-    if (!householdId) return;
+    if (!householdId || !userId) return;
     let current = true;
     fetchHouseholdRows(householdId)
       .then((result) => { if (current) { setRows(result); setError(""); } })
@@ -97,18 +90,23 @@ export function HouseholdDataProvider({ children }: { children: ReactNode }) {
       })
       .finally(() => { if (current) setLoading(false); });
     return () => { current = false; };
-  }, [householdId, attempt]);
+  }, [householdId, userId, attempt]);
 
   const reload = useCallback(() => setAttempt((n) => n + 1), []);
 
   const openHousehold = useCallback((id: string | null) => {
     if (id) localStorage.setItem(STORAGE_KEY, id);
     else localStorage.removeItem(STORAGE_KEY);
-    if (!id) setRows(mockRows);
+    if (!id) setRows(emptyRows);
     setLoading(id !== null);
     setError("");
     setHouseholdId(id);
   }, []);
+
+  function requireHousehold(): string {
+    if (!householdId) throw new Error("Öppna ett hushåll under Mina hushåll först.");
+    return householdId;
+  }
 
   const members = useMemo(() => active(rows.members), [rows.members]);
   const currentMember = members.find((m) => m.userId === rows.userId) ?? null;
@@ -157,104 +155,27 @@ export function HouseholdDataProvider({ children }: { children: ReactNode }) {
     groups,
     completions: active(rows.completions),
     async markDone(choreId) {
-      if (householdId) {
-        await insertCompletion(choreId);
-        return reload();
-      }
-      setRows((prev) => ({
-        ...prev,
-        completions: [
-          ...prev.completions,
-          { id: `c${Date.now()}`, choreId, userId: prev.userId, ...timestamps() },
-        ],
-      }));
+      requireHousehold();
+      await insertCompletion(choreId);
+      reload();
     },
     async setAssignees(choreId, userIds) {
-      if (householdId) {
-        await saveAssignees(choreId, active(rows.assignments), userIds);
-        return reload();
-      }
-      // Inget raderas: borttagna tilldelningar får deletedAt, nya läggs till.
-      const now = new Date();
-      setRows((prev) => {
-        const kept = prev.assignments.map((a) =>
-          a.choreId === choreId && a.deletedAt === null && !userIds.includes(a.userId)
-            ? { ...a, deletedAt: now, updatedAt: now }
-            : a,
-        );
-        const added = userIds
-          .filter((userId) =>
-            !kept.some((a) => a.choreId === choreId && a.userId === userId && a.deletedAt === null),
-          )
-          .map((userId) => ({ id: `a${now.getTime()}${userId}`, userId, choreId, ...timestamps(now) }));
-        return { ...prev, assignments: [...kept, ...added] };
-      });
+      requireHousehold();
+      await saveAssignees(choreId, active(rows.assignments), userIds);
+      reload();
     },
     async addGroup(name, rotationDays, choreIds) {
-      if (householdId) {
-        await insertGroup(householdId, name, rotationDays, choreIds);
-        return reload();
-      }
-      const id = `g${Date.now()}`;
-      const now = new Date();
-      setRows((prev) => ({
-        ...prev,
-        groups: [
-          ...prev.groups,
-          { id, householdId: mockHousehold.id, name, rotationDays, startDate: now, ...timestamps(now) },
-        ],
-        choreRows: prev.choreRows.map((c) =>
-          choreIds.includes(c.id) ? { ...c, choreGroupId: id, updatedAt: now } : c,
-        ),
-      }));
+      await insertGroup(requireHousehold(), name, rotationDays, choreIds);
+      reload();
     },
     async addChore(chore) {
-      if (householdId) {
-        await insertChore(householdId, chore);
-        return reload();
-      }
-      const now = new Date();
-      setRows((prev) => ({
-        ...prev,
-        choreRows: [
-          ...prev.choreRows,
-          {
-            id: `ch${now.getTime()}`,
-            householdId: mockHousehold.id,
-            choreGroupId: null,
-            name: chore.name.trim(),
-            description: chore.description.trim(),
-            intervalDays: chore.intervalDays,
-            weight: chore.weight,
-            imagePath: null,
-            audioPath: null,
-            isArchived: false,
-            ...timestamps(now),
-          },
-        ],
-      }));
+      await insertChore(requireHousehold(), chore);
+      reload();
     },
     async editChore(choreId, chore) {
-      if (householdId) {
-        await updateChore(choreId, chore);
-        return reload();
-      }
-      const now = new Date();
-      setRows((prev) => ({
-        ...prev,
-        choreRows: prev.choreRows.map((c) =>
-          c.id === choreId
-            ? {
-                ...c,
-                name: chore.name.trim(),
-                description: chore.description.trim(),
-                intervalDays: chore.intervalDays,
-                weight: chore.weight,
-                updatedAt: now,
-              }
-            : c,
-        ),
-      }));
+      requireHousehold();
+      await updateChore(choreId, chore);
+      reload();
     },
   };
 

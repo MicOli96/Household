@@ -1,7 +1,6 @@
 import { router, Stack } from "expo-router";
 import { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { MockDataNotice } from "../components/MockDataNotice";
 import { PieChart } from "../components/PieChart";
 import { Card } from "../components/ui";
 import { useHouseholdData } from "../data/HouseholdData";
@@ -55,8 +54,6 @@ export default function Statistics() {
           <Text style={[styles.arrow, { color: colors.text, opacity: hasNext ? 1 : 0 }]}>›</Text>
         </Pressable>
       </View>
-
-      <MockDataNotice />
 
       {showHelp && (
         <Card style={styles.help}>

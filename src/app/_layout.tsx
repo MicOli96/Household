@@ -1,11 +1,26 @@
-import { Stack } from "expo-router";
+import { SplashScreen, Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import { useEffect } from "react";
 import { BrandSplash } from "../components/BrandSplash";
+import { AuthSessionProvider, useAuthSession } from "../data/AuthSession";
 import { HouseholdDataProvider } from "../data/HouseholdData";
 import { ThemeProvider, useTheme } from "../theme/ThemeProvider";
 
+// Den inbyggda splashen ligger kvar tills vi vet om någon är inloggad,
+// annars syns inloggningen en kort stund innan dagsvyn.
+SplashScreen.preventAutoHideAsync();
+
 function ThemedStack() {
   const { scheme, colors } = useTheme();
+  const { session, loading } = useAuthSession();
+
+  useEffect(() => {
+    if (!loading) SplashScreen.hide();
+  }, [loading]);
+
+  // Skärmarna visas först när sessionen är inläst, så att en länk direkt till
+  // en skärm inte skickas till inloggningen medan den läses in.
+  if (loading) return null;
 
   return (
     <>
@@ -18,41 +33,46 @@ function ThemedStack() {
           contentStyle: { backgroundColor: colors.background },
         }}
       >
-        <Stack.Screen name="index" options={{ title: "Sysslor" }} />
-        <Stack.Screen name="settings" options={{ title: "Inställningar" }} />
-        <Stack.Screen name="components" options={{ title: "Komponenter" }} />
-        <Stack.Screen name="chore/[id]" options={{ title: "" }} />
+        {/* Skärmarna för den som är inloggad (#75). Loggar man ut skickas man
+            till inloggningen, och loggar man in hamnar man i dagsvyn, som i
+            sin tur skickar vidare till Mina hushåll om inget hushåll är öppnat. */}
+        <Stack.Protected guard={!!session}>
+          <Stack.Screen name="index" options={{ title: "Sysslor" }} />
+          <Stack.Screen name="settings" options={{ title: "Inställningar" }} />
+          <Stack.Screen name="chore/[id]" options={{ title: "" }} />
 
-        {/* Område 2: Konto & Profil */}
-        <Stack.Screen name="(auth)/login" options={{ title: "Logga in" }} />
-        <Stack.Screen name="(auth)/register" options={{ title: "Skapa konto" }} />
-        <Stack.Screen name="profile" options={{ title: "Profil" }} />
-        <Stack.Screen name="households/join" options={{ title: "Gå med i hushåll" }} />
-        <Stack.Screen name="households/pending" options={{ title: "Väntar på godkännande" }} />
+          {/* Område 2: Konto & Profil */}
+          <Stack.Screen name="profile" options={{ title: "Profil" }} />
+          <Stack.Screen name="households/join" options={{ title: "Gå med i hushåll" }} />
+          <Stack.Screen name="households/pending" options={{ title: "Väntar på godkännande" }} />
 
-        {/* Område 3: Hushåll */}
-        <Stack.Screen name="households/index" options={{ title: "Mina hushåll" }} />
-        <Stack.Screen name="household" options={{ title: "Hushåll" }} />
+          {/* Område 3: Hushåll */}
+          <Stack.Screen name="households/index" options={{ title: "Mina hushåll" }} />
+          <Stack.Screen name="household" options={{ title: "Hushåll" }} />
 
-        {/* Område 4: Sysslor */}
-        <Stack.Screen
-          name="chore/new"
-          options={{ title: "Skapa en ny syssla", presentation: "modal" }}
-        />
-        <Stack.Screen name="chore/[id]/edit" options={{ title: "Redigera syssla" }} />
+          {/* Område 4: Sysslor */}
+          <Stack.Screen
+            name="chore/new"
+            options={{ title: "Skapa en ny syssla", presentation: "modal" }}
+          />
+          <Stack.Screen name="chore/[id]/edit" options={{ title: "Redigera syssla" }} />
 
-        {/* Område 5: Schemaläggning */}
-        <Stack.Screen
-          name="chore/[id]/assign"
-          options={{ title: "Tilldela", presentation: "modal" }}
-        />
-        <Stack.Screen name="groups" options={{ title: "Rotationsgrupper" }} />
+          {/* Område 5: Schemaläggning */}
+          <Stack.Screen
+            name="chore/[id]/assign"
+            options={{ title: "Tilldela", presentation: "modal" }}
+          />
+          <Stack.Screen name="groups" options={{ title: "Rotationsgrupper" }} />
 
-        {/* Område 6: Statistik */}
-        <Stack.Screen name="statistics" options={{ title: "Statistik" }} />
+          {/* Område 6: Statistik */}
+          <Stack.Screen name="statistics" options={{ title: "Statistik" }} />
+        </Stack.Protected>
 
-        {/* Översikt över alla skärmar, bara under utvecklingen */}
-        <Stack.Screen name="screens" options={{ title: "Alla skärmar" }} />
+        {/* Inloggningen går bara att öppna när ingen är inloggad. */}
+        <Stack.Protected guard={!session}>
+          <Stack.Screen name="(auth)/login" options={{ title: "Logga in" }} />
+          <Stack.Screen name="(auth)/register" options={{ title: "Skapa konto" }} />
+        </Stack.Protected>
       </Stack>
     </>
   );
@@ -61,9 +81,11 @@ function ThemedStack() {
 export default function RootLayout() {
   return (
     <ThemeProvider>
-      <HouseholdDataProvider>
-        <ThemedStack />
-      </HouseholdDataProvider>
+      <AuthSessionProvider>
+        <HouseholdDataProvider>
+          <ThemedStack />
+        </HouseholdDataProvider>
+      </AuthSessionProvider>
       <BrandSplash />
     </ThemeProvider>
   );
