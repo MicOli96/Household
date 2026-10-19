@@ -1,5 +1,5 @@
 import "react-native-url-polyfill/auto";
-import "expo-sqlite/localStorage/install";
+import "@/lib/localStorage";
 import { createClient } from "@supabase/supabase-js";
 
 // Klienten som appen använder för att prata med Supabase (databas, inloggning och filer).
