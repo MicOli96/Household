@@ -1,6 +1,6 @@
 import { router, Stack, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Card, PillButton } from "../../components/ui";
 import { choreError } from "../../data/chores";
 import { useChore, useHouseholdData } from "../../data/HouseholdData";
@@ -16,7 +16,7 @@ export default function ChoreDetail() {
   const [done, setDone] = useState(false);
   const [error, setError] = useState("");
   const chore = useChore(id);
-  const { markDone } = useHouseholdData();
+  const { markDone, currentMember } = useHouseholdData();
 
   if (!chore) {
     return (
@@ -47,7 +47,19 @@ export default function ChoreDetail() {
 
   return (
     <View style={styles.container}>
-      <Stack.Screen options={{ title: chore.name }} />
+      <Stack.Screen
+        options={{
+          title: chore.name,
+          // Bara ägare kan redigera sysslan (#34).
+          headerRight: currentMember?.isOwner
+            ? () => (
+                <Pressable onPress={() => router.push(`/chore/${chore.id}/edit`)} hitSlop={12}>
+                  <Text style={{ color: colors.primary, fontSize: 16 }}>Redigera</Text>
+                </Pressable>
+              )
+            : undefined,
+        }}
+      />
 
       <Card style={styles.info}>
         <View style={styles.infoContent}>

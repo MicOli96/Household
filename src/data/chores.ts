@@ -161,6 +161,22 @@ export async function insertChore(householdId: string, chore: NewChore): Promise
   if (error) throw new Error("Kunde inte skapa sysslan. Bara ägare kan lägga till sysslor.");
 }
 
+/** Sparar ändringar i en syssla (#34). Databasen släpper bara igenom ägare. */
+export async function updateChore(choreId: string, chore: NewChore): Promise<void> {
+  if (!chore.name.trim()) throw new Error("Kunde inte spara sysslan utan titel.");
+  if (chore.description.length > 500) throw new Error("Kunde inte spara sysslan, beskrivningen är för lång.");
+  const { supabase } = await client();
+  const { error } = await supabase.from("chores")
+    .update({
+      name: chore.name.trim(),
+      description: chore.description.trim(),
+      interval_days: chore.intervalDays,
+      weight: chore.weight,
+    })
+    .eq("id", choreId);
+  if (error) throw new Error("Kunde inte spara sysslan. Bara ägare kan redigera sysslor.");
+}
+
 /** Skapar en rotationsgrupp och flyttar in sysslorna i den. */
 export async function insertGroup(
   householdId: string,

@@ -7,6 +7,7 @@ import {
   insertChore,
   insertCompletion,
   insertGroup,
+  updateChore,
   NewChore,
   saveAssignees,
 } from "./chores";
@@ -48,6 +49,7 @@ type HouseholdDataValue = {
   setAssignees: (choreId: string, userIds: string[]) => Promise<void>;
   addGroup: (name: string, rotationDays: number, choreIds: string[]) => Promise<void>;
   addChore: (chore: NewChore) => Promise<void>;
+  editChore: (choreId: string, chore: NewChore) => Promise<void>;
 };
 
 const HouseholdDataContext = createContext<HouseholdDataValue | null>(null);
@@ -230,6 +232,28 @@ export function HouseholdDataProvider({ children }: { children: ReactNode }) {
             ...timestamps(now),
           },
         ],
+      }));
+    },
+    async editChore(choreId, chore) {
+      if (householdId) {
+        await updateChore(choreId, chore);
+        return reload();
+      }
+      const now = new Date();
+      setRows((prev) => ({
+        ...prev,
+        choreRows: prev.choreRows.map((c) =>
+          c.id === choreId
+            ? {
+                ...c,
+                name: chore.name.trim(),
+                description: chore.description.trim(),
+                intervalDays: chore.intervalDays,
+                weight: chore.weight,
+                updatedAt: now,
+              }
+            : c,
+        ),
       }));
     },
   };
