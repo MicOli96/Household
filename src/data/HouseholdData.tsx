@@ -7,6 +7,7 @@ import {
   insertChore,
   insertCompletion,
   insertGroup,
+  updateChore,
   NewChore,
   saveAssignees,
 } from "./chores";
@@ -39,6 +40,7 @@ type HouseholdDataValue = {
   setAssignees: (choreId: string, userIds: string[]) => Promise<void>;
   addGroup: (name: string, rotationDays: number, choreIds: string[]) => Promise<void>;
   addChore: (chore: NewChore) => Promise<void>;
+  editChore: (choreId: string, chore: NewChore) => Promise<void>;
 };
 
 const HouseholdDataContext = createContext<HouseholdDataValue | null>(null);
@@ -168,6 +170,11 @@ export function HouseholdDataProvider({ children }: { children: ReactNode }) {
     },
     async addChore(chore) {
       await insertChore(requireHousehold(), chore);
+      reload();
+    },
+    async editChore(choreId, chore) {
+      requireHousehold();
+      await updateChore(choreId, chore);
       reload();
     },
   };

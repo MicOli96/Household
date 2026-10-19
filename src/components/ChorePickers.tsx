@@ -1,11 +1,10 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import type { ChoreRow } from "../data/types";
 import { useTheme } from "../theme/ThemeProvider";
+import { WEIGHTS } from "../utils/choreValidation";
 
 type Weight = ChoreRow["weight"];
 
-// Värdena som databasen tillåter (chores.weight).
-const WEIGHTS: readonly Weight[] = [1, 2, 4, 6, 8];
 // Fasta val i stället för 1–30 som i Figma, så att alla får plats utan att
 // skrolla: varje dag, varannan dag, var tredje dag, varje vecka,
 // varannan vecka och varje månad.

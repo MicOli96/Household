@@ -1,4 +1,5 @@
 import { avatars, AvatarEmoji } from "../theme/avatars";
+import { validateChore } from "../utils/choreValidation";
 import type { Assignment, ChoreGroup, ChoreRow, Completion, Member } from "./types";
 
 // Läser och sparar dagsvyns data i Supabase: medlemmar, sysslor,
@@ -147,8 +148,8 @@ export type NewChore = Pick<ChoreRow, "name" | "description" | "intervalDays" | 
  * name (max 100 tecken).
  */
 export async function insertChore(householdId: string, chore: NewChore): Promise<void> {
-  if (!chore.name.trim()) throw new Error("Kunde inte skapa sysslan utan titel.");
-  if (chore.description.length > 500) throw new Error("Kunde inte skapa sysslan, beskrivningen är för lång.");
+  const invalid = Object.values(validateChore(chore))[0];
+  if (invalid) throw new Error(`Kunde inte skapa sysslan. ${invalid}`);
   const { supabase } = await client();
   const { error } = await supabase.from("chores").insert({
     household_id: householdId,
@@ -158,6 +159,22 @@ export async function insertChore(householdId: string, chore: NewChore): Promise
     weight: chore.weight,
   });
   if (error) throw new Error("Kunde inte skapa sysslan. Bara ägare kan lägga till sysslor.");
+}
+
+/** Sparar ändringar i en syssla (#34). Databasen släpper bara igenom ägare. */
+export async function updateChore(choreId: string, chore: NewChore): Promise<void> {
+  if (!chore.name.trim()) throw new Error("Kunde inte spara sysslan utan titel.");
+  if (chore.description.length > 500) throw new Error("Kunde inte spara sysslan, beskrivningen är för lång.");
+  const { supabase } = await client();
+  const { error } = await supabase.from("chores")
+    .update({
+      name: chore.name.trim(),
+      description: chore.description.trim(),
+      interval_days: chore.intervalDays,
+      weight: chore.weight,
+    })
+    .eq("id", choreId);
+  if (error) throw new Error("Kunde inte spara sysslan. Bara ägare kan redigera sysslor.");
 }
 
 /** Skapar en rotationsgrupp och flyttar in sysslorna i den. */

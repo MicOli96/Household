@@ -57,7 +57,7 @@ export default function DailyView() {
       />
 
       <View style={styles.footer}>
-        {/* Vänta tills hushållet är hämtat, annars syns testdatans ägare en kort stund. */}
+        {/* Vänta tills hushållet är hämtat, så att knappen bara syns för ägare. */}
         {!loading && currentMember?.isOwner && (
           <PillButton label="⊕  Lägg till" onPress={() => router.push("/chore/new")} />
         )}

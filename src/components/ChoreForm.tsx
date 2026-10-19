@@ -3,6 +3,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { ChoreRow } from "../data/types";
 import { useTheme } from "../theme/ThemeProvider";
+import { ChoreErrors, DESCRIPTION_MAX_LENGTH, NAME_MAX_LENGTH, validateChore } from "../utils/choreValidation";
 import { IntervalPicker, WeightPicker } from "./ChorePickers";
 import { Badge, Card, TextField } from "./ui";
 
@@ -28,10 +29,6 @@ type Props = {
 };
 
 const ICON_SIZE = 28;
-// Titeln får vara högst lika lång som chores.name (varchar(100)). Beskrivningen
-// har ingen gräns i databasen (text), men så att ingen klistrar in hur mycket som helst.
-const NAME_MAX_LENGTH = 100;
-const DESCRIPTION_MAX_LENGTH = 500;
 
 // Ikonen i Spara och Stäng: ett + eller × i en ring, som i Figma. Ritas själv
 // i stället för tecknen ⊕ och ⊗, som blir för små och för täta i typsnittet.
@@ -55,16 +52,16 @@ export function ChoreForm({ initial, onSave, onClose }: Props) {
   const [weight, setWeight] = useState<ChoreRow["weight"]>(initial?.weight ?? 2);
   // Vilket kort som visar sin väljare i stället för värdet, eller null.
   const [picking, setPicking] = useState<"interval" | "weight" | null>(null);
-  const [nameError, setNameError] = useState("");
+  const [errors, setErrors] = useState<ChoreErrors>({});
   const [saveError, setSaveError] = useState("");
   const [saving, setSaving] = useState(false);
 
   async function save() {
     if (saving) return;
-    if (!name.trim()) {
-      setNameError("Sysslan behöver en titel");
-      return;
-    }
+    // Ogiltiga värden hindrar sparandet och visas vid fältet (#31).
+    const found = validateChore({ name, description, intervalDays, weight });
+    setErrors(found);
+    if (Object.keys(found).length > 0) return;
     setSaving(true);
     setSaveError("");
     try {
@@ -83,16 +80,20 @@ export function ChoreForm({ initial, onSave, onClose }: Props) {
           value={name}
           onChangeText={(text) => {
             setName(text);
-            setNameError("");
+            setErrors((prev) => ({ ...prev, name: undefined }));
           }}
           maxLength={NAME_MAX_LENGTH}
-          error={nameError || undefined}
+          error={errors.name}
         />
         <TextField
           placeholder="Beskrivning"
           value={description}
-          onChangeText={setDescription}
+          onChangeText={(text) => {
+            setDescription(text);
+            setErrors((prev) => ({ ...prev, description: undefined }));
+          }}
           maxLength={DESCRIPTION_MAX_LENGTH}
+          error={errors.description}
           multiline
         />
 
@@ -141,6 +142,11 @@ export function ChoreForm({ initial, onSave, onClose }: Props) {
           </Card>
         )}
 
+        {errors.intervalDays || errors.weight ? (
+          <Text accessibilityRole="alert" style={{ color: colors.danger }}>
+            {errors.intervalDays ?? errors.weight}
+          </Text>
+        ) : null}
         {saveError ? (
           <Text accessibilityRole="alert" style={{ color: colors.danger }}>{saveError}</Text>
         ) : null}
