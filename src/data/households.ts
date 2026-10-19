@@ -45,6 +45,35 @@ export async function listHouseholds(): Promise<HouseholdSummary[]> {
   return (data ?? []).map(({ id, name, code }) => ({ id, name, code }));
 }
 
+// Hushåll där den inloggade har skickat en förfrågan som ägaren inte har svarat på ännu (#25).
+export async function listPendingHouseholds(): Promise<HouseholdSummary[]> {
+  const { supabase, userId } = await client();
+  const { data, error } = await supabase.from("households")
+    .select("id, name, code, household_members!inner(user_id)")
+    .eq("household_members.user_id", userId)
+    .eq("household_members.is_approved", false)
+    .is("household_members.deleted_at", null)
+    .is("deleted_at", null).order("created_at");
+  if (error) throw new Error("Kunde inte hämta förfrågningarna. Försök igen.");
+  return (data ?? []).map(({ id, name, code }) => ({ id, name, code }));
+}
+
+/**
+ * Var den inloggades förfrågan till ett hushåll står.
+ * "denied" betyder att raden är borttagen eller saknas, t.ex. för att ägaren nekade.
+ */
+export type MembershipStatus = "approved" | "pending" | "denied";
+
+export async function getMembershipStatus(householdId: string): Promise<MembershipStatus> {
+  const { supabase, userId } = await client();
+  const { data, error } = await supabase.from("household_members")
+    .select("is_approved, deleted_at")
+    .eq("household_id", householdId).eq("user_id", userId).maybeSingle();
+  if (error) throw new Error("Kunde inte hämta förfrågan. Försök igen.");
+  if (!data || data.deleted_at) return "denied";
+  return data.is_approved ? "approved" : "pending";
+}
+
 export async function getHousehold(id: string): Promise<HouseholdSummary> {
   const { supabase } = await client();
   const { data, error } = await supabase.from("households")
