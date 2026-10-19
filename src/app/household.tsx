@@ -19,9 +19,6 @@ import {
 } from "../data/households";
 import { useTheme } from "../theme/ThemeProvider";
 
-// Visas när sidan öppnas utan id, t.ex. från "Alla skärmar".
-const testHousehold: HouseholdSummary = { id: "test", name: "Familjen Svensson", code: "4F7K2P" };
-
 // TODO (område 3): Resten av hushållsvyn, se #16–#21 och #26.
 // Byt ut Placeholder mot den riktiga vyn.
 // Byt namn och medlemsmenyn (gör till ägare, pausa) är modaler (AppModal), inte egna skärmar.
@@ -30,9 +27,7 @@ export default function Household() {
   const { openHousehold } = useHouseholdData();
   const { id } = useLocalSearchParams<{ id?: string | string[] }>();
   const householdId = Array.isArray(id) ? id[0] : id;
-  const [household, setHousehold] = useState<HouseholdSummary | null>(
-    householdId ? null : testHousehold,
-  );
+  const [household, setHousehold] = useState<HouseholdSummary | null>(null);
   const [members, setMembers] = useState<MemberSummary[]>([]);
   const [error, setError] = useState("");
 
@@ -52,20 +47,15 @@ export default function Household() {
   }, [householdId]);
 
   // Den inloggade är ägare om dess egen rad bland medlemmarna har isOwner.
-  // Testhushållet (utan id) visar pennan så att den går att se under utvecklingen.
-  const isOwner = householdId ? members.some((m) => m.isMe && m.isOwner) : true;
+  const isOwner = members.some((m) => m.isMe && m.isOwner);
 
   // Om dialogen "Byt namn på hushållet" är öppen.
   const [renaming, setRenaming] = useState(false);
 
   // Sparar det nya namnet i Supabase och visar det när databasen har svarat.
-  // Testhushållet (utan id) finns inte i databasen, där byts namnet bara i appen.
   async function rename(name: string) {
-    if (householdId) {
-      setHousehold(await renameHousehold(householdId, name));
-    } else {
-      setHousehold((current) => (current ? { ...current, name } : current));
-    }
+    if (!householdId) return;
+    setHousehold(await renameHousehold(householdId, name));
     setRenaming(false);
   }
 
@@ -99,7 +89,7 @@ export default function Household() {
     return (
       <View style={styles.message}>
         <Text style={{ color: error ? colors.danger : colors.textMuted }}>
-          {error || "Hämtar hushållet..."}
+          {error || (householdId ? "Hämtar hushållet..." : "Inget hushåll är valt.")}
         </Text>
       </View>
     );
@@ -128,18 +118,15 @@ export default function Household() {
           <Text accessibilityRole="alert" style={{ color: colors.danger }}>{memberError}</Text>
         ) : null}
 
-        {/* Väljer hushållet för dagsvyn och går dit (#12). Testhushållet finns
-            inte i databasen och kan därför inte öppnas. */}
-        {householdId && (
-          <PillButton
-            label="Visa sysslor"
-            variant="primary"
-            onPress={() => {
-              openHousehold(householdId);
-              router.dismissTo("/");
-            }}
-          />
-        )}
+        {/* Väljer hushållet för dagsvyn och går dit (#12). */}
+        <PillButton
+          label="Visa sysslor"
+          variant="primary"
+          onPress={() => {
+            openHousehold(household.id);
+            router.dismissTo("/");
+          }}
+        />
       </View>
 
       {renaming && (

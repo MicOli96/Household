@@ -1,7 +1,6 @@
 import { router } from "expo-router";
 import { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { MockDataNotice } from "../components/MockDataNotice";
 import { PieChart } from "../components/PieChart";
 import { useHouseholdData } from "../data/HouseholdData";
 import { useTheme } from "../theme/ThemeProvider";
@@ -38,8 +37,6 @@ export default function Statistics() {
           <Text style={[styles.arrow, { color: colors.text, opacity: hasNext ? 1 : 0 }]}>›</Text>
         </Pressable>
       </View>
-
-      <MockDataNotice />
 
       {total.length === 0 ? (
         <Text style={[styles.empty, { color: colors.textMuted }]}>
