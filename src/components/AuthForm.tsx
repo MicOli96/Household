@@ -51,8 +51,8 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
         return;
       }
 
+      // Med en session byter _layout.tsx själv till appens skärmar (#75).
       if (data.session) {
-        router.replace(registering ? "/profile" : "/households");
         return;
       }
 

@@ -1,5 +1,5 @@
 import { router } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -15,8 +15,14 @@ import {
   getMyProfile,
   householdError,
   saveMyProfile,
-  validateProfileName,
 } from "../data/households";
+import {
+  getMyName,
+  NAME_MAX_LENGTH,
+  profileError,
+  saveMyName,
+  validateName,
+} from "../data/profile";
 import { useTheme } from "../theme/ThemeProvider";
 import { avatars, type AvatarEmoji } from "../theme/avatars";
 
@@ -31,59 +37,66 @@ export default function Profile() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const submitting = useRef(false);
 
   useEffect(() => {
     let active = true;
-    if (!householdId) return () => {
-      active = false;
-    };
 
-    getMyProfile(householdId)
-      .then((profile) => {
+    async function loadProfile() {
+      setLoading(true);
+      setError("");
+      try {
+        const savedName = await getMyName();
         if (!active) return;
-        setName(profile.name);
-        setAvatar(profile.avatar);
-        setTaken(profile.taken);
-      })
-      .catch((reason: unknown) => {
-        if (active) setError(householdError(reason));
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
+        setName(savedName);
 
+        if (householdId) {
+          const profile = await getMyProfile(householdId);
+          if (!active) return;
+          setAvatar(profile.avatar);
+          setTaken(profile.taken);
+        }
+      } catch (reason: unknown) {
+        if (active) {
+          setError(householdId ? householdError(reason) : profileError(reason));
+        }
+      } finally {
+        if (active) setLoading(false);
+      }
+    }
+
+    void loadProfile();
     return () => {
       active = false;
     };
   }, [householdId]);
 
-  const visibleError = householdId
-    ? error
-    : "Öppna eller gå med i ett hushåll innan du ändrar profilen.";
-
   async function save() {
-    if (!householdId) {
-      setError("Öppna eller gå med i ett hushåll innan du ändrar profilen.");
-      return;
-    }
-    const nameError = validateProfileName(name);
-    if (nameError) {
-      setError(nameError);
-      return;
-    }
-    if (!avatar) {
+    if (submitting.current) return;
+
+    const validation = validateName(name);
+    setError(validation);
+    if (validation) return;
+
+    if (householdId && !avatar) {
       setError("Välj ett djur.");
       return;
     }
+
+    submitting.current = true;
+    setSaving(true);
+    setError("");
     try {
-      setSaving(true);
-      setError("");
-      await saveMyProfile(householdId, name, avatar);
-      reload();
-      router.back();
-    } catch (reason) {
-      setError(householdError(reason));
+      await saveMyName(name);
+      if (householdId && avatar) {
+        await saveMyProfile(householdId, name, avatar);
+        reload();
+      }
+      router.dismissTo("/households");
+    } catch (reason: unknown) {
+      setError(householdId ? householdError(reason) : profileError(reason));
     } finally {
+      submitting.current = false;
       setSaving(false);
     }
   }
@@ -108,57 +121,75 @@ export default function Profile() {
           <View style={styles.headerSpacer} />
         </View>
 
-        {loading && householdId ? (
+        {loading ? (
           <View style={styles.loading}>
             <ActivityIndicator color={colors.primary} size="large" />
           </View>
         ) : (
           <>
             <TextField
+              accessibilityLabel="Ditt namn"
               value={name}
-              onChangeText={setName}
+              onChangeText={(value) => {
+                setName(value);
+                setError("");
+              }}
               placeholder="Ditt namn"
               autoCapitalize="words"
+              autoComplete="name"
               autoCorrect={false}
-              maxLength={100}
+              maxLength={NAME_MAX_LENGTH}
+              returnKeyType="done"
+              onSubmitEditing={save}
+              editable={!saving}
               style={styles.nameInput}
+              error={error || undefined}
             />
 
-            <View style={styles.section}>
-              <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>VÄLJ AVATAR</Text>
-              <View style={styles.avatarGrid}>
-                {avatarOptions.map((emoji) => {
-                  const selected = avatar === emoji;
-                  const disabled = taken.includes(emoji) && !selected;
-                  return (
-                    <Pressable
-                      key={emoji}
-                      accessibilityRole="button"
-                      accessibilityLabel={`${emoji}${disabled ? ", upptagen" : ""}`}
-                      accessibilityState={{ selected, disabled }}
-                      onPress={() => {
-                        if (!disabled) setAvatar(emoji);
-                      }}
-                      disabled={disabled}
-                      style={styles.avatarOption}
-                    >
-                      <Avatar
-                        emoji={emoji}
-                        size={56}
-                        selected={selected}
-                        disabled={disabled}
-                      />
-                    </Pressable>
-                  );
-                })}
+            {householdId ? (
+              <View style={styles.section}>
+                <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>
+                  VÄLJ AVATAR
+                </Text>
+                <View style={styles.avatarGrid}>
+                  {avatarOptions.map((emoji) => {
+                    const selected = avatar === emoji;
+                    const disabled = taken.includes(emoji) && !selected;
+                    return (
+                      <Pressable
+                        key={emoji}
+                        accessibilityRole="button"
+                        accessibilityLabel={`${emoji}${disabled ? ", upptagen" : ""}`}
+                        accessibilityState={{ selected, disabled }}
+                        onPress={() => {
+                          if (!disabled) {
+                            setAvatar(emoji);
+                            setError("");
+                          }
+                        }}
+                        disabled={disabled || saving}
+                        style={styles.avatarOption}
+                      >
+                        <Avatar
+                          emoji={emoji}
+                          size={56}
+                          selected={selected}
+                          disabled={disabled}
+                        />
+                      </Pressable>
+                    );
+                  })}
+                </View>
+                <Text style={[styles.helper, { color: colors.textMuted }]}>
+                  Utgråade är upptagna i hushållet
+                </Text>
               </View>
-              <Text style={[styles.helper, { color: colors.textMuted }]}>
-                Utgråade är upptagna i hushållet
-              </Text>
-            </View>
+            ) : null}
 
-            {visibleError ? (
-              <Text style={[styles.error, { color: colors.danger }]}>{visibleError}</Text>
+            {error ? (
+              <Text accessibilityRole="alert" style={[styles.error, { color: colors.danger }]}>
+                {error}
+              </Text>
             ) : null}
 
             <PillButton

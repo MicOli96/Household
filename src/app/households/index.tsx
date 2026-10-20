@@ -1,8 +1,9 @@
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useRef, useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { SignOutButton } from "../../components/SignOutButton";
 import { AppModal, Card, PillButton, TextField } from "../../components/ui";
-import { createHousehold, householdError, listHouseholds, validateHouseholdName } from "../../data/households";
+import { createHousehold, householdError, listHouseholds, listPendingHouseholds, validateHouseholdName } from "../../data/households";
 import type { HouseholdSummary } from "../../data/households";
 import { useTheme } from "../../theme/ThemeProvider";
 
@@ -14,6 +15,7 @@ export default function Households() {
   const [isCreating, setIsCreating] = useState(false);
   const submitting = useRef(false);
   const [households, setHouseholds] = useState<HouseholdSummary[]>([]);
+  const [pending, setPending] = useState<HouseholdSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
   const [loadError, setLoadError] = useState("");
@@ -22,7 +24,9 @@ export default function Households() {
     setLoading(true);
     setLoadError("");
     try {
-      setHouseholds(await listHouseholds());
+      const [approved, waiting] = await Promise.all([listHouseholds(), listPendingHouseholds()]);
+      setHouseholds(approved);
+      setPending(waiting);
     } catch (error) {
       setLoadError(householdError(error));
     } finally {
@@ -34,7 +38,12 @@ export default function Households() {
   // ett nytt namn på ett hushåll syns när man kommer tillbaka hit.
   useFocusEffect(useCallback(() => {
     let active = true;
-    listHouseholds().then((result) => { if (active) setHouseholds(result); })
+    Promise.all([listHouseholds(), listPendingHouseholds()])
+      .then(([approved, waiting]) => {
+        if (!active) return;
+        setHouseholds(approved);
+        setPending(waiting);
+      })
       .catch((error: unknown) => { if (active) setLoadError(householdError(error)); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
@@ -78,16 +87,24 @@ export default function Households() {
         <View style={styles.section}>
           <Text accessibilityRole="alert" style={{ color: colors.danger }}>{loadError}</Text>
           <PillButton label="Försök igen" onPress={load} disabled={loading} />
-          <PillButton label="Logga in" onPress={() => router.push("/login")} />
         </View>
       ) : null}
-      {!loading && !loadError && households.length === 0 ? (
+      {!loading && !loadError && households.length === 0 && pending.length === 0 ? (
         <Text style={{ color: colors.textMuted }}>Du har inga hushåll ännu.</Text>
       ) : null}
       {households.map((household) => (
         <Card key={household.id} onPress={() => router.push({ pathname: "/household", params: { id: household.id } })}>
           <Text style={[styles.cardTitle, { color: colors.text }]}>{household.name}</Text>
           <Text style={{ color: colors.textMuted }}>›</Text>
+        </Card>
+      ))}
+      {pending.length > 0 ? (
+        <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>Väntar på godkännande</Text>
+      ) : null}
+      {pending.map((household) => (
+        <Card key={household.id} onPress={() => router.push({ pathname: "/households/pending", params: { id: household.id } })}>
+          <Text style={[styles.cardTitle, { color: colors.textMuted }]}>{household.name}</Text>
+          <Text style={{ color: colors.textMuted }}>Väntar</Text>
         </Card>
       ))}
       <PillButton label="Skapa nytt hushåll" variant="primary" disabled={loading} onPress={() => {
@@ -97,6 +114,8 @@ export default function Households() {
         setShowCreateModal(true);
       }} />
       <PillButton label="Gå med i hushåll" onPress={() => router.push("/households/join")} />
+      <PillButton label="Profil" onPress={() => router.push("/profile")} />
+      <SignOutButton />
       <AppModal visible={showCreateModal} title="Skapa nytt hushåll" onClose={closeModal}
         footer={<>
           <PillButton label="Avbryt" onPress={closeModal} disabled={isCreating} />
@@ -115,4 +134,5 @@ const styles = StyleSheet.create({
   title: { fontSize: 22, fontWeight: "600" },
   cardTitle: { fontSize: 17, fontWeight: "600", flexShrink: 1 },
   section: { gap: 12 },
+  sectionTitle: { fontSize: 15, fontWeight: "600", marginTop: 8 },
 });
