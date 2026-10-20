@@ -26,7 +26,7 @@ function ThemedStack() {
         {/* Område 2: Konto & Profil */}
         <Stack.Screen name="(auth)/login" options={{ title: "Logga in" }} />
         <Stack.Screen name="(auth)/register" options={{ title: "Skapa konto" }} />
-        <Stack.Screen name="profile" options={{ title: "Profil" }} />
+        <Stack.Screen name="profile" options={{ title: "Profil", headerShown: false }} />
         <Stack.Screen name="households/join" options={{ title: "Gå med i hushåll" }} />
         <Stack.Screen name="households/pending" options={{ title: "Väntar på godkännande" }} />
 
