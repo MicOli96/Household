@@ -1,3 +1,4 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { router, Stack, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
@@ -25,6 +26,7 @@ import { useTheme } from "../theme/ThemeProvider";
 export default function Household() {
   const { colors } = useTheme();
   const { openHousehold } = useHouseholdData();
+  const queryClient = useQueryClient();
   const { id } = useLocalSearchParams<{ id?: string | string[] }>();
   const householdId = Array.isArray(id) ? id[0] : id;
   const [household, setHousehold] = useState<HouseholdSummary | null>(null);
@@ -64,6 +66,7 @@ export default function Household() {
   async function rename(name: string) {
     if (!householdId) return;
     setHousehold(await renameHousehold(householdId, name));
+    queryClient.invalidateQueries({ queryKey: ["households"] });
     setRenaming(false);
   }
 
