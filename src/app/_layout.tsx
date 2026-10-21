@@ -1,9 +1,11 @@
+import { QueryClientProvider } from "@tanstack/react-query";
 import { SplashScreen, Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
 import { BrandSplash } from "../components/BrandSplash";
 import { AuthSessionProvider, useAuthSession } from "../data/AuthSession";
 import { HouseholdDataProvider } from "../data/HouseholdData";
+import { queryClient } from "../lib/queryClient";
 import { ThemeProvider, useTheme } from "../theme/ThemeProvider";
 
 // Den inbyggda splashen ligger kvar tills vi vet om någon är inloggad,
@@ -80,13 +82,15 @@ function ThemedStack() {
 
 export default function RootLayout() {
   return (
-    <ThemeProvider>
-      <AuthSessionProvider>
-        <HouseholdDataProvider>
-          <ThemedStack />
-        </HouseholdDataProvider>
-      </AuthSessionProvider>
-      <BrandSplash />
-    </ThemeProvider>
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider>
+        <AuthSessionProvider>
+          <HouseholdDataProvider>
+            <ThemedStack />
+          </HouseholdDataProvider>
+        </AuthSessionProvider>
+        <BrandSplash />
+      </ThemeProvider>
+    </QueryClientProvider>
   );
 }
