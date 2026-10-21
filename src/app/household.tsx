@@ -6,6 +6,7 @@ import { MemberList } from "../components/MemberList";
 import { MemberMenu } from "../components/MemberMenu";
 import { Placeholder } from "../components/Placeholder";
 import { RenameHouseholdDialog } from "../components/RenameHouseholdDialog";
+import { RequestList } from "../components/RequestList";
 import { PillButton } from "../components/ui";
 import { useHouseholdData } from "../data/HouseholdData";
 import {
@@ -53,21 +54,8 @@ export default function Household() {
   // Den inloggade är ägare om dess egen rad bland medlemmarna har isOwner.
   const isOwner = members.some((m) => m.isMe && m.isOwner);
 
-  // ETAPP 3 (#17), steg B: plocka fram förfrågningarna ur members.
-  //
-  //   OBS: members (liten bokstav) = listan med personer, datan.
-  //        MemberList (stor bokstav) = komponenten som ritar listan. Den ska inte användas här.
-  //
-  //   Pseudokod, läs det som en mening:
-  //     requests = ta listan members
-  //                gå igenom varje person (kalla personen m)
-  //                behåll personen OM m INTE är godkänd   (godkänd = m.isApproved, INTE = !)
-  //
-  //   Jämför med raden ovanför (isOwner) och raden nedanför (isPending):
-  //     de använder members.some((m) => ...)  → svarar "finns det någon?" (true/false)
-  //     du ska använda members.filter((m) => ...) → svarar "vilka?" (en ny lista)
-
-  const requests = members.filter((m) => m.isApproved);
+  // Förfrågningar: de som har skickat en förfrågan men inte är godkända än (#17).
+  const requests = members.filter((m) => !m.isApproved);
 
   // Den som inte är godkänd än kommer inte in i hushållet, utan ser sin förfrågan (#25).
   const isPending = members.some((m) => m.isMe && !m.isApproved);
@@ -150,26 +138,14 @@ export default function Household() {
           canManage={isOwner}
           onOpenMenu={setMenuMember}
         />
-
-        {/* ETAPP 3 (#17), steg C: visa RequestList, men BARA för ägare.
-
-            Pseudokod:
-              OM isOwner är sann:
-                  rita RequestList
-                  och ge den propen requests, med värdet requests från steg B
-              ANNARS:
-                  rita ingenting
-
-            Så skrivs "OM … rita, annars ingenting" i JSX:
-              {villkor && <Komponent prop={värde} />}
-
-            Titta på MemberList här ovanför: där ges propen members värdet members.
-            Du gör likadant, fast propen heter requests. */}
         {memberError ? (
           <Text accessibilityRole="alert" style={{ color: colors.danger }}>
             {memberError}
           </Text>
         ) : null}
+
+        {/* Bara ägare ser förfrågningarna (#17). */}
+        {isOwner && <RequestList requests={requests} />}
 
         {/* Väljer hushållet för dagsvyn och går dit (#12). */}
         <PillButton
@@ -200,12 +176,11 @@ export default function Household() {
       <Placeholder
         title="Kvar att bygga"
         area={3}
-        issues="#17–#20, #26"
+        issues="#18–#20, #26"
         todo={[
           "⋯ på en medlem öppnar menyn: gör till ägare, pausa (#19, #20, ägare)",
           'Pausade medlemmar markeras "Pausad" (#20)',
-          // ETAPP 3 (#17), steg D: när listan syns, ändra raden nedan till bara "(#18, ägare)".
-          "Förfrågningar: acceptera eller neka (#17, #18, ägare)",
+          "Förfrågningar: acceptera eller neka (#18, ägare)",
           "Lämna hushåll (#26)",
         ]}
         tables={[
