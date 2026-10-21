@@ -1,5 +1,6 @@
 import type { Session } from "@supabase/supabase-js";
 import { createContext, ReactNode, useContext, useEffect, useState } from "react";
+import { queryClient } from "../lib/queryClient";
 import { supabase } from "../lib/supabase";
 
 // Den inloggade användaren för hela appen (#75). _layout.tsx använder den
@@ -19,7 +20,11 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     // Anropas direkt med den sparade sessionen och sedan vid varje in- och utloggning.
-    const { data } = supabase.auth.onAuthStateChange((_event, next) => setSession(next));
+    const { data } = supabase.auth.onAuthStateChange((event, next) => {
+      // Nästa användare på samma telefon ska inte se den förras data.
+      if (event === "SIGNED_OUT") queryClient.clear();
+      setSession(next);
+    });
     return () => data.subscription.unsubscribe();
   }, []);
 

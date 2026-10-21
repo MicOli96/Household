@@ -1,53 +1,44 @@
-import { router, useFocusEffect } from "expo-router";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { router } from "expo-router";
 import { useCallback, useRef, useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { SignOutButton } from "../../components/SignOutButton";
 import { AppModal, Card, PillButton, TextField } from "../../components/ui";
 import { createHousehold, householdError, listHouseholds, listPendingHouseholds, validateHouseholdName } from "../../data/households";
-import type { HouseholdSummary } from "../../data/households";
+import { useRefreshOnFocus } from "../../hooks/useRefreshOnFocus";
 import { useTheme } from "../../theme/ThemeProvider";
 
 export default function Households() {
   const { colors } = useTheme();
+  const queryClient = useQueryClient();
   const [householdName, setHouseholdName] = useState("");
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [nameError, setNameError] = useState("");
-  const [isCreating, setIsCreating] = useState(false);
   const submitting = useRef(false);
-  const [households, setHouseholds] = useState<HouseholdSummary[]>([]);
-  const [pending, setPending] = useState<HouseholdSummary[]>([]);
-  const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
-  const [loadError, setLoadError] = useState("");
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setLoadError("");
-    try {
-      const [approved, waiting] = await Promise.all([listHouseholds(), listPendingHouseholds()]);
-      setHouseholds(approved);
-      setPending(waiting);
-    } catch (error) {
-      setLoadError(householdError(error));
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  // Båda nycklarna börjar med "households", så invalidateQueries({ queryKey: ["households"] })
+  // märker båda listorna som gamla.
+  const approved = useQuery({ queryKey: ["households"], queryFn: listHouseholds });
+  const waiting = useQuery({ queryKey: ["households", "pending"], queryFn: listPendingHouseholds });
+  const households = approved.data ?? [];
+  const pending = waiting.data ?? [];
+  const loading = approved.isLoading || waiting.isLoading;
+  const loadError = approved.error || waiting.error ? householdError(approved.error ?? waiting.error) : "";
 
-  // Hämtar listan varje gång sidan visas, inte bara första gången, så att t.ex.
-  // ett nytt namn på ett hushåll syns när man kommer tillbaka hit.
-  useFocusEffect(useCallback(() => {
-    let active = true;
-    Promise.all([listHouseholds(), listPendingHouseholds()])
-      .then(([approved, waiting]) => {
-        if (!active) return;
-        setHouseholds(approved);
-        setPending(waiting);
-      })
-      .catch((error: unknown) => { if (active) setLoadError(householdError(error)); })
-      .finally(() => { if (active) setLoading(false); });
-    return () => { active = false; };
-  }, []));
+  const { refetch: refetchApproved } = approved;
+  const { refetch: refetchWaiting } = waiting;
+  const refetchAll = useCallback(() => {
+    refetchApproved();
+    refetchWaiting();
+  }, [refetchApproved, refetchWaiting]);
+  useRefreshOnFocus(refetchAll);
+
+  const create = useMutation({
+    mutationFn: createHousehold,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["households"] }),
+  });
+  const isCreating = create.isPending;
 
   function closeModal() {
     if (submitting.current) return;
@@ -62,11 +53,8 @@ export default function Households() {
     setNameError(validation);
     if (validation) return;
     submitting.current = true;
-    setIsCreating(true);
     try {
-      const household = await createHousehold(householdName);
-      setHouseholds((previous) => [...previous, household]);
-      setLoadError("");
+      const household = await create.mutateAsync(householdName);
       setMessage(`Hushållet ”${household.name}” har skapats. Tryck på kortet för att öppna det.`);
       setShowCreateModal(false);
       setHouseholdName("");
@@ -74,7 +62,6 @@ export default function Households() {
       setNameError(householdError(error));
     } finally {
       submitting.current = false;
-      setIsCreating(false);
     }
   }
 
@@ -86,7 +73,7 @@ export default function Households() {
       {loadError ? (
         <View style={styles.section}>
           <Text accessibilityRole="alert" style={{ color: colors.danger }}>{loadError}</Text>
-          <PillButton label="Försök igen" onPress={load} disabled={loading} />
+          <PillButton label="Försök igen" onPress={refetchAll} disabled={loading} />
         </View>
       ) : null}
       {!loading && !loadError && households.length === 0 && pending.length === 0 ? (
