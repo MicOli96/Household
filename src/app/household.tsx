@@ -4,10 +4,11 @@ import { StyleSheet, Text, View } from "react-native";
 import { HouseholdHeader, HouseholdTitle } from "../components/HouseholdHeader";
 import { MemberList } from "../components/MemberList";
 import { MemberMenu } from "../components/MemberMenu";
+import { Placeholder } from "../components/Placeholder";
 import { RenameHouseholdDialog } from "../components/RenameHouseholdDialog";
+import { RequestList } from "../components/RequestList";
 import { PillButton } from "../components/ui";
 import { useHouseholdData } from "../data/HouseholdData";
-import { Placeholder } from "../components/Placeholder";
 import {
   getHousehold,
   getMembers,
@@ -41,19 +42,29 @@ export default function Household() {
         setHousehold(householdResult);
         setMembers(membersResult);
       })
-      .catch((reason: unknown) => { if (active) setError(householdError(reason)); });
+      .catch((reason: unknown) => {
+        if (active) setError(householdError(reason));
+      });
     // Om man lämnar sidan innan svaret kommit ska svaret inte sparas.
-    return () => { active = false; };
+    return () => {
+      active = false;
+    };
   }, [householdId]);
 
   // Den inloggade är ägare om dess egen rad bland medlemmarna har isOwner.
   const isOwner = members.some((m) => m.isMe && m.isOwner);
 
+  // Förfrågningar: de som har skickat en förfrågan men inte är godkända än (#17).
+  const requests = members.filter((m) => !m.isApproved);
+
   // Den som inte är godkänd än kommer inte in i hushållet, utan ser sin förfrågan (#25).
   const isPending = members.some((m) => m.isMe && !m.isApproved);
   useEffect(() => {
     if (isPending && householdId) {
-      router.replace({ pathname: "/households/pending", params: { id: householdId } });
+      router.replace({
+        pathname: "/households/pending",
+        params: { id: householdId },
+      });
     }
   }, [isPending, householdId]);
 
@@ -97,7 +108,8 @@ export default function Household() {
     return (
       <View style={styles.message}>
         <Text style={{ color: error ? colors.danger : colors.textMuted }}>
-          {error || (householdId ? "Hämtar hushållet..." : "Inget hushåll är valt.")}
+          {error ||
+            (householdId ? "Hämtar hushållet..." : "Inget hushåll är valt.")}
         </Text>
       </View>
     );
@@ -121,10 +133,19 @@ export default function Household() {
 
       <View style={styles.header}>
         <HouseholdHeader code={household.code} />
-        <MemberList members={members} canManage={isOwner} onOpenMenu={setMenuMember} />
+        <MemberList
+          members={members}
+          canManage={isOwner}
+          onOpenMenu={setMenuMember}
+        />
         {memberError ? (
-          <Text accessibilityRole="alert" style={{ color: colors.danger }}>{memberError}</Text>
+          <Text accessibilityRole="alert" style={{ color: colors.danger }}>
+            {memberError}
+          </Text>
         ) : null}
+
+        {/* Bara ägare ser förfrågningarna (#17). */}
+        {isOwner && <RequestList requests={requests} />}
 
         {/* Väljer hushållet för dagsvyn och går dit (#12). */}
         <PillButton
@@ -155,11 +176,11 @@ export default function Household() {
       <Placeholder
         title="Kvar att bygga"
         area={3}
-        issues="#17–#20, #26"
+        issues="#18–#20, #26"
         todo={[
           "⋯ på en medlem öppnar menyn: gör till ägare, pausa (#19, #20, ägare)",
-          "Pausade medlemmar markeras \"Pausad\" (#20)",
-          "Förfrågningar: acceptera eller neka (#17, #18, ägare)",
+          'Pausade medlemmar markeras "Pausad" (#20)',
+          "Förfrågningar: acceptera eller neka (#18, ägare)",
           "Lämna hushåll (#26)",
         ]}
         tables={[
