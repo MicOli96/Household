@@ -14,8 +14,10 @@ import { useHouseholdData } from "../data/HouseholdData";
 import {
   getMyProfile,
   householdError,
+  listHouseholds,
   saveMyProfile,
 } from "../data/households";
+import type { HouseholdSummary } from "../data/households";
 import {
   getMyName,
   NAME_MAX_LENGTH,
@@ -34,6 +36,9 @@ export default function Profile() {
   const [name, setName] = useState("");
   const [avatar, setAvatar] = useState<AvatarEmoji | null>(null);
   const [taken, setTaken] = useState<AvatarEmoji[]>([]);
+  const [householdOptions, setHouseholdOptions] = useState<HouseholdSummary[]>([]);
+  const [avatarHouseholdId, setAvatarHouseholdId] = useState<string | null>(householdId);
+  const [loadedAvatarHouseholdId, setLoadedAvatarHouseholdId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -51,14 +56,20 @@ export default function Profile() {
         setName(savedName);
 
         if (householdId) {
-          const profile = await getMyProfile(householdId);
+          setAvatarHouseholdId(householdId);
+        } else {
+          const availableHouseholds = await listHouseholds();
           if (!active) return;
-          setAvatar(profile.avatar);
-          setTaken(profile.taken);
+          setHouseholdOptions(availableHouseholds);
+          setAvatarHouseholdId((current) =>
+            current && availableHouseholds.some((household) => household.id === current)
+              ? current
+              : availableHouseholds[0]?.id ?? null,
+          );
         }
       } catch (reason: unknown) {
         if (active) {
-          setError(householdId ? householdError(reason) : profileError(reason));
+          setError(profileError(reason));
         }
       } finally {
         if (active) setLoading(false);
@@ -71,6 +82,27 @@ export default function Profile() {
     };
   }, [householdId]);
 
+  useEffect(() => {
+    if (!avatarHouseholdId) return;
+    let active = true;
+    getMyProfile(avatarHouseholdId)
+      .then((profile) => {
+        if (!active) return;
+        setAvatar(profile.avatar);
+        setTaken(profile.taken);
+        setLoadedAvatarHouseholdId(avatarHouseholdId);
+      })
+      .catch((reason: unknown) => {
+        if (active) {
+          setError(householdError(reason));
+          setLoadedAvatarHouseholdId(avatarHouseholdId);
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, [avatarHouseholdId]);
+
   async function save() {
     if (submitting.current) return;
 
@@ -78,23 +110,22 @@ export default function Profile() {
     setError(validation);
     if (validation) return;
 
-    if (householdId && !avatar) {
+    if (avatarHouseholdId && !avatar) {
       setError("Välj ett djur.");
       return;
     }
-
     submitting.current = true;
     setSaving(true);
     setError("");
     try {
       await saveMyName(name);
-      if (householdId && avatar) {
-        await saveMyProfile(householdId, name, avatar);
-        reload();
+      if (avatarHouseholdId && avatar) {
+        await saveMyProfile(avatarHouseholdId, name, avatar);
+        if (avatarHouseholdId === householdId) reload();
       }
       router.dismissTo("/households");
     } catch (reason: unknown) {
-      setError(householdId ? householdError(reason) : profileError(reason));
+      setError(avatarHouseholdId ? householdError(reason) : profileError(reason));
     } finally {
       submitting.current = false;
       setSaving(false);
@@ -121,7 +152,7 @@ export default function Profile() {
           <View style={styles.headerSpacer} />
         </View>
 
-        {loading ? (
+        {loading || (avatarHouseholdId && avatarHouseholdId !== loadedAvatarHouseholdId) ? (
           <View style={styles.loading}>
             <ActivityIndicator color={colors.primary} size="large" />
           </View>
@@ -146,7 +177,46 @@ export default function Profile() {
               error={error || undefined}
             />
 
-            {householdId ? (
+            {!householdId && householdOptions.length > 1 ? (
+              <View style={styles.householdPicker}>
+                <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>
+                  AVATAR FÖR HUSHÅLL
+                </Text>
+                <View style={styles.householdOptions}>
+                  {householdOptions.map((household) => (
+                    <Pressable
+                      key={household.id}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: avatarHouseholdId === household.id }}
+                      onPress={() => {
+                        setAvatarHouseholdId(household.id);
+                        setAvatar(null);
+                        setError("");
+                      }}
+                      style={[
+                        styles.householdOption,
+                        {
+                          backgroundColor:
+                            avatarHouseholdId === household.id ? colors.primary : colors.card,
+                          borderColor: colors.border,
+                        },
+                      ]}
+                    >
+                      <Text
+                        style={{
+                          color: avatarHouseholdId === household.id ? "#FFFFFF" : colors.text,
+                        }}
+                        numberOfLines={1}
+                      >
+                        {household.name}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </View>
+            ) : null}
+
+            {avatarHouseholdId ? (
               <View style={styles.section}>
                 <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>
                   VÄLJ AVATAR
@@ -255,6 +325,21 @@ const styles = StyleSheet.create({
   },
   section: {
     marginTop: 28,
+  },
+  householdPicker: {
+    marginTop: 24,
+  },
+  householdOptions: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  householdOption: {
+    maxWidth: "100%",
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
   },
   sectionTitle: {
     fontSize: 12,
