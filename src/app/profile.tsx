@@ -1,5 +1,6 @@
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { ScrollView, StyleSheet, Text } from "react-native";
 import { PillButton, TextField } from "../components/ui";
 import { getMyName, NAME_MAX_LENGTH, profileError, saveMyName, validateName } from "../data/profile";
@@ -9,21 +10,26 @@ import { useTheme } from "../theme/ThemeProvider";
 // TODO (område 2): avatarväljaren, se #29 och #30.
 export default function Profile() {
   const { colors } = useTheme();
-  const [name, setName] = useState("");
+  const queryClient = useQueryClient();
+  // null tills man skriver, så att det sparade namnet visas utan att skriva över det man skriver.
+  const [typed, setTyped] = useState<string | null>(null);
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const submitting = useRef(false);
 
-  // Fyller i det sparade namnet när profilen öppnas.
-  useEffect(() => {
-    let active = true;
-    getMyName()
-      .then((saved) => { if (active) setName(saved); })
-      .catch((reason: unknown) => { if (active) setError(profileError(reason)); })
-      .finally(() => { if (active) setLoading(false); });
-    return () => { active = false; };
-  }, []);
+  const profileQuery = useQuery({ queryKey: ["profile"], queryFn: getMyName });
+  const name = typed ?? profileQuery.data ?? "";
+  const loading = profileQuery.isLoading;
+  const loadError = profileQuery.error ? profileError(profileQuery.error) : "";
+
+  // Namnet kopieras till alla hushåll man är med i, så medlemslistorna visar det också.
+  const saveMutation = useMutation({
+    mutationFn: saveMyName,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["profile"] });
+      queryClient.invalidateQueries({ queryKey: ["members"] });
+    },
+  });
+  const saving = saveMutation.isPending;
 
   async function save() {
     if (submitting.current) return;
@@ -31,16 +37,14 @@ export default function Profile() {
     setError(validation);
     if (validation) return;
     submitting.current = true;
-    setSaving(true);
     try {
-      await saveMyName(name);
+      await saveMutation.mutateAsync(name);
       // Tillbaka till "Mina hushåll" om man kom därifrån, annars dit som ny skärm.
       router.dismissTo("/households");
     } catch (reason) {
       setError(profileError(reason));
     } finally {
       submitting.current = false;
-      setSaving(false);
     }
   }
 
@@ -52,7 +56,7 @@ export default function Profile() {
         placeholder={loading ? "Hämtar namn..." : "Ditt namn"}
         value={name}
         onChangeText={(text) => {
-          setName(text);
+          setTyped(text);
           setError("");
         }}
         maxLength={NAME_MAX_LENGTH}
@@ -61,7 +65,7 @@ export default function Profile() {
         returnKeyType="done"
         onSubmitEditing={save}
         editable={!loading && !saving}
-        error={error || undefined}
+        error={error || loadError || undefined}
       />
       <PillButton
         label={saving ? "Sparar..." : "Spara"}
