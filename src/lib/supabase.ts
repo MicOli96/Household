@@ -15,7 +15,8 @@ if (!url || !key) {
 
 export const supabase = createClient(url, key, {
   auth: {
-    storage: localStorage,
+    // Webbexporten förbereder sidorna i Node, där localStorage saknas.
+    storage: typeof localStorage !== "undefined" ? localStorage : undefined,
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: false,
