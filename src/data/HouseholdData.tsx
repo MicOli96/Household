@@ -1,3 +1,4 @@
+import { completionMembers, sameCompletionDay } from "../utils/completionMembers";
 import "@/lib/localStorage";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createContext, ReactNode, useCallback, useContext, useMemo, useState } from "react";
@@ -49,10 +50,6 @@ const HouseholdDataContext = createContext<HouseholdDataValue | null>(null);
 /** Rader som inte är borttagna, som .is("deleted_at", null) i Supabase. */
 function active<T extends { deletedAt: Date | null }>(rows: T[]): T[] {
   return rows.filter((r) => r.deletedAt === null);
-}
-
-function isSameDay(a: Date, b: Date) {
-  return a.toDateString() === b.toDateString();
 }
 
 const emptyRows: HouseholdRows = {
@@ -117,7 +114,14 @@ export function HouseholdDataProvider({ children }: { children: ReactNode }) {
       const done = liveCompletions
         .filter((c) => c.choreId === row.id)
         .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-      const doneToday = done.filter((c) => isSameDay(c.createdAt, today));
+      const doneToday = done.filter((c) => sameCompletionDay(c.createdAt, today));
+
+      const completedTodayBy = completionMembers(doneToday, rows.members);
+      const latestDay = done[0]?.createdAt;
+      const lastCompletedBy = completionMembers(
+        latestDay ? done.filter((c) => sameCompletionDay(c.createdAt, latestDay)) : [],
+        rows.members,
+      );
 
       // Sysslor i en rotationsgrupp har den som har gruppen just nu.
       const group = groups.find((g) => g.id === row.choreGroupId);
@@ -131,9 +135,9 @@ export function HouseholdDataProvider({ children }: { children: ReactNode }) {
       return {
         ...row,
         lastDoneAt: done[0]?.createdAt ?? null,
-        doneTodayBy: doneToday
-          .map((c) => members.find((m) => m.userId === c.userId)?.avatar)
-          .filter((a) => a != null),
+        doneTodayBy: completedTodayBy.map((member) => member.avatar).filter((avatar) => avatar != null),
+        completedTodayBy,
+        lastCompletedBy,
         assignees,
       };
     });
