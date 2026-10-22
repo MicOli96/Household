@@ -1,16 +1,22 @@
 import { StyleSheet, Text, View } from "react-native";
 import type { MemberSummary } from "../data/households";
 import { useTheme } from "../theme/ThemeProvider";
-import { Avatar, Card } from "./ui";
+import { Avatar, Card, PillButton } from "./ui";
 
 type Props = {
   /** Bara förfrågningar (isApproved = false), household.tsx har redan filtrerat. */
   requests: MemberSummary[];
+  /** Anropas när ägaren trycker på Godkänn. */
+  onApprove: (request: MemberSummary) => void;
+  /** Anropas när ägaren trycker på Neka. */
+  onDeny: (request: MemberSummary) => void;
+  /** Stänger av knapparna medan ett svar skickas, så att man inte trycker två gånger. */
+  disabled: boolean;
 };
 
 const AVATAR_SIZE = 32;
 
-// Visar vem som vill gå med. Acceptera och neka kommer i #18.
+// Visar vem som vill gå med (#17) och låter ägaren godkänna eller neka (#18).
 export function RequestList(props: Props) {
   const { colors } = useTheme();
 
@@ -47,6 +53,22 @@ export function RequestList(props: Props) {
                 Vill gå med
               </Text>
             </View>
+          </View>
+          <View style={styles.buttons}>
+            <PillButton
+              label="Neka"
+              variant="danger"
+              style={styles.button}
+              disabled={props.disabled}
+              onPress={() => props.onDeny(request)}
+            />
+            <PillButton
+              label="Godkänn"
+              variant="primary"
+              style={styles.button}
+              disabled={props.disabled}
+              onPress={() => props.onApprove(request)}
+            />
           </View>
         </Card>
       ))}
@@ -87,5 +109,15 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 13,
+  },
+  buttons: {
+    flexDirection: "row",
+    gap: 8,
+    marginLeft: 12,
+  },
+  // Mindre än vanliga PillButton så att namnet får plats bredvid på en telefon.
+  button: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
   },
 });
