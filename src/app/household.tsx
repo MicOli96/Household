@@ -142,7 +142,8 @@ export default function Household() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["pauses", householdId] }),
   });
 
-  // Dialogen väntar på svaret och visar felet om det misslyckas.
+  // Dialogen väntar på svaret och visar felet om det misslyckas. Den stängs
+  // efter varje val, så att ingen trycker Spara paus för att komma ut.
   async function savePause(member: MemberSummary, startDate: string, endDate: string | null) {
     await addPauseMutation.mutateAsync({ userId: member.userId, startDate, endDate });
     setPausingMember(null);
@@ -150,6 +151,7 @@ export default function Household() {
 
   async function endPause(pause: PauseSummary) {
     await stopPauseMutation.mutateAsync(pause);
+    setPausingMember(null);
   }
 
   if (!household) {

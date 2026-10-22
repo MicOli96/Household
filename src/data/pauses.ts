@@ -26,20 +26,23 @@ function daysFromToday(days: number): string {
 }
 
 // Datumen kan jämföras som text eftersom året står först.
-export function isPausedToday(pause: PauseSummary): boolean {
-  const today = daysFromToday(0);
-  return pause.startDate <= today && (pause.endDate === null || pause.endDate >= today);
+export function isPausedOn(pause: PauseSummary, day: string): boolean {
+  return pause.startDate <= day && (pause.endDate === null || pause.endDate >= day);
 }
 
-// Pauser som pågår eller är planerade. Avslutade pauser hämtas inte.
-export async function getPauses(householdId: string): Promise<PauseSummary[]> {
+export function isPausedToday(pause: PauseSummary): boolean {
+  return isPausedOn(pause, daysFromToday(0));
+}
+
+// Pauser som pågår eller är planerade. Statistiken behöver även avslutade.
+export async function getPauses(householdId: string, includeEnded = false): Promise<PauseSummary[]> {
   await requireUser();
-  const { data, error } = await supabase.from("pauses")
+  let query = supabase.from("pauses")
     .select("id, user_id, start_date, end_date")
     .eq("household_id", householdId)
-    .is("deleted_at", null)
-    .or(`end_date.is.null,end_date.gte.${daysFromToday(0)}`)
-    .order("start_date");
+    .is("deleted_at", null);
+  if (!includeEnded) query = query.or(`end_date.is.null,end_date.gte.${daysFromToday(0)}`);
+  const { data, error } = await query.order("start_date");
   if (error) throw new Error("Kunde inte hämta pauserna. Försök igen.");
   return (data ?? []).map((row) => ({
     id: row.id,
