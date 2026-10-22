@@ -18,6 +18,7 @@ import {
   renameHousehold,
   setMemberOwner,
 } from "../data/households";
+import { getPauses, isPausedToday } from "../data/pauses";
 import { useRefreshOnFocus } from "../hooks/useRefreshOnFocus";
 import { useTheme } from "../theme/ThemeProvider";
 
@@ -42,17 +43,28 @@ export default function Household() {
     queryFn: () => getMembers(householdId as string),
     enabled: !!householdId,
   });
+  const pausesQuery = useQuery({
+    queryKey: ["pauses", householdId],
+    queryFn: () => getPauses(householdId as string),
+    enabled: !!householdId,
+  });
   const household = householdQuery.data ?? null;
   const members = membersQuery.data ?? [];
+  const pauses = pausesQuery.data ?? [];
   const queryError = householdQuery.error ?? membersQuery.error;
   const error = queryError ? householdError(queryError) : "";
 
+  // Planerade pauser som inte har börjat räknas inte här.
+  const pausedUserIds = pauses.filter(isPausedToday).map((pause) => pause.userId);
+
   const { refetch: refetchHousehold } = householdQuery;
   const { refetch: refetchMembers } = membersQuery;
+  const { refetch: refetchPauses } = pausesQuery;
   const refetchAll = useCallback(() => {
     refetchHousehold();
     refetchMembers();
-  }, [refetchHousehold, refetchMembers]);
+    refetchPauses();
+  }, [refetchHousehold, refetchMembers, refetchPauses]);
   useRefreshOnFocus(refetchAll);
 
   // Den inloggade är ägare om dess egen rad bland medlemmarna har isOwner.
@@ -147,6 +159,7 @@ export default function Household() {
         <HouseholdHeader code={household.code} />
         <MemberList
           members={members}
+          pausedUserIds={pausedUserIds}
           canManage={isOwner}
           onOpenMenu={setMenuMember}
         />

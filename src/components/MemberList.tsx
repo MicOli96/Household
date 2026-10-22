@@ -5,6 +5,8 @@ import { Avatar, Card } from "./ui";
 
 type Props = {
   members: MemberSummary[];
+  /** Medlemmarna som är pausade idag. */
+  pausedUserIds: string[];
   /** Om den inloggade är ägare. Då visas ⋯ på alla utom en själv. */
   canManage: boolean;
   /** Anropas när ägaren trycker på ⋯ på en medlem. */
@@ -15,7 +17,7 @@ const AVATAR_SIZE = 32;
 
 // Listan "MEDLEMMAR" i hushållsvyn: avatar, namn och "Ägare" (#16).
 // Förfrågningar (isApproved = false) visas inte här utan i en egen lista.
-export function MemberList({ members, canManage, onOpenMenu }: Props) {
+export function MemberList({ members, pausedUserIds, canManage, onOpenMenu }: Props) {
   const { colors } = useTheme();
   const approved = members.filter((member) => member.isApproved);
 
@@ -39,6 +41,9 @@ export function MemberList({ members, canManage, onOpenMenu }: Props) {
             </Text>
           </View>
           <View style={styles.right}>
+            {pausedUserIds.includes(member.userId) && (
+              <Text style={[styles.role, { color: colors.textMuted }]}>Pausad</Text>
+            )}
             {member.isOwner && (
               <Text style={[styles.role, { color: colors.textMuted }]}>Ägare</Text>
             )}
