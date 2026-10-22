@@ -1,4 +1,5 @@
-import { Text, View } from "react-native";
+import { CompletedBy } from "./CompletedBy";
+import { View } from "react-native";
 import Svg, { Circle, Path } from "react-native-svg";
 import { avatars } from "../theme/avatars";
 import { Member } from "../data/types";
@@ -25,9 +26,14 @@ export function PieChart({ slices, size, showAvatars = false }: Props) {
   // En enda bit kan inte ritas som båge, då blir det en hel cirkel.
   if (slices.length === 1) {
     return (
-      <Svg width={size} height={size}>
-        <Circle cx={r} cy={r} r={r} fill={colorOf(slices[0].member)} />
-      </Svg>
+      <View style={{ width: size, height: size }}>
+        <Svg width={size} height={size}>
+          <Circle cx={r} cy={r} r={r} fill={colorOf(slices[0].member)} />
+        </Svg>
+        {showAvatars && <View style={{ position: "absolute", left: r - 16, top: r - 16 }}>
+          <CompletedBy members={[slices[0].member]} />
+        </View>}
+      </View>
     );
   }
 
@@ -59,12 +65,10 @@ export function PieChart({ slices, size, showAvatars = false }: Props) {
       </Svg>
       {showAvatars &&
         parts.map((p) => (
-          <Text
-            key={p.slice.member.userId}
-            style={{ position: "absolute", left: p.label.x - 12, top: p.label.y - 14, fontSize: 20 }}
-          >
-            {p.slice.member.avatar}
-          </Text>
+          <View key={p.slice.member.userId}
+            style={{ position: "absolute", left: p.label.x - 16, top: p.label.y - 16 }}>
+            <CompletedBy members={[p.slice.member]} />
+          </View>
         ))}
     </View>
   );
