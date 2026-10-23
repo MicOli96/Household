@@ -15,13 +15,15 @@ export function CompletedBy({ members, size = 24 }: Props) {
         <View key={member.userId} accessible accessibilityRole="image"
           accessibilityLabel={`Utförd av ${member.name || "medlem utan namn"}${member.avatar ? "" : ", ingen avatar vald"}`}>
           {member.avatar ? <Avatar emoji={member.avatar} size={size} /> : (
-            <View style={[styles.fallback, {
-              width: size + 8, height: size + 8, borderRadius: (size + 8) / 2,
-              backgroundColor: colors.border,
-            }]}>
-              <Text style={{ color: colors.text, fontSize: size * 0.55 }}>
-                {member.name.trim().slice(0, 1).toLocaleUpperCase() || "?"}
-              </Text>
+            <View style={[styles.fallback, { width: size + 8, height: size + 8 }]}>
+              <View style={[styles.fallback, {
+                width: size, height: size, borderRadius: size / 2,
+                backgroundColor: colors.border,
+              }]}>
+                <Text style={{ color: colors.text, fontSize: size * 0.55 }}>
+                  {member.name.trim().slice(0, 1).toLocaleUpperCase() || "?"}
+                </Text>
+              </View>
             </View>
           )}
         </View>
