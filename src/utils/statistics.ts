@@ -1,3 +1,4 @@
+import { isPausedOn, PauseSummary, toDateString } from "../data/pauses";
 import { ChoreRow, Completion, Member } from "../data/types";
 
 export type Period = {
@@ -38,6 +39,14 @@ export function periodsWithStatistics(completions: Completion[], today: Date = n
   return [currentWeek(today), lastWeek(today), lastMonth(today)].filter((period) =>
     completions.some((c) => inPeriod(c, period)),
   );
+}
+
+/** Sysslor som gjordes en dag då medlemmen var pausad räknas inte (#20). */
+export function withoutPausedDays(completions: Completion[], pauses: PauseSummary[]): Completion[] {
+  return completions.filter((completion) => {
+    const day = toDateString(completion.createdAt);
+    return !pauses.some((pause) => pause.userId === completion.userId && isPausedOn(pause, day));
+  });
 }
 
 export type Slice = { member: Member; value: number };
