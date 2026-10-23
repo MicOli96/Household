@@ -1,4 +1,4 @@
-import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from "react-native";
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from "react-native";
 import { PillButton, TextField } from "../../components/ui";
 import { useJoinHouseholdForm } from "../../hooks/useJoinHouseholdForm";
 import { useTheme } from "../../theme/ThemeProvider";
@@ -9,13 +9,15 @@ export default function JoinHousehold() {
 
   return (
     <KeyboardAvoidingView
+      style={styles.container}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
       <ScrollView
+        contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
       >
-        <View>
-          <Text style={{ color: colors.textMuted }}>
+        <View style={styles.form}>
+          <Text style={[styles.description, { color: colors.textMuted }]}>
             Ange hushållets kod för att skicka en förfrågan till ägaren.
           </Text>
 
@@ -42,3 +44,24 @@ export default function JoinHousehold() {
     </KeyboardAvoidingView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  content: {
+    flexGrow: 1,
+    padding: 24,
+    gap: 16,
+  },
+  form: {
+    width: "100%",
+    maxWidth: 440,
+    alignSelf: "center",
+    gap: 16,
+  },
+  description: {
+    fontSize: 16,
+    lineHeight: 24,
+  },
+});
