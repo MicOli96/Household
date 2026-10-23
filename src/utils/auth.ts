@@ -1,21 +1,21 @@
 export type AuthMode = "login" | "register";
 
 export type AuthErrors = {
-  email?: string;
+  username?: string;
   password?: string;
   confirmPassword?: string;
 };
 
 export function validateAuth(
   mode: AuthMode,
-  email: string,
+  username: string,
   password: string,
   confirmPassword: string,
 ): AuthErrors {
   const errors: AuthErrors = {};
 
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
-    errors.email = "Ange en giltig e-postadress.";
+  if (!isValidUsername(username)) {
+    errors.username = "Använd 3–30 tecken: a–z, siffror och understreck.";
   }
 
   if (!password) {
@@ -31,32 +31,35 @@ export function validateAuth(
   return errors;
 }
 
-export function authErrorMessage(code?: string): string {
-  switch (code) {
-    case "invalid_credentials":
-      return "Fel e-postadress eller lösenord.";
+export function normalizeUsername(username: string): string {
+  return username.trim().toLowerCase();
+}
 
-    case "email_not_confirmed":
-      return "Bekräfta din e-postadress innan du loggar in.";
+export function isValidUsername(username: string): boolean {
+  return /^[a-z0-9_]{3,30}$/.test(normalizeUsername(username));
+}
 
-    case "user_already_exists":
-    case "email_exists":
-      return "Det finns redan ett konto med den e-postadressen.";
-
-    case "weak_password":
-      return "Lösenordet uppfyller inte kraven. Välj ett längre och starkare lösenord.";
-
-    case "email_address_invalid":
-      return "Ange en giltig e-postadress.";
-
-    case "over_request_rate_limit":
-    case "over_email_send_rate_limit":
-      return "För många försök. Vänta en stund och försök igen.";
-
-    case "signup_disabled":
-      return "Registrering är inte tillgänglig just nu.";
-
-    default:
-      return "Det gick inte att genomföra begäran. Kontrollera anslutningen och försök igen.";
+export function usernameToEmail(username: string): string {
+  if (!isValidUsername(username)) {
+    throw new Error("Ogiltigt användarnamn.");
   }
+
+  return `${normalizeUsername(username)}@users.example.com`;
+}
+
+const authMessages: Record<string, string> = {
+  invalid_credentials: "Fel användarnamn eller lösenord.",
+  email_not_confirmed: "Kontot kan inte användas ännu. Kontakta projektansvarig.",
+  user_already_exists: "Användarnamnet är redan upptaget.",
+  email_exists: "Användarnamnet är redan upptaget.",
+  weak_password: "Lösenordet uppfyller inte kraven. Välj ett längre och starkare lösenord.",
+  email_address_invalid: "Användarnamnet kunde inte användas. Försök med ett annat.",
+  over_request_rate_limit: "För många försök. Vänta en stund och försök igen.",
+  over_email_send_rate_limit: "För många försök. Vänta en stund och försök igen.",
+  signup_disabled: "Registrering är inte tillgänglig just nu.",
+};
+
+export function authErrorMessage(code?: string): string {
+  return (code && Object.hasOwn(authMessages, code) ? authMessages[code] : undefined)
+    ?? "Det gick inte att genomföra begäran. Kontrollera anslutningen och försök igen.";
 }

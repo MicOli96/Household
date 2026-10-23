@@ -64,18 +64,23 @@ const emptyRows: HouseholdRows = {
   completions: [],
 };
 
-function savedHouseholdId(): string | null {
+function savedHouseholdId(userId: string): string | null {
   try {
-    return localStorage.getItem(STORAGE_KEY);
+    return localStorage.getItem(`${STORAGE_KEY}:${userId}`);
   } catch {
     return null;
   }
 }
 
 export function HouseholdDataProvider({ children }: { children: ReactNode }) {
-  const [householdId, setHouseholdId] = useState<string | null>(savedHouseholdId);
   const { session } = useAuthSession();
   const userId = session?.user.id;
+  const [householdsByUser, setHouseholdsByUser] = useState<Record<string, string | null>>({});
+  const householdId = userId
+    ? Object.hasOwn(householdsByUser, userId)
+      ? householdsByUser[userId]
+      : savedHouseholdId(userId)
+    : null;
   const queryClient = useQueryClient();
 
   // Användaren ingår i nyckeln eftersom datan säger vem som är inloggad (currentMember).
@@ -95,10 +100,15 @@ export function HouseholdDataProvider({ children }: { children: ReactNode }) {
   }, [queryClient, householdId]);
 
   const openHousehold = useCallback((id: string | null) => {
-    if (id) localStorage.setItem(STORAGE_KEY, id);
-    else localStorage.removeItem(STORAGE_KEY);
-    setHouseholdId(id);
-  }, []);
+    if (!userId) return;
+    const storageKey = `${STORAGE_KEY}:${userId}`;
+    try {
+      if (id) localStorage.setItem(storageKey, id);
+      else localStorage.removeItem(storageKey);
+    } catch {
+    }
+    setHouseholdsByUser((previous) => ({ ...previous, [userId]: id }));
+  }, [userId]);
 
   function requireHousehold(): string {
     if (!householdId) throw new Error("Öppna ett hushåll under Mina hushåll först.");
