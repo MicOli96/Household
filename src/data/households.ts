@@ -143,6 +143,31 @@ export async function setMemberOwner(
   if (error || !data) throw new Error("Kunde inte ändra ägarrollen. Bara ägare kan utse ägare.");
 }
 
+// Godkänner en förfrågan så att personen blir medlem (#18). Databasen släpper
+// bara igenom ägare: för andra ändras ingen rad, och då kommer inget tillbaka.
+// Bara obesvarade förfrågningar ändras, så två ägare kan inte svara samtidigt.
+export async function approveRequest(householdId: string, userId: string): Promise<void> {
+  await requireUser();
+  const { data, error } = await supabase.from("household_members")
+    .update({ is_approved: true })
+    .eq("household_id", householdId).eq("user_id", userId)
+    .eq("is_approved", false).is("deleted_at", null)
+    .select("user_id").maybeSingle();
+  if (error || !data) throw new Error("Kunde inte godkänna förfrågan. Den kan redan vara besvarad.");
+}
+
+// Nekar en förfrågan (#18). Raden tas bort genom att deleted_at sätts, och
+// den som frågade ser "Förfrågan nekades". Personen kan fråga igen med koden.
+export async function denyRequest(householdId: string, userId: string): Promise<void> {
+  await requireUser();
+  const { data, error } = await supabase.from("household_members")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("household_id", householdId).eq("user_id", userId)
+    .eq("is_approved", false).is("deleted_at", null)
+    .select("user_id").maybeSingle();
+  if (error || !data) throw new Error("Kunde inte neka förfrågan. Den kan redan vara besvarad.");
+}
+
 // Medlemmar och förfrågningar (is_approved = false) som inte har lämnat, äldst först.
 export async function getMembers(householdId: string): Promise<MemberSummary[]> {
   const { id: userId } = await requireUser();
