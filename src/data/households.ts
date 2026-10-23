@@ -1,4 +1,5 @@
 import { avatars, type AvatarEmoji } from "../theme/avatars";
+import { requireUser, supabase } from "../lib/supabase";
 import type { Household, Member } from "./types";
 
 export type HouseholdSummary = Pick<Household, "id" | "name" | "code">;
@@ -38,17 +39,10 @@ export function validateProfileName(value: string): string {
   return "";
 }
 
-async function client() {
-  const { supabase } = await import("../lib/supabase");
-  const { data, error } = await supabase.auth.getUser();
-  if (error || !data.user) throw new Error("Du måste vara inloggad. Öppna Logga in och försök igen.");
-  return { supabase, userId: data.user.id };
-}
-
 export async function createHousehold(name: string): Promise<HouseholdSummary> {
   const validation = validateHouseholdName(name);
   if (validation) throw new Error(validation);
-  const { supabase } = await client();
+  await requireUser();
   const { data, error } = await supabase.rpc("create_household", { p_name: name.trim() });
   if (error) throw new Error("Kunde inte skapa hushållet. Försök igen.");
   if (!data?.id) throw new Error("Skapandet kunde inte bekräftas. Uppdatera hushållslistan innan du försöker igen.");
@@ -56,7 +50,7 @@ export async function createHousehold(name: string): Promise<HouseholdSummary> {
 }
 
 export async function listHouseholds(): Promise<HouseholdSummary[]> {
-  const { supabase, userId } = await client();
+  const { id: userId } = await requireUser();
   const { data, error } = await supabase.from("households")
     .select("id, name, code, household_members!inner(user_id)")
     .eq("household_members.user_id", userId)
@@ -70,7 +64,7 @@ export async function listHouseholds(): Promise<HouseholdSummary[]> {
 
 // Hushåll där den inloggade har skickat en förfrågan som ägaren inte har svarat på ännu (#25).
 export async function listPendingHouseholds(): Promise<HouseholdSummary[]> {
-  const { supabase, userId } = await client();
+  const { id: userId } = await requireUser();
   const { data, error } = await supabase.from("households")
     .select("id, name, code, household_members!inner(user_id)")
     .eq("household_members.user_id", userId)
@@ -82,13 +76,13 @@ export async function listPendingHouseholds(): Promise<HouseholdSummary[]> {
 }
 
 /**
- * Var den inloggades förfrågan till ett hushåll står.
+ * Var den inloggade förfrågan till ett hushåll står.
  * "denied" betyder att raden är borttagen eller saknas, t.ex. för att ägaren nekade.
  */
 export type MembershipStatus = "approved" | "pending" | "denied";
 
 export async function getMembershipStatus(householdId: string): Promise<MembershipStatus> {
-  const { supabase, userId } = await client();
+  const { id: userId } = await requireUser();
   const { data, error } = await supabase.from("household_members")
     .select("is_approved, deleted_at")
     .eq("household_id", householdId).eq("user_id", userId).maybeSingle();
@@ -98,7 +92,7 @@ export async function getMembershipStatus(householdId: string): Promise<Membersh
 }
 
 export async function getHousehold(id: string): Promise<HouseholdSummary> {
-  const { supabase } = await client();
+  await requireUser();
   const { data, error } = await supabase.from("households")
     .select("id, name, code")
     .eq("id", id)
@@ -109,7 +103,7 @@ export async function getHousehold(id: string): Promise<HouseholdSummary> {
 }
 
 export async function getMyProfile(householdId: string): Promise<MyProfile> {
-  const { supabase, userId } = await client();
+  const { id: userId } = await requireUser();
 
   const profileQuery = supabase.from("household_members")
     .select("name, avatar_id")
@@ -155,7 +149,7 @@ export async function saveMyProfile(
   if (nameError) throw new Error(nameError);
   if (!avatar) throw new Error("Välj en avatar.");
 
-  const { supabase, userId } = await client();
+  const { id: userId } = await requireUser();
   const avatarId = avatarIdByEmoji[avatar];
 
   const saveQuery = supabase.from("household_members")
@@ -184,7 +178,7 @@ export async function saveMyProfile(
 export async function renameHousehold(id: string, name: string): Promise<HouseholdSummary> {
   const validation = validateHouseholdName(name);
   if (validation) throw new Error(validation);
-  const { supabase } = await client();
+  await requireUser();
   const { data, error } = await supabase.from("households")
     .update({ name: name.trim() })
     .eq("id", id)
@@ -201,7 +195,7 @@ export async function setMemberOwner(
   userId: string,
   isOwner: boolean,
 ): Promise<void> {
-  const { supabase } = await client();
+  await requireUser();
   const { data, error } = await supabase.from("household_members")
     .update({ is_owner: isOwner })
     .eq("household_id", householdId)
@@ -213,7 +207,7 @@ export async function setMemberOwner(
 
 // Medlemmar och förfrågningar (is_approved = false) som inte har lämnat, äldst först.
 export async function getMembers(householdId: string): Promise<MemberSummary[]> {
-  const { supabase, userId } = await client();
+  const { id: userId } = await requireUser();
   const { data, error } = await supabase.from("household_members")
     .select("user_id, name, is_owner, is_approved, avatar_id")
     .eq("household_id", householdId)

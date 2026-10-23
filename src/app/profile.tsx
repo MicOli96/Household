@@ -135,6 +135,8 @@ export default function Profile() {
         }
       }
       router.dismissTo("/households");
+    } catch (reason: unknown) {
+      setError(profileError(reason));
     } finally {
       submitting.current = false;
     }

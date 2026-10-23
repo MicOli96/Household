@@ -1,5 +1,6 @@
 import "@/lib/localStorage";
-import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { createContext, ReactNode, useCallback, useContext, useMemo, useState } from "react";
 import { currentRotationMember } from "../utils/rotation";
 import {
   fetchHouseholdRows,
@@ -73,33 +74,29 @@ function savedHouseholdId(): string | null {
 
 export function HouseholdDataProvider({ children }: { children: ReactNode }) {
   const [householdId, setHouseholdId] = useState<string | null>(savedHouseholdId);
-  const [rows, setRows] = useState<HouseholdRows>(emptyRows);
   const { session } = useAuthSession();
   const userId = session?.user.id;
-  const [loading, setLoading] = useState(householdId !== null);
-  const [error, setError] = useState("");
-  const [attempt, setAttempt] = useState(0);
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    if (!householdId || !userId) return;
-    let current = true;
-    fetchHouseholdRows(householdId)
-      .then((result) => { if (current) { setRows(result); setError(""); } })
-      .catch((reason: unknown) => {
-        if (current) setError(reason instanceof Error ? reason.message : "Kunde inte hämta sysslorna.");
-      })
-      .finally(() => { if (current) setLoading(false); });
-    return () => { current = false; };
-  }, [householdId, userId, attempt]);
+  // Användaren ingår i nyckeln eftersom datan säger vem som är inloggad (currentMember).
+  const rowsQuery = useQuery({
+    queryKey: ["chores", householdId, userId],
+    queryFn: () => fetchHouseholdRows(householdId as string),
+    enabled: !!householdId && !!userId,
+  });
+  const rows = rowsQuery.data ?? emptyRows;
+  const loading = rowsQuery.isLoading;
+  const error = rowsQuery.error
+    ? (rowsQuery.error instanceof Error ? rowsQuery.error.message : "Kunde inte hämta sysslorna.")
+    : "";
 
-  const reload = useCallback(() => setAttempt((n) => n + 1), []);
+  const reload = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ["chores", householdId] });
+  }, [queryClient, householdId]);
 
   const openHousehold = useCallback((id: string | null) => {
     if (id) localStorage.setItem(STORAGE_KEY, id);
     else localStorage.removeItem(STORAGE_KEY);
-    if (!id) setRows(emptyRows);
-    setLoading(id !== null);
-    setError("");
     setHouseholdId(id);
   }, []);
 

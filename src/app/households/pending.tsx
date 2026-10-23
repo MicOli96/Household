@@ -1,9 +1,10 @@
-import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
-import { useCallback, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { router, useLocalSearchParams } from "expo-router";
+import { useEffect } from "react";
 import { ActivityIndicator, ScrollView, StyleSheet, Text } from "react-native";
 import { PillButton } from "../../components/ui";
 import { useHouseholdData } from "../../data/HouseholdData";
-import { getHousehold, getMembershipStatus, householdError, MembershipStatus } from "../../data/households";
+import { getHousehold, getMembershipStatus, householdError } from "../../data/households";
 import { useTheme } from "../../theme/ThemeProvider";
 
 // Hur ofta förfrågan kontrolleras medan skärmen är öppen.
@@ -14,44 +15,39 @@ const CHECK_INTERVAL_MS = 5000;
 export default function PendingHousehold() {
   const { colors } = useTheme();
   const { openHousehold } = useHouseholdData();
+  const queryClient = useQueryClient();
   const { id } = useLocalSearchParams<{ id?: string | string[] }>();
   const householdId = Array.isArray(id) ? id[0] : id;
-  const [name, setName] = useState("");
-  const [status, setStatus] = useState<MembershipStatus | null>(null);
-  const [error, setError] = useState("");
 
-  // Kontrollerar förfrågan direkt och sedan med jämna mellanrum så länge skärmen visas.
-  // När ägaren har godkänt öppnas hushållet av sig självt.
-  useFocusEffect(useCallback(() => {
-    if (!householdId) return;
-    let active = true;
+  // Frågar var femte sekund tills ägaren har svarat, sedan slutar den.
+  const statusQuery = useQuery({
+    queryKey: ["membership", householdId],
+    queryFn: () => getMembershipStatus(householdId as string),
+    enabled: !!householdId,
+    refetchInterval: (query) =>
+      query.state.data === "approved" || query.state.data === "denied" ? false : CHECK_INTERVAL_MS,
+  });
+  const status = statusQuery.data ?? null;
+  const error = statusQuery.error ? householdError(statusQuery.error) : "";
 
-    async function check(id: string) {
-      try {
-        const result = await getMembershipStatus(id);
-        if (!active) return;
-        setError("");
-        setStatus(result);
-        if (result === "approved") {
-          openHousehold(id);
-          router.replace("/");
-        }
-      } catch (reason) {
-        if (active) setError(householdError(reason));
-      }
+  // Namnet går bara att läsa medan förfrågan finns kvar. React Query behåller
+  // det senast hämtade namnet även om en senare hämtning misslyckas.
+  const nameQuery = useQuery({
+    queryKey: ["household", householdId],
+    queryFn: () => getHousehold(householdId as string),
+    enabled: !!householdId,
+  });
+  const name = nameQuery.data?.name ?? "";
+
+  // När ägaren har svarat ska Mina hushåll visa det, och vid ja öppnas hushållet.
+  useEffect(() => {
+    if (!householdId || (status !== "approved" && status !== "denied")) return;
+    queryClient.invalidateQueries({ queryKey: ["households"] });
+    if (status === "approved") {
+      openHousehold(householdId);
+      router.replace("/");
     }
-
-    // Namnet går bara att läsa medan förfrågan finns kvar, så det hämtas en gång.
-    getHousehold(householdId)
-      .then((household) => { if (active) setName(household.name); })
-      .catch(() => {});
-    check(householdId);
-    const timer = setInterval(() => check(householdId), CHECK_INTERVAL_MS);
-    return () => {
-      active = false;
-      clearInterval(timer);
-    };
-  }, [householdId, openHousehold]));
+  }, [status, householdId, openHousehold, queryClient]);
 
   const householdName = name ? `”${name}”` : "hushållet";
 

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { requireUser, supabase } from "../lib/supabase";
 
 // Användarens namn (#27). Namnet sparas på kontot (user_metadata.name), så att
 // det finns redan innan man har ett hushåll. create_household och
@@ -20,16 +21,9 @@ export function validateName(value: string): string {
   return result.success ? "" : result.error.issues[0].message;
 }
 
-async function client() {
-  const { supabase } = await import("../lib/supabase");
-  const { data, error } = await supabase.auth.getUser();
-  if (error || !data.user) throw new Error("Du måste vara inloggad. Öppna Logga in och försök igen.");
-  return { supabase, user: data.user };
-}
-
 /** Namnet som är sparat på kontot, eller en tom sträng om inget är sparat än. */
 export async function getMyName(): Promise<string> {
-  const { user } = await client();
+  const user = await requireUser();
   const result = nameSchema.safeParse(user.user_metadata?.name);
   return result.success ? result.data : "";
 }
@@ -40,7 +34,7 @@ export async function saveMyName(value: string): Promise<string> {
   if (!result.success) throw new Error(result.error.issues[0].message);
   const name = result.data;
 
-  const { supabase, user } = await client();
+  const user = await requireUser();
   const { error } = await supabase.auth.updateUser({ data: { name } });
   if (error) throw new Error("Kunde inte spara namnet. Försök igen.");
 
