@@ -1,7 +1,6 @@
-import { router } from "expo-router";
+import { Redirect, router } from "expo-router";
 import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 import { ChoreCard } from "../components/ChoreCard";
-import { MockDataNotice } from "../components/MockDataNotice";
 import { PillButton } from "../components/ui";
 import { useHouseholdData } from "../data/HouseholdData";
 import { useTheme } from "../theme/ThemeProvider";
@@ -12,6 +11,9 @@ import { useTheme } from "../theme/ThemeProvider";
 export default function DailyView() {
   const { colors } = useTheme();
   const { chores, currentMember, householdId, loading, error, reload } = useHouseholdData();
+
+  // Utan öppnat hushåll finns inga sysslor att visa, då väljer man ett först (#75).
+  if (!householdId) return <Redirect href="/households" />;
 
   return (
     <View style={styles.container}>
@@ -24,7 +26,6 @@ export default function DailyView() {
         </Pressable>
       </View>
 
-      <MockDataNotice />
       {loading && <Text style={[styles.notice, { color: colors.textMuted }]}>Hämtar sysslor...</Text>}
       {error ? (
         <View style={styles.notice}>
@@ -32,7 +33,7 @@ export default function DailyView() {
           <PillButton label="Försök igen" onPress={reload} />
         </View>
       ) : null}
-      {householdId && !loading && !error && chores.length === 0 && (
+      {!loading && !error && chores.length === 0 && (
         <Text style={[styles.notice, { color: colors.textMuted }]}>
           Hushållet har inga sysslor ännu.
         </Text>
@@ -56,7 +57,7 @@ export default function DailyView() {
       />
 
       <View style={styles.footer}>
-        {/* Vänta tills hushållet är hämtat, annars syns testdatans ägare en kort stund. */}
+        {/* Vänta tills hushållet är hämtat, så att knappen bara syns för ägare. */}
         {!loading && currentMember?.isOwner && (
           <PillButton label="⊕  Lägg till" onPress={() => router.push("/chore/new")} />
         )}

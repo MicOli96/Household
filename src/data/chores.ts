@@ -1,4 +1,6 @@
+import { requireUser, supabase } from "../lib/supabase";
 import { avatars, AvatarEmoji } from "../theme/avatars";
+import { validateChore } from "../utils/choreValidation";
 import type { Assignment, ChoreGroup, ChoreRow, Completion, Member } from "./types";
 
 // Läser och sparar dagsvyns data i Supabase: medlemmar, sysslor,
@@ -13,13 +15,6 @@ export type HouseholdRows = {
   assignments: Assignment[];
   completions: Completion[];
 };
-
-async function client() {
-  const { supabase } = await import("../lib/supabase");
-  const { data, error } = await supabase.auth.getUser();
-  if (error || !data.user) throw new Error("Du måste vara inloggad. Öppna Logga in och försök igen.");
-  return { supabase, userId: data.user.id };
-}
 
 // avatars.id 1–8 är samma ordning som i src/theme/avatars.ts.
 const avatarEmojis = Object.keys(avatars) as AvatarEmoji[];
@@ -41,7 +36,7 @@ function localDate(value: string): Date {
 }
 
 export async function fetchHouseholdRows(householdId: string): Promise<HouseholdRows> {
-  const { supabase, userId } = await client();
+  const { id: userId } = await requireUser();
   const [members, chores, groups, assignments, completions] = await Promise.all([
     supabase.from("household_members").select("*")
       .eq("household_id", householdId).eq("is_approved", true).is("deleted_at", null)
@@ -109,7 +104,7 @@ export async function fetchHouseholdRows(householdId: string): Promise<Household
 
 /** Markerar en syssla som gjord av den inloggade (en rad i completions). */
 export async function insertCompletion(choreId: string): Promise<void> {
-  const { supabase, userId } = await client();
+  const { id: userId } = await requireUser();
   const { error } = await supabase.from("completions").insert({ chore_id: choreId, user_id: userId });
   if (error) throw new Error("Kunde inte markera sysslan som gjord. Försök igen.");
 }
@@ -120,7 +115,7 @@ export async function saveAssignees(
   current: Assignment[],
   userIds: string[],
 ): Promise<void> {
-  const { supabase } = await client();
+  await requireUser();
   const removed = current.filter((a) => a.choreId === choreId && !userIds.includes(a.userId));
   const added = userIds.filter((id) => !current.some((a) => a.choreId === choreId && a.userId === id));
 
@@ -147,9 +142,9 @@ export type NewChore = Pick<ChoreRow, "name" | "description" | "intervalDays" | 
  * name (max 100 tecken).
  */
 export async function insertChore(householdId: string, chore: NewChore): Promise<void> {
-  if (!chore.name.trim()) throw new Error("Kunde inte skapa sysslan utan titel.");
-  if (chore.description.length > 500) throw new Error("Kunde inte skapa sysslan, beskrivningen är för lång.");
-  const { supabase } = await client();
+  const invalid = Object.values(validateChore(chore))[0];
+  if (invalid) throw new Error(`Kunde inte skapa sysslan. ${invalid}`);
+  await requireUser();
   const { error } = await supabase.from("chores").insert({
     household_id: householdId,
     name: chore.name.trim(),
@@ -160,6 +155,22 @@ export async function insertChore(householdId: string, chore: NewChore): Promise
   if (error) throw new Error("Kunde inte skapa sysslan. Bara ägare kan lägga till sysslor.");
 }
 
+/** Sparar ändringar i en syssla (#34). Databasen släpper bara igenom ägare. */
+export async function updateChore(choreId: string, chore: NewChore): Promise<void> {
+  if (!chore.name.trim()) throw new Error("Kunde inte spara sysslan utan titel.");
+  if (chore.description.length > 500) throw new Error("Kunde inte spara sysslan, beskrivningen är för lång.");
+  await requireUser();
+  const { error } = await supabase.from("chores")
+    .update({
+      name: chore.name.trim(),
+      description: chore.description.trim(),
+      interval_days: chore.intervalDays,
+      weight: chore.weight,
+    })
+    .eq("id", choreId);
+  if (error) throw new Error("Kunde inte spara sysslan. Bara ägare kan redigera sysslor.");
+}
+
 /** Skapar en rotationsgrupp och flyttar in sysslorna i den. */
 export async function insertGroup(
   householdId: string,
@@ -167,7 +178,7 @@ export async function insertGroup(
   rotationDays: number,
   choreIds: string[],
 ): Promise<void> {
-  const { supabase } = await client();
+  await requireUser();
   const { data, error } = await supabase.from("chore_groups")
     .insert({ household_id: householdId, name, rotation_days: rotationDays })
     .select("id").single();

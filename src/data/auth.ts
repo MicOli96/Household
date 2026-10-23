@@ -1,4 +1,3 @@
-import type { Session } from "@supabase/supabase-js";
 import { supabase } from "../lib/supabase";
 import { normalizeUsername, usernameToEmail } from "../utils/auth";
 
@@ -19,20 +18,4 @@ export async function login(username: string, password: string) {
     email: usernameToEmail(username),
     password,
   });
-}
-
-export function getSession() {
-  return supabase.auth.getSession();
-}
-
-export function onSessionChange(callback: (session: Session | null) => void) {
-  const { data } = supabase.auth.onAuthStateChange((_event, session) => {
-    callback(session);
-  });
-
-  return () => data.subscription.unsubscribe();
-}
-
-export function logout() {
-  return supabase.auth.signOut();
 }

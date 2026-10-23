@@ -19,7 +19,9 @@ Skanna QR-koden med kameran (iPhone) eller i Expo Go (Android). Tryck `w` i term
 
 ### Backend (Supabase)
 
-Appen använder [Supabase](https://supabase.com) som backend: databas, inloggning och filer. Kopiera `.env.example` till `.env.local` och fyll i projektets adress och publishable key (Supabase → Project Settings → API Keys). `.env.local` checkas inte in.
+Appen använder [Supabase](https://supabase.com) som backend: databas, inloggning och filer. Projektets adress och publishable key finns i `.env`, som ligger i git, så det behövs ingen egen fil. Värdena är publika och byggs in i appen. Det är reglerna i databasen (RLS) som skyddar datan. Lägg **aldrig** in secret key (service_role) eller databaslösenordet i `.env`.
+
+Har du en gammal `.env.local` från tidigare, ta bort den. Den läses före `.env` och kan ge fel värden. Starta om med `npx expo start -c` efter att värdena har ändrats, eftersom de byggs in i appen.
 
 Databasen beskrivs av filerna i `supabase/migrations/`. Ändra inte tabeller direkt i Supabase, lägg till en ny migration i stället så att alla har samma databas. Så här kopplar du terminalen till projektet och skickar upp migrationerna:
 
@@ -48,7 +50,7 @@ npm run lint        # ESLint
 | `src/theme/` | Färger för ljust och mörkt läge, `useTheme()` och avatarerna. |
 | `src/utils/` | Uträkningar, t.ex. dagar sedan en syssla gjordes och om den är försenad. |
 | `src/lib/` | Supabase-klienten (`supabase.ts`). |
-| `src/data/` | Anrop till Supabase (`households.ts`, `chores.ts`), typer som följer tabellerna (`types.ts`) och `HouseholdData` med hooks som `useChores()`. Innan ett hushåll är öppnat visar dagsvyn testdata (`mockData.ts`). |
+| `src/data/` | Anrop till Supabase (`households.ts`, `chores.ts`), typer som följer tabellerna (`types.ts`) `HouseholdData` med hooks som `useChores()` och `AuthSession` med den inloggade användaren. Den som inte är inloggad kommer bara åt Logga in och Skapa konto, och utan öppnat hushåll skickar dagsvyn vidare till Mina hushåll. |
 | `supabase/migrations/` | Databasens tabeller, regler och funktioner (SQL). |
 | `docs/design/` | Designsystem, skärmar och Figma-skript. |
 | `assets/images/` | Logga, appikon och splash. |
@@ -61,8 +63,6 @@ import { useTheme } from "../theme/ThemeProvider";
 
 const { colors } = useTheme();
 ```
-
-Alla komponenter visas i appen under **Ändra → Visa komponenter**.
 
 ## Så jobbar vi
 
@@ -181,12 +181,11 @@ transaktion; den inloggade användaren blir godkänd ägare. Inga nya paket elle
 
 **Verifieringsstatus:** typkontroll, lint och isolerade kontroller av validering,
 RPC-parametrar, inloggningskrav och felhantering har körts. Flödet mot gruppens
-riktiga Supabase-projekt och telefonens layout återstår att verifiera med giltig
-`.env.local`. Kravet ska inte markeras som slutverifierat före detta test.
+riktiga Supabase-projekt och telefonens layout återstår att verifiera. Kravet ska
+inte markeras som slutverifierat före detta test.
 
 Manuell kontroll:
-1. Fyll i gruppens URL och publishable key i `.env.local` (ska inte committas),
-   starta om Expo och logga in med ett testkonto.
+1. Starta Expo med `npx expo start -c` och logga in med ett testkonto.
 2. Kontrollera att tomt namn, mellanslag och över 100 tecken inte kan sparas.
 3. Skapa ett hushåll. Kontrollera återkopplingen, att det visas som ett kort och
    att endast ett hushåll skapas vid snabba upprepade tryck.
