@@ -1,5 +1,6 @@
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -17,7 +18,6 @@ import {
   listHouseholds,
   saveMyProfile,
 } from "../data/households";
-import type { HouseholdSummary } from "../data/households";
 import {
   getMyName,
   NAME_MAX_LENGTH,
@@ -33,75 +33,74 @@ const avatarOptions = Object.keys(avatars) as AvatarEmoji[];
 export default function Profile() {
   const { colors } = useTheme();
   const { householdId, reload } = useHouseholdData();
-  const [name, setName] = useState("");
-  const [avatar, setAvatar] = useState<AvatarEmoji | null>(null);
-  const [taken, setTaken] = useState<AvatarEmoji[]>([]);
-  const [householdOptions, setHouseholdOptions] = useState<HouseholdSummary[]>([]);
-  const [avatarHouseholdId, setAvatarHouseholdId] = useState<string | null>(householdId);
-  const [loadedAvatarHouseholdId, setLoadedAvatarHouseholdId] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const queryClient = useQueryClient();
+  const [typedName, setTypedName] = useState<string | null>(null);
+  const [selectedHouseholdId, setSelectedHouseholdId] = useState<string | null>(null);
+  const [avatarSelection, setAvatarSelection] = useState<{
+    householdId: string;
+    avatar: AvatarEmoji;
+  } | null>(null);
   const [error, setError] = useState("");
   const submitting = useRef(false);
 
-  useEffect(() => {
-    let active = true;
+  const profileQuery = useQuery({ queryKey: ["profile"], queryFn: getMyName });
+  const name = typedName ?? profileQuery.data ?? "";
+  const householdsQuery = useQuery({
+    queryKey: ["households"],
+    queryFn: listHouseholds,
+    enabled: !householdId,
+  });
+  const householdOptions = householdsQuery.data ?? [];
+  const avatarHouseholdId = householdId
+    ?? householdOptions.find((household) => household.id === selectedHouseholdId)?.id
+    ?? householdOptions[0]?.id
+    ?? null;
+  const avatarQuery = useQuery({
+    queryKey: ["my-profile", avatarHouseholdId],
+    queryFn: () => {
+      if (!avatarHouseholdId) throw new Error("Välj ett hushåll.");
+      return getMyProfile(avatarHouseholdId);
+    },
+    enabled: avatarHouseholdId !== null,
+  });
+  const avatar = avatarSelection?.householdId === avatarHouseholdId
+    ? avatarSelection.avatar
+    : avatarQuery.data?.avatar ?? null;
+  const taken = avatarQuery.data?.taken ?? [];
+  const loading = profileQuery.isLoading || householdsQuery.isLoading || avatarQuery.isLoading;
+  const loadError = profileQuery.error
+    ? profileError(profileQuery.error)
+    : householdsQuery.error
+      ? householdError(householdsQuery.error)
+      : avatarQuery.error
+        ? householdError(avatarQuery.error)
+        : "";
 
-    async function loadProfile() {
-      setLoading(true);
-      setError("");
-      try {
-        const savedName = await getMyName();
-        if (!active) return;
-        setName(savedName);
-
-        if (householdId) {
-          setAvatarHouseholdId(householdId);
-        } else {
-          const availableHouseholds = await listHouseholds();
-          if (!active) return;
-          setHouseholdOptions(availableHouseholds);
-          setAvatarHouseholdId((current) =>
-            current && availableHouseholds.some((household) => household.id === current)
-              ? current
-              : availableHouseholds[0]?.id ?? null,
-          );
-        }
-      } catch (reason: unknown) {
-        if (active) {
-          setError(profileError(reason));
-        }
-      } finally {
-        if (active) setLoading(false);
-      }
-    }
-
-    void loadProfile();
-    return () => {
-      active = false;
-    };
-  }, [householdId]);
-
-  useEffect(() => {
-    if (!avatarHouseholdId) return;
-    let active = true;
-    getMyProfile(avatarHouseholdId)
-      .then((profile) => {
-        if (!active) return;
-        setAvatar(profile.avatar);
-        setTaken(profile.taken);
-        setLoadedAvatarHouseholdId(avatarHouseholdId);
-      })
-      .catch((reason: unknown) => {
-        if (active) {
-          setError(householdError(reason));
-          setLoadedAvatarHouseholdId(avatarHouseholdId);
-        }
-      });
-    return () => {
-      active = false;
-    };
-  }, [avatarHouseholdId]);
+  const saveNameMutation = useMutation({
+    mutationFn: saveMyName,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["profile"] });
+      queryClient.invalidateQueries({ queryKey: ["members"] });
+      queryClient.invalidateQueries({ queryKey: ["chores"] });
+      setTypedName(null);
+    },
+  });
+  const saveAvatarMutation = useMutation({
+    mutationFn: ({
+      householdId: targetHouseholdId,
+      name: profileName,
+      avatar: selectedAvatar,
+    }: {
+      householdId: string;
+      name: string;
+      avatar: AvatarEmoji;
+    }) => saveMyProfile(targetHouseholdId, profileName, selectedAvatar),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["my-profile", variables.householdId] });
+      if (variables.householdId === householdId) reload();
+    },
+  });
+  const saving = saveNameMutation.isPending || saveAvatarMutation.isPending;
 
   async function save() {
     if (submitting.current) return;
@@ -115,20 +114,29 @@ export default function Profile() {
       return;
     }
     submitting.current = true;
-    setSaving(true);
     setError("");
     try {
-      await saveMyName(name);
+      try {
+        await saveNameMutation.mutateAsync(name);
+      } catch (reason: unknown) {
+        setError(profileError(reason));
+        return;
+      }
       if (avatarHouseholdId && avatar) {
-        await saveMyProfile(avatarHouseholdId, name, avatar);
-        if (avatarHouseholdId === householdId) reload();
+        try {
+          await saveAvatarMutation.mutateAsync({
+            householdId: avatarHouseholdId,
+            name,
+            avatar,
+          });
+        } catch (reason: unknown) {
+          setError(householdError(reason));
+          return;
+        }
       }
       router.dismissTo("/households");
-    } catch (reason: unknown) {
-      setError(avatarHouseholdId ? householdError(reason) : profileError(reason));
     } finally {
       submitting.current = false;
-      setSaving(false);
     }
   }
 
@@ -152,7 +160,7 @@ export default function Profile() {
           <View style={styles.headerSpacer} />
         </View>
 
-        {loading || (avatarHouseholdId && avatarHouseholdId !== loadedAvatarHouseholdId) ? (
+        {loading ? (
           <View style={styles.loading}>
             <ActivityIndicator color={colors.primary} size="large" />
           </View>
@@ -162,7 +170,7 @@ export default function Profile() {
               accessibilityLabel="Ditt namn"
               value={name}
               onChangeText={(value) => {
-                setName(value);
+                setTypedName(value);
                 setError("");
               }}
               placeholder="Ditt namn"
@@ -174,7 +182,7 @@ export default function Profile() {
               onSubmitEditing={save}
               editable={!saving}
               style={styles.nameInput}
-              error={error || undefined}
+              error={error || loadError || undefined}
             />
 
             {!householdId && householdOptions.length > 1 ? (
@@ -189,8 +197,8 @@ export default function Profile() {
                       accessibilityRole="button"
                       accessibilityState={{ selected: avatarHouseholdId === household.id }}
                       onPress={() => {
-                        setAvatarHouseholdId(household.id);
-                        setAvatar(null);
+                        setSelectedHouseholdId(household.id);
+                        setAvatarSelection(null);
                         setError("");
                       }}
                       style={[
@@ -233,7 +241,9 @@ export default function Profile() {
                         accessibilityState={{ selected, disabled }}
                         onPress={() => {
                           if (!disabled) {
-                            setAvatar(emoji);
+                            if (avatarHouseholdId) {
+                              setAvatarSelection({ householdId: avatarHouseholdId, avatar: emoji });
+                            }
                             setError("");
                           }
                         }}
@@ -256,9 +266,9 @@ export default function Profile() {
               </View>
             ) : null}
 
-            {error ? (
+            {error || loadError ? (
               <Text accessibilityRole="alert" style={[styles.error, { color: colors.danger }]}>
-                {error}
+                {error || loadError}
               </Text>
             ) : null}
 

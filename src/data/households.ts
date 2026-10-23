@@ -158,17 +158,20 @@ export async function saveMyProfile(
   const { supabase, userId } = await client();
   const avatarId = avatarIdByEmoji[avatar];
 
-  const { data, error } = await supabase.from("household_members")
+  const saveQuery = supabase.from("household_members")
     .update({ name: name.trim(), avatar_id: avatarId })
     .eq("household_id", householdId)
     .eq("user_id", userId)
     .is("deleted_at", null)
     .select("user_id")
     .maybeSingle();
+  const saveResult = await saveQuery;
 
-  if (error || !data) {
-    if (!error) throw new Error("Kunde inte spara profilen. Kontrollera att du är medlem i hushållet.");
-    const message = error.message ?? "";
+  if (saveResult.error || !saveResult.data) {
+    if (!saveResult.error) {
+      throw new Error("Kunde inte spara profilen. Kontrollera att du är medlem i hushållet.");
+    }
+    const message = saveResult.error.message ?? "";
     if (/duplicate|unique/i.test(message)) {
       throw new Error("Den avataren är redan vald av någon annan i hushållet.");
     }
