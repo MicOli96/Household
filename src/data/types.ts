@@ -86,8 +86,10 @@ export type ChoreGroup = Timestamps & {
 export type Chore = ChoreRow & {
   /** När sysslan senast gjordes, eller null om den aldrig gjorts. */
   lastDoneAt: Date | null;
-  /** Avatarerna för dem som gjort sysslan idag. */
-  doneTodayBy: AvatarEmoji[];
+  /** Utförarna idag, inklusive personer som ännu inte valt avatar. */
+  completedTodayBy: Member[];
+  /** Utförarna den senaste kalenderdag sysslan gjordes. */
+  lastCompletedBy: Member[];
   /** Medlemmarna som har sysslan, manuellt eller via rotation. */
   assignees: Member[];
 };

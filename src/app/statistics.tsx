@@ -1,3 +1,4 @@
+import { CompletedBy } from "../components/CompletedBy";
 import { router, Stack } from "expo-router";
 import { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
@@ -86,6 +87,7 @@ export default function Statistics() {
             {perChore.map(({ chore, slices }) => (
               <View key={chore.id} style={styles.small}>
                 <PieChart slices={slices} size={80} />
+                <CompletedBy members={slices.map((slice) => slice.member)} size={16} />
                 <Text style={[styles.smallCaption, { color: colors.text }]} numberOfLines={1}>
                   {chore.name}
                 </Text>

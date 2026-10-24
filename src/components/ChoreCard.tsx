@@ -1,8 +1,9 @@
-import { StyleSheet, Text } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { Chore } from "../data/types";
 import { useTheme } from "../theme/ThemeProvider";
 import { daysSinceDone, isOverdue } from "../utils/chores";
 import { Badge, Card } from "./ui";
+import { CompletedBy } from "./CompletedBy";
 
 type Props = {
   chore: Chore;
@@ -22,8 +23,10 @@ export function ChoreCard({ chore, onPress }: Props) {
     <Card onPress={onPress}>
       <Text style={[styles.name, { color: colors.text }]}>{chore.name}</Text>
 
-      {chore.doneTodayBy.length > 0 ? (
-        <Text style={styles.avatars}>{chore.doneTodayBy.join("")}</Text>
+      {chore.completedTodayBy.length > 0 ? (
+        <View style={styles.avatars}>
+          <CompletedBy members={chore.completedTodayBy} />
+        </View>
       ) : (
         <Badge label={days ?? "–"} overdue={overdue} />
       )}
@@ -33,10 +36,13 @@ export function ChoreCard({ chore, onPress }: Props) {
 
 const styles = StyleSheet.create({
   name: {
+    flex: 1,
+    marginRight: 8,
     fontSize: 17,
     fontWeight: "600",
   },
   avatars: {
-    fontSize: 20,
+    maxWidth: "60%",
+    flexShrink: 1,
   },
 });

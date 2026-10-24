@@ -1,3 +1,4 @@
+import { CompletedBy } from "../../components/CompletedBy";
 import { router, Stack, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
@@ -100,8 +101,8 @@ export default function ChoreDetail() {
         <Text style={[styles.label, { color: colors.textMuted }]}>SENAST GJORD</Text>
         <Text style={[styles.lastDone, { color: isOverdue(chore) ? colors.danger : colors.text }]}>
           {lastDone}
-          {chore.doneTodayBy.length > 0 && ` av ${chore.doneTodayBy.join(" ")}`}
         </Text>
+        <CompletedBy members={chore.lastCompletedBy} size={32} />
       </View>
 
       {error ? <Text style={{ color: colors.danger }}>{error}</Text> : null}
