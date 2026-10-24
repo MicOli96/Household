@@ -1,6 +1,7 @@
 import { router, Stack, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ChoreMedia } from "../../components/ChoreMedia";
 import { Card, PillButton } from "../../components/ui";
 import { choreError } from "../../data/chores";
 import { useChore, useHouseholdData } from "../../data/HouseholdData";
@@ -46,7 +47,7 @@ export default function ChoreDetail() {
   }
 
   return (
-    <View style={styles.container}>
+    <ScrollView contentContainerStyle={styles.container}>
       <Stack.Screen
         options={{
           title: chore.name,
@@ -90,6 +91,8 @@ export default function ChoreDetail() {
         </Text>
       </View>
 
+      <ChoreMedia chore={chore} />
+
       {error ? <Text style={{ color: colors.danger }}>{error}</Text> : null}
       <PillButton
         label={done ? "✓  Markerad som gjord" : "✓  Markera som gjord"}
@@ -97,13 +100,13 @@ export default function ChoreDetail() {
         onPress={markAsDone}
         style={styles.doneButton}
       />
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    flexGrow: 1,
     padding: 16,
     gap: 20,
   },
