@@ -1,4 +1,5 @@
-import { Text, View } from "react-native";
+import { CompletedBy } from "./CompletedBy";
+import { View } from "react-native";
 import Svg, { Circle, Path } from "react-native-svg";
 import { avatars } from "../theme/avatars";
 import { Member } from "../data/types";
@@ -14,20 +15,28 @@ type Props = {
   size: number;
   /** Visa avatarerna i diagrammet, bara i det stora. */
   showAvatars?: boolean;
+  /** Avatarens cirkeldiameter; ytterbehållaren är 8 pixlar större. */
+  avatarSize?: number;
 };
 
 // Cirkeldiagram där varje medlem får sin avatars färg, som i skissen.
-export function PieChart({ slices, size, showAvatars = false }: Props) {
+export function PieChart({ slices, size, showAvatars = false, avatarSize = 24 }: Props) {
   const total = slices.reduce((sum, s) => sum + s.value, 0);
   const r = size / 2;
+  const avatarOffset = (avatarSize + 8) / 2;
   if (total === 0) return null;
 
   // En enda bit kan inte ritas som båge, då blir det en hel cirkel.
   if (slices.length === 1) {
     return (
-      <Svg width={size} height={size}>
-        <Circle cx={r} cy={r} r={r} fill={colorOf(slices[0].member)} />
-      </Svg>
+      <View style={{ width: size, height: size }}>
+        <Svg width={size} height={size}>
+          <Circle cx={r} cy={r} r={r} fill={colorOf(slices[0].member)} />
+        </Svg>
+        {showAvatars && <View style={{ position: "absolute", left: r - avatarOffset, top: r - avatarOffset }}>
+          <CompletedBy members={[slices[0].member]} size={avatarSize} />
+        </View>}
+      </View>
     );
   }
 
@@ -59,12 +68,10 @@ export function PieChart({ slices, size, showAvatars = false }: Props) {
       </Svg>
       {showAvatars &&
         parts.map((p) => (
-          <Text
-            key={p.slice.member.userId}
-            style={{ position: "absolute", left: p.label.x - 12, top: p.label.y - 14, fontSize: 20 }}
-          >
-            {p.slice.member.avatar}
-          </Text>
+          <View key={p.slice.member.userId}
+            style={{ position: "absolute", left: p.label.x - avatarOffset, top: p.label.y - avatarOffset }}>
+            <CompletedBy members={[p.slice.member]} size={avatarSize} />
+          </View>
         ))}
     </View>
   );
