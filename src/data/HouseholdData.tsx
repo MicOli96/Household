@@ -12,6 +12,7 @@ import {
   NewChore,
   saveAssignees,
 } from "./chores";
+import { ChoreMediaKind, LocalMediaFile, saveChoreMedia } from "./choreMedia";
 import { useAuthSession } from "./AuthSession";
 import { Chore, ChoreGroup, ChoreRow, Completion, Member } from "./types";
 
@@ -42,6 +43,12 @@ type HouseholdDataValue = {
   addGroup: (name: string, rotationDays: number, choreIds: string[]) => Promise<void>;
   addChore: (chore: NewChore) => Promise<void>;
   editChore: (choreId: string, chore: NewChore) => Promise<void>;
+  /** Lägger till eller byter sysslans bild eller ljud (#33). */
+  addChoreMedia: (
+    chore: Pick<ChoreRow, "id" | "householdId" | "imagePath" | "audioPath">,
+    kind: ChoreMediaKind,
+    file: LocalMediaFile,
+  ) => Promise<void>;
 };
 
 const HouseholdDataContext = createContext<HouseholdDataValue | null>(null);
@@ -182,6 +189,11 @@ export function HouseholdDataProvider({ children }: { children: ReactNode }) {
     async editChore(choreId, chore) {
       requireHousehold();
       await updateChore(choreId, chore);
+      reload();
+    },
+    async addChoreMedia(chore, kind, file) {
+      requireHousehold();
+      await saveChoreMedia(chore, kind, file);
       reload();
     },
   };
