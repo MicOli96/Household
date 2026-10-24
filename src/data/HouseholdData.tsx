@@ -129,13 +129,13 @@ export function HouseholdDataProvider({ children }: { children: ReactNode }) {
       const assignees = rotating
         ? [rotating]
         : members.filter((m) =>
-            liveAssignments.some((a) => a.choreId === row.id && a.userId === m.userId),
-          );
+          liveAssignments.some((a) => a.choreId === row.id && a.userId === m.userId),
+        );
 
       return {
         ...row,
         lastDoneAt: done[0]?.createdAt ?? null,
-        doneTodayBy: completedTodayBy.map((member) => member.avatar).filter((avatar) => avatar != null),
+
         completedTodayBy,
         lastCompletedBy,
         assignees,

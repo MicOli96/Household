@@ -23,8 +23,9 @@
 Avatarval och unika avatarer i hushållet hör till #29/#30. Denna implementation
 läser befintligt avatar_id. Vid framtida sparande av avatar behöver profilfunktionen
 invalidera React Query-nyckeln `["chores"]`, precis som dagens namnändring gör.
-`doneTodayBy` finns kvar som kompatibelt emoji-fält; vyerna använder de nya
-medlemslistorna `completedTodayBy` och `lastCompletedBy` för att bevara identiteten.
+Vyerna använder medlemslistorna `completedTodayBy` och `lastCompletedBy` för att
+bevara identiteten. Det oanvända emoji-fältet har tagits bort. Diagrammets
+`avatarSize` skickas till avatarerna och centreras med `(avatarSize + 8) / 2`.
 Inga nya paket, databasmigrationer eller ändringar i avatarväljaren ingår.
 
 ## Kontroller
