@@ -119,7 +119,7 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
               style={styles.link}
               onPress={() => router.replace(registering ? "/login" : "/register")}
             >
-              <Text style={{ color: colors.primary }}>
+              <Text style={{ color: colors.primaryText }}>
                 {registering ? "Logga in" : "Skapa konto"}
               </Text>
             </Pressable>

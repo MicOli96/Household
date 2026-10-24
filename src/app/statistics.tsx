@@ -37,7 +37,7 @@ export default function Statistics() {
               onPress={() => setShowHelp((value) => !value)}
               hitSlop={12}
               accessibilityLabel="Vad visar statistiken?"
-              style={[styles.helpButton, { borderColor: colors.text }]}
+              style={[styles.helpButton, { backgroundColor: colors.card }]}
             >
               <Text style={[styles.helpText, { color: colors.text }]}>?</Text>
             </Pressable>
@@ -107,7 +107,6 @@ const styles = StyleSheet.create({
     width: 26,
     height: 26,
     borderRadius: 13,
-    borderWidth: 1.5,
     alignItems: "center",
     justifyContent: "center",
   },
