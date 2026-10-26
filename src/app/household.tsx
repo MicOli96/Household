@@ -21,7 +21,14 @@ import {
   renameHousehold,
   setMemberOwner,
 } from "../data/households";
-import { addPause, getPauses, isPausedToday, PauseSummary, stopPause } from "../data/pauses";
+import {
+  addPause,
+  getPauses,
+  isPausedToday,
+  pauseError,
+  PauseSummary,
+  stopPause,
+} from "../data/pauses";
 import { useRefreshOnFocus } from "../hooks/useRefreshOnFocus";
 import { useTheme } from "../theme/ThemeProvider";
 
@@ -110,6 +117,9 @@ export default function Household() {
   const closeMenu = () => setMenuMember(null);
   // Fel från valen i menyn, visas under medlemslistan.
   const [memberError, setMemberError] = useState("");
+  // Utan pauserna kan "Pausad" saknas i listan, så felet visas på samma ställe.
+  const memberMessage =
+    memberError || (pausesQuery.error ? pauseError(pausesQuery.error) : "");
 
   // Gör medlemmen till ägare, eller tar bort ägarrollen om man råkat ge den (#19).
   const ownerMutation = useMutation({
@@ -211,9 +221,9 @@ export default function Household() {
           canManage={isOwner}
           onOpenMenu={setMenuMember}
         />
-        {memberError ? (
+        {memberMessage ? (
           <Text accessibilityRole="alert" style={{ color: colors.danger }}>
-            {memberError}
+            {memberMessage}
           </Text>
         ) : null}
 
