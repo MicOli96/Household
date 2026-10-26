@@ -30,9 +30,10 @@ export async function getMyName(): Promise<string> {
 
 /** Sparar namnet och returnerar det som det sparades (utan mellanslag runt). */
 export async function saveMyName(value: string): Promise<string> {
-  const result = nameSchema.safeParse(value);
-  if (!result.success) throw new Error(result.error.issues[0].message);
-  const name = result.data;
+  const validation = validateName(value);
+  if (validation) throw new Error(validation);
+  // Samma som nameSchema gör innan namnet kontrolleras.
+  const name = value.trim();
 
   const user = await requireUser();
   const { error } = await supabase.auth.updateUser({ data: { name } });
