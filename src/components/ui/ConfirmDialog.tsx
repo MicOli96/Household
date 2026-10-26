@@ -9,7 +9,7 @@ type Props = {
   message: string;
   /** Texten på knappen som gör det farliga, t.ex. "Ta bort ändå". */
   confirmLabel: string;
-  onConfirm: () => void;
+  onConfirm?: () => void;
   onCancel: () => void;
   /** Ett mildare val, t.ex. "Arkivera i stället" när man tar bort en syssla. */
   alternative?: { label: string; onPress: () => void };
@@ -34,7 +34,7 @@ export function ConfirmDialog({
         {alternative && (
           <PillButton label={alternative.label} variant="primary" onPress={alternative.onPress} />
         )}
-        <PillButton label={confirmLabel} variant="danger" onPress={onConfirm} />
+        <PillButton label={confirmLabel} variant="danger" onPress={onConfirm} disabled={!onConfirm} />
         <PillButton label="Avbryt" onPress={onCancel} />
       </View>
     </AppModal>
