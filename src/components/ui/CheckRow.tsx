@@ -21,12 +21,12 @@ export function CheckRow({ label, checked, onPress, left }: Props) {
       accessibilityState={{ checked }}
       style={[
         styles.row,
-        { backgroundColor: colors.card, borderColor: checked ? colors.primary : colors.border },
+        { backgroundColor: colors.card },
       ]}
     >
       {left}
       <Text style={[styles.label, { color: colors.text }]}>{label}</Text>
-      <Text style={[styles.check, { color: colors.primary }]}>{checked ? "✓" : ""}</Text>
+      <Text style={[styles.check, { color: colors.primaryText }]}>{checked ? "✓" : ""}</Text>
     </Pressable>
   );
 }
@@ -38,7 +38,6 @@ const styles = StyleSheet.create({
     gap: 12,
     padding: 10,
     borderRadius: 10,
-    borderWidth: 2,
   },
   label: {
     flex: 1,

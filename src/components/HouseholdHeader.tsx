@@ -1,6 +1,6 @@
 import { Pressable, Share, StyleSheet, Text, View } from "react-native";
 import { useTheme } from "../theme/ThemeProvider";
-import { Card } from "./ui";
+import { Card, Icon } from "./ui";
 
 type TitleProps = {
   name: string;
@@ -20,8 +20,8 @@ export function HouseholdTitle({ name, isOwner, onEdit }: TitleProps) {
         {name}
       </Text>
       {isOwner && (
-        <Pressable onPress={onEdit} hitSlop={8} accessibilityLabel="Byt namn">
-          <Text style={[styles.pen, { color: colors.primary }]}>✎</Text>
+        <Pressable onPress={onEdit} hitSlop={8} accessibilityRole="button" accessibilityLabel="Byt namn">
+          <Icon name="edit" color={colors.primaryText} size={22} />
         </Pressable>
       )}
     </View>
@@ -53,7 +53,7 @@ export function HouseholdHeader({ code }: Props) {
         <Text style={[styles.code, { color: colors.text }]}>{code}</Text>
       </View>
       <Pressable onPress={shareCode} hitSlop={8}>
-        <Text style={[styles.action, { color: colors.primary }]}>Dela</Text>
+        <Text style={[styles.action, { color: colors.primaryText }]}>Dela</Text>
       </Pressable>
     </Card>
   );
@@ -69,9 +69,6 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: "600",
     flexShrink: 1,
-  },
-  pen: {
-    fontSize: 20,
   },
   info: {
     gap: 4,

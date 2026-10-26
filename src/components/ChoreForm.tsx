@@ -33,9 +33,11 @@ const ICON_SIZE = 28;
 // Ikonen i Spara och Stäng: ett + eller × i en ring, som i Figma. Ritas själv
 // i stället för tecknen ⊕ och ⊗, som blir för små och för täta i typsnittet.
 function CircleIcon({ symbol, color }: { symbol: "+" | "×"; color: string }) {
+  const { colors } = useTheme();
+  // Fylld cirkel i stället för en ring (#77).
   return (
-    <View style={[styles.icon, { borderColor: color }]}>
-      <Text style={[styles.iconSymbol, { color }]}>{symbol}</Text>
+    <View style={[styles.icon, { backgroundColor: color }]}>
+      <Text style={[styles.iconSymbol, { color: colors.card }]}>{symbol}</Text>
     </View>
   );
 }
@@ -225,7 +227,6 @@ const styles = StyleSheet.create({
     width: ICON_SIZE,
     height: ICON_SIZE,
     borderRadius: ICON_SIZE / 2,
-    borderWidth: 2,
     alignItems: "center",
     justifyContent: "center",
   },

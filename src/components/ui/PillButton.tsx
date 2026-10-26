@@ -8,9 +8,9 @@ type Props = {
   label: string;
   onPress?: () => void;
   /**
-   * default: vit knapp ("Lägg till", "Ändra").
+   * default: vit knapp ("Lägg till").
    * primary: orange knapp för huvudvalet ("Spara", "Logga in").
-   * danger: röd ram för farliga val ("Ta bort ändå").
+   * danger: röd knapp för farliga val ("Ta bort ändå").
    */
   variant?: Variant;
   style?: StyleProp<ViewStyle>;
@@ -22,10 +22,11 @@ type Props = {
 export function PillButton({ label, onPress, variant = "default", style, disabled = false }: Props) {
   const { colors } = useTheme();
 
-  const background = variant === "primary" ? colors.primary : colors.card;
+  // Knapparna är fyllda utan ram (#77).
+  const background =
+    variant === "primary" ? colors.primary : variant === "danger" ? colors.danger : colors.card;
   const textColor =
-    variant === "primary" ? "#FFFFFF" : variant === "danger" ? colors.danger : colors.text;
-  const borderColor = variant === "danger" ? colors.danger : "transparent";
+    variant === "primary" ? colors.onPrimary : variant === "danger" ? colors.onDanger : colors.text;
 
   return (
     <Pressable
@@ -33,7 +34,7 @@ export function PillButton({ label, onPress, variant = "default", style, disable
       disabled={disabled}
       style={({ pressed }) => [
         styles.button,
-        { backgroundColor: background, borderColor },
+        { backgroundColor: background },
         pressed && styles.pressed,
         disabled && styles.disabled,
         style,
@@ -49,7 +50,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 999,
-    borderWidth: 1,
     alignItems: "center",
     ...shadow,
   },

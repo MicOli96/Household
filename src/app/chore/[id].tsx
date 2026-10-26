@@ -1,8 +1,9 @@
+import { CompletedBy } from "../../components/CompletedBy";
 import { router, Stack, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { ChoreMedia } from "../../components/ChoreMedia";
-import { Card, PillButton } from "../../components/ui";
+import { Card, Icon, PillButton } from "../../components/ui";
 import { choreError } from "../../data/chores";
 import { useChore, useHouseholdData } from "../../data/HouseholdData";
 import { useTheme } from "../../theme/ThemeProvider";
@@ -54,8 +55,14 @@ export default function ChoreDetail() {
           // Bara ägare kan redigera sysslan (#34).
           headerRight: currentMember?.isOwner
             ? () => (
-                <Pressable onPress={() => router.push(`/chore/${chore.id}/edit`)} hitSlop={12}>
-                  <Text style={{ color: colors.primary, fontSize: 16 }}>Redigera</Text>
+                <Pressable
+                  onPress={() => router.push(`/chore/${chore.id}/edit`)}
+                  hitSlop={12}
+                  accessibilityRole="button"
+                  accessibilityLabel="Redigera sysslan"
+                  style={styles.headerButton}
+                >
+                  <Icon name="edit" color={colors.primaryText} />
                 </Pressable>
               )
             : undefined,
@@ -83,12 +90,20 @@ export default function ChoreDetail() {
         </View>
       </Card>
 
+      {/* Tilldelningen flyttades hit från dagsvyn och syns bara för ägare (#77). */}
+      {currentMember?.isOwner && (
+        <PillButton
+          label="Tilldela syssla"
+          onPress={() => router.push(`/chore/${chore.id}/assign`)}
+        />
+      )}
+
       <View style={styles.section}>
         <Text style={[styles.label, { color: colors.textMuted }]}>SENAST GJORD</Text>
         <Text style={[styles.lastDone, { color: isOverdue(chore) ? colors.danger : colors.text }]}>
           {lastDone}
-          {chore.doneTodayBy.length > 0 && ` av ${chore.doneTodayBy.join(" ")}`}
         </Text>
+        <CompletedBy members={chore.lastCompletedBy} size={32} />
       </View>
 
       <ChoreMedia chore={chore} />
@@ -105,6 +120,9 @@ export default function ChoreDetail() {
 }
 
 const styles = StyleSheet.create({
+  headerButton: {
+    paddingHorizontal: 8,
+  },
   container: {
     flexGrow: 1,
     padding: 16,

@@ -82,11 +82,10 @@ export default function Groups() {
                     styles.chip,
                     {
                       backgroundColor: picked ? colors.primary : colors.card,
-                      borderColor: colors.border,
                     },
                   ]}
                 >
-                  <Text style={{ color: picked ? "#FFFFFF" : colors.text }}>{chore.name}</Text>
+                  <Text style={{ color: picked ? colors.onPrimary : colors.text }}>{chore.name}</Text>
                 </Pressable>
               );
             })}
@@ -132,6 +131,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 999,
-    borderWidth: 1,
   },
 });
