@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createContext, ReactNode, useCallback, useContext, useMemo, useState } from "react";
 import { currentRotationMember } from "../utils/rotation";
 import {
+  archiveChore,
   fetchHouseholdRows,
   HouseholdRows,
   insertChore,
@@ -43,6 +44,7 @@ type HouseholdDataValue = {
   addGroup: (name: string, rotationDays: number, choreIds: string[]) => Promise<void>;
   addChore: (chore: NewChore) => Promise<void>;
   editChore: (choreId: string, chore: NewChore) => Promise<void>;
+  archiveChore: (choreId: string) => Promise<void>;
 };
 
 const HouseholdDataContext = createContext<HouseholdDataValue | null>(null);
@@ -186,6 +188,11 @@ export function HouseholdDataProvider({ children }: { children: ReactNode }) {
     async editChore(choreId, chore) {
       requireHousehold();
       await updateChore(choreId, chore);
+      reload();
+    },
+    async archiveChore(choreId) {
+      requireHousehold();
+      await archiveChore(choreId);
       reload();
     },
   };

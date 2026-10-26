@@ -173,6 +173,24 @@ export async function updateChore(choreId: string, chore: NewChore): Promise<voi
   if (error) throw new Error("Kunde inte spara sysslan. Bara ägare kan redigera sysslor.");
 }
 
+export async function archiveChore(choreId: string): Promise<void> {
+  await requireUser();
+
+  const { data, error } = await supabase
+    .from("chores")
+    .update({ is_archived: true })
+    .eq("id", choreId)
+    .is("deleted_at", null)
+    .select("id")
+    .maybeSingle();
+
+  if (error || !data) {
+    throw new Error(
+      "Kunde inte arkivera sysslan. Kontrollera att du är ägare och försök igen. "
+    );
+  }
+}
+
 /** Skapar en rotationsgrupp och flyttar in sysslorna i den. */
 export async function insertGroup(
   householdId: string,
