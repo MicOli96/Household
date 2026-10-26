@@ -1,3 +1,6 @@
+import { File } from "expo-file-system";
+import { Platform } from "react-native";
+
 import { requireUser, supabase } from "../lib/supabase";
 import type { ChoreRow } from "./types";
 
@@ -40,6 +43,16 @@ function mimeTypeFor(kind: ChoreMediaKind, file: LocalMediaFile): string {
 }
 
 /**
+ * fetch(uri).arrayBuffer() läser inte lokala filer (file://) på telefonen, så
+ * filen blev bara 14 byte i storage. Där läses den med expo-file-system.
+ * På webben är uri en blob:-länk som fetch läser rätt, och File finns inte där.
+ */
+async function readLocalFile(uri: string): Promise<ArrayBuffer> {
+  if (Platform.OS === "web") return fetch(uri).then((response) => response.arrayBuffer());
+  return new File(uri).arrayBuffer();
+}
+
+/**
  * Laddar upp en bild eller ett ljud och kopplar filen till sysslan. Filnamnet
  * får en tidsstämpel så att en ny fil inte visas med en gammal sparad länk.
  * Den tidigare filen tas bort efteråt.
@@ -56,7 +69,7 @@ export async function saveChoreMedia(
 
   let body: ArrayBuffer;
   try {
-    body = await fetch(file.uri).then((response) => response.arrayBuffer());
+    body = await readLocalFile(file.uri);
   } catch {
     throw new Error("Kunde inte läsa filen på telefonen. Försök igen.");
   }
