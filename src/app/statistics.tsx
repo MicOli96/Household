@@ -1,23 +1,39 @@
+import { useQuery } from "@tanstack/react-query";
 import { router, Stack } from "expo-router";
 import { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { CompletedBy } from "../components/CompletedBy";
 import { PieChart } from "../components/PieChart";
 import { Card } from "../components/ui";
 import { useHouseholdData } from "../data/HouseholdData";
+import { getPauses, pauseError } from "../data/pauses";
 import { useTheme } from "../theme/ThemeProvider";
-import { distribution, periodsWithStatistics } from "../utils/statistics";
+import { distribution, periodsWithStatistics, withoutPausedDays } from "../utils/statistics";
 
 // Statistik (#39–#44): ett stort diagram med den viktade fördelningen och ett
 // litet diagram per syssla. Pilarna går mellan nuvarande vecka, förra veckan
 // och förra månaden. Perioder utan gjorda sysslor visas inte (#44).
 export default function Statistics() {
   const { colors } = useTheme();
-  const { completions, allChores, members } = useHouseholdData();
+  const { householdId, completions: allCompletions, allChores, members } = useHouseholdData();
+  // Nyckeln börjar som pausnyckeln i hushållsvyn, så den hämtas om när någon pausas.
+  const pausesQuery = useQuery({
+    queryKey: ["pauses", householdId, "all"],
+    queryFn: () => getPauses(householdId as string, true),
+    enabled: !!householdId,
+  });
+  // Utan pauserna skulle pausade sysslor räknas, så diagrammen väntar på dem.
+  const pausesMessage = pausesQuery.isLoading
+    ? "Hämtar statistiken..."
+    : pausesQuery.error
+      ? pauseError(pausesQuery.error)
+      : "";
+  const completions = withoutPausedDays(allCompletions, pausesQuery.data ?? []);
   const periods = periodsWithStatistics(completions);
   const [index, setIndex] = useState(0);
   const period = periods[Math.min(index, periods.length - 1)];
   const { total, perChore } = period
-    ? distribution(completions, allChores, members, period)
+    ? distribution(completions, allChores, members, period, pausesQuery.data ?? [])
     : { total: [], perChore: [] };
   const hasNext = index < periods.length - 1;
   // ? i rubriken visar vad diagrammen räknar, föreslaget av Hannes.
@@ -37,7 +53,7 @@ export default function Statistics() {
               onPress={() => setShowHelp((value) => !value)}
               hitSlop={12}
               accessibilityLabel="Vad visar statistiken?"
-              style={[styles.helpButton, { borderColor: colors.text }]}
+              style={[styles.helpButton, { backgroundColor: colors.card }]}
             >
               <Text style={[styles.helpText, { color: colors.text }]}>?</Text>
             </Pressable>
@@ -61,17 +77,27 @@ export default function Statistics() {
             <Text style={[styles.helpTitle, { color: colors.text }]}>Totalt</Text>
             <Text style={{ color: colors.text }}>
               Poäng för allt som gjorts under perioden. Varje syssla ger lika många poäng som
-              sitt värde, så en tung syssla räknas mer än en lätt.
+              sitt värde, så en tung syssla räknas mer än en lätt. Det som görs medan man är
+              pausad räknas inte. Den som varit pausad en del av perioden räknas upp efter hur
+              många dagar hen var med, så att alla jämförs rättvist.
             </Text>
             <Text style={[styles.helpTitle, { color: colors.text }]}>De små diagrammen</Text>
             <Text style={{ color: colors.text }}>
-              Hur många gånger var och en har gjort sysslan, utan värde.
+              Hur många gånger var och en har gjort sysslan, utan värde. Pauser räknas på samma
+              sätt som i Totalt.
             </Text>
           </View>
         </Card>
       )}
 
-      {total.length === 0 ? (
+      {pausesMessage ? (
+        <Text
+          accessibilityRole={pausesQuery.error ? "alert" : undefined}
+          style={[styles.empty, { color: pausesQuery.error ? colors.danger : colors.textMuted }]}
+        >
+          {pausesMessage}
+        </Text>
+      ) : total.length === 0 ? (
         <Text style={[styles.empty, { color: colors.textMuted }]}>
           Ingen statistik än. Den visas när någon har gjort en syssla.
         </Text>
@@ -86,6 +112,7 @@ export default function Statistics() {
             {perChore.map(({ chore, slices }) => (
               <View key={chore.id} style={styles.small}>
                 <PieChart slices={slices} size={80} />
+                <CompletedBy members={slices.map((slice) => slice.member)} size={16} />
                 <Text style={[styles.smallCaption, { color: colors.text }]} numberOfLines={1}>
                   {chore.name}
                 </Text>
@@ -107,7 +134,6 @@ const styles = StyleSheet.create({
     width: 26,
     height: 26,
     borderRadius: 13,
-    borderWidth: 1.5,
     alignItems: "center",
     justifyContent: "center",
   },

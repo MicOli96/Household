@@ -1,3 +1,4 @@
+import { isPausedOn, PauseSummary, toDateString } from "../data/pauses";
 import { ChoreRow, Completion, Member } from "../data/types";
 
 export type Period = {
@@ -40,6 +41,30 @@ export function periodsWithStatistics(completions: Completion[], today: Date = n
   );
 }
 
+/** Sysslor som gjordes en dag då medlemmen var pausad räknas inte (#20). */
+export function withoutPausedDays(completions: Completion[], pauses: PauseSummary[]): Completion[] {
+  return completions.filter((completion) => {
+    const day = toDateString(completion.createdAt);
+    return !pauses.some((pause) => pause.userId === completion.userId && isPausedOn(pause, day));
+  });
+}
+
+export function daysIn(period: Period): string[] {
+  const days: string[] = [];
+  const day = new Date(period.start);
+  while (day < period.end) {
+    days.push(toDateString(day));
+    day.setDate(day.getDate() + 1);
+  }
+  return days;
+}
+
+export function activeDays(userId: string, period: Period, pauses: PauseSummary[]): number {
+  return daysIn(period).filter(
+    (day) => !pauses.some((pause) => pause.userId === userId && isPausedOn(pause, day)),
+  ).length;
+}
+
 export type Slice = { member: Member; value: number };
 
 function inPeriod(completion: Completion, period: Period) {
@@ -61,9 +86,20 @@ export function distribution(
   chores: ChoreRow[],
   members: Member[],
   period: Period,
+  pauses: PauseSummary[],
 ) {
   const inside = completions.filter((c) => inPeriod(c, period));
   const weightOf = new Map(chores.map((c) => [c.id, c.weight]));
+  const periodDays = daysIn(period).length;
+
+  function normalized(totals: Map<string, number>): Map<string, number> {
+    return new Map(
+      [...totals].map(([userId, value]) => {
+        const active = activeDays(userId, period, pauses);
+        return [userId, active === 0 ? 0 : (value * periodDays) / active];
+      }),
+    );
+  }
 
   const total = new Map<string, number>();
   for (const c of inside) {
@@ -76,9 +112,9 @@ export function distribution(
       for (const c of inside.filter((c) => c.choreId === chore.id)) {
         counts.set(c.userId, (counts.get(c.userId) ?? 0) + 1);
       }
-      return { chore, slices: slices(counts, members) };
+      return { chore, slices: slices(normalized(counts), members) };
     })
     .filter((c) => c.slices.length > 0);
 
-  return { total: slices(total, members), perChore };
+  return { total: slices(normalized(total), members), perChore };
 }

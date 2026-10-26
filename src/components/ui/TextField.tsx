@@ -2,7 +2,7 @@ import { StyleSheet, Text, TextInput, TextInputProps, View } from "react-native"
 import { useTheme } from "../../theme/ThemeProvider";
 
 type Props = TextInputProps & {
-  /** Felmeddelande under fältet, t.ex. "Titel måste fyllas i". Gör ramen röd. */
+  /** Felmeddelande under fältet, t.ex. "Titel måste fyllas i". Ger fältet en röd ram. */
   error?: string;
 };
 
@@ -22,7 +22,8 @@ export function TextField({ style, multiline, error, ...props }: Props) {
           {
             backgroundColor: colors.card,
             color: colors.text,
-            borderColor: error ? colors.danger : colors.border,
+            // Ramen syns bara vid fel, annars är fältet ett fyllt kort (#77).
+            borderColor: error ? colors.danger : "transparent",
           },
           style,
         ]}
