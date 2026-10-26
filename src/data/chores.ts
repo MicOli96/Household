@@ -173,6 +173,22 @@ export async function updateChore(choreId: string, chore: NewChore): Promise<voi
   if (error) throw new Error("Kunde inte spara sysslan. Bara ägare kan redigera sysslor.");
 }
 
+export async function deleteChore(choreId: string): Promise<void> {
+  await requireUser();
+
+  const { data, error } = await supabase.rpc("delete_chore", {
+    p_chore_id: choreId,
+  });
+
+  if (error) {
+    throw new Error("Kunde inte ta bort sysslan. Kontrollera att du är ägare och försök igen.");
+  }
+
+  if (data !== choreId) {
+    throw new Error("Kunde inte bekräfta borttagningen. Uppdatera listan innan du försöker igen.");
+  }
+}
+
 /** Skapar en rotationsgrupp och flyttar in sysslorna i den. */
 export async function insertGroup(
   householdId: string,

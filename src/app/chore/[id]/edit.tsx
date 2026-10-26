@@ -1,18 +1,39 @@
-import { router, useLocalSearchParams } from "expo-router";
-import { StyleSheet, Text, View } from "react-native";
+import { router, useLocalSearchParams, Stack } from "expo-router";
+import { StyleSheet, Text, View, Pressable } from "react-native";
 import { ChoreForm } from "../../../components/ChoreForm";
-import { PillButton } from "../../../components/ui";
+import { PillButton, ConfirmDialog } from "../../../components/ui";
 import { choreError } from "../../../data/chores";
 import { useChore, useHouseholdData } from "../../../data/HouseholdData";
 import { useTheme } from "../../../theme/ThemeProvider";
+import { useState } from "react";
 
 // Redigera en syssla (#34). Samma formulär som "Skapa en ny syssla", ifyllt.
-// Ta bort och arkivera (#35, #37) läggs till senare.
 export default function EditChore() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { colors } = useTheme();
-  const { editChore, currentMember, loading } = useHouseholdData();
+  const { editChore, currentMember, loading, removeChore } = useHouseholdData();
   const chore = useChore(id);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  async function handleDelete() {
+    if (isDeleting) return;
+
+    setIsDeleting(true);
+    setDeleteError("");
+
+    try {
+      await removeChore(id);
+      setShowDeleteDialog(false);
+      router.dismissTo("/");
+    } catch (error) {
+      setDeleteError(choreError(error));
+      setShowDeleteDialog(false);
+    } finally {
+      setIsDeleting(false);
+    }
+  }
 
   if (loading) {
     return (
@@ -42,23 +63,46 @@ export default function EditChore() {
   }
 
   return (
-    <ChoreForm
-      initial={{
-        name: chore.name,
-        description: chore.description,
-        intervalDays: chore.intervalDays,
-        weight: chore.weight,
-      }}
-      onSave={async (values) => {
-        try {
-          await editChore(chore.id, values);
-        } catch (reason) {
-          throw new Error(choreError(reason));
-        }
-        router.back();
-      }}
-      onClose={() => router.back()}
-    />
+    <>
+      <Stack.Screen
+        options={{
+          headerRight: () => (
+            <Pressable onPress={() => setShowDeleteDialog(true)} hitSlop={12}>
+              <Text style={{ color: colors.danger, fontSize: 16 }}>Ta bort syssla</Text>
+            </Pressable>
+          ),
+        }}
+      />
+      <ChoreForm
+        initial={{
+          name: chore.name,
+          description: chore.description,
+          intervalDays: chore.intervalDays,
+          weight: chore.weight,
+        }}
+        onSave={async (values) => {
+          try {
+            await editChore(chore.id, values);
+          } catch (reason) {
+            throw new Error(choreError(reason));
+          }
+          router.back();
+        }}
+        onClose={() => router.back()}
+      />
+      {deleteError && (
+        <Text style={{ color: colors.danger, padding: 24 }}>{deleteError}</Text>
+      )}
+      <ConfirmDialog
+        visible={showDeleteDialog}
+        title={`Ta bort ${chore.name}?`}
+        message="Sysslan och all tillhörande statistik kommer att tas bort."
+        confirmLabel={isDeleting ? "Tar bort…" : "Ta bort ändå"}
+        onConfirm={handleDelete}
+        onCancel={() => setShowDeleteDialog(false)}
+        isSubmitting={isDeleting}
+      />
+    </>
   );
 }
 
