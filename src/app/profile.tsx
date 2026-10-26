@@ -23,7 +23,6 @@ import {
   NAME_MAX_LENGTH,
   profileError,
   saveMyName,
-  validateName,
 } from "../data/profile";
 import { useTheme } from "../theme/ThemeProvider";
 import { avatars, type AvatarEmoji } from "../theme/avatars";
@@ -40,7 +39,6 @@ export default function Profile() {
     householdId: string;
     avatar: AvatarEmoji;
   } | null>(null);
-  const [error, setError] = useState("");
   const submitting = useRef(false);
 
   const profileQuery = useQuery({ queryKey: ["profile"], queryFn: getMyName });
@@ -104,21 +102,21 @@ export default function Profile() {
     },
   });
   const saving = saveNameMutation.isPending || saveAvatarMutation.isPending;
+  const saveError = saveNameMutation.error
+    ? profileError(saveNameMutation.error)
+    : saveAvatarMutation.error
+      ? householdError(saveAvatarMutation.error)
+      : "";
 
   async function save() {
     if (submitting.current) return;
 
-    const validation = validateName(name);
-    setError(validation);
-    if (validation) return;
-
     submitting.current = true;
-    setError("");
     try {
       try {
         await saveNameMutation.mutateAsync(name);
-      } catch (reason: unknown) {
-        setError(profileError(reason));
+      } catch {
+        // React Query retains the mutation error for display below.
         return;
       }
       if (avatarHouseholdId && avatar) {
@@ -128,14 +126,12 @@ export default function Profile() {
             name,
             avatar,
           });
-        } catch (reason: unknown) {
-          setError(householdError(reason));
+        } catch {
+          // React Query retains the mutation error for display below.
           return;
         }
       }
       router.dismissTo("/households");
-    } catch (reason: unknown) {
-      setError(profileError(reason));
     } finally {
       submitting.current = false;
     }
@@ -158,7 +154,8 @@ export default function Profile() {
               value={name}
               onChangeText={(value) => {
                 setTypedName(value);
-                setError("");
+                saveNameMutation.reset();
+                saveAvatarMutation.reset();
               }}
               placeholder="Ditt namn"
               autoCapitalize="words"
@@ -169,7 +166,7 @@ export default function Profile() {
               onSubmitEditing={save}
               editable={!saving}
               style={styles.nameInput}
-              error={error || loadError || undefined}
+              error={saveError || loadError || undefined}
             />
 
             {!householdId && householdOptions.length > 1 ? (
@@ -186,7 +183,7 @@ export default function Profile() {
                       onPress={() => {
                         setSelectedHouseholdId(household.id);
                         setAvatarSelection(null);
-                        setError("");
+                        saveAvatarMutation.reset();
                       }}
                       style={[
                         styles.householdOption,
@@ -231,7 +228,7 @@ export default function Profile() {
                             if (avatarHouseholdId) {
                               setAvatarSelection({ householdId: avatarHouseholdId, avatar: emoji });
                             }
-                            setError("");
+                            saveAvatarMutation.reset();
                           }
                         }}
                         disabled={disabled || saving}
@@ -253,9 +250,9 @@ export default function Profile() {
               </View>
             ) : null}
 
-            {error || loadError ? (
+            {saveError || loadError ? (
               <Text accessibilityRole="alert" style={[styles.error, { color: colors.danger }]}>
-                {error || loadError}
+                {saveError || loadError}
               </Text>
             ) : null}
 

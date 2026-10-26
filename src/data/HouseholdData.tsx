@@ -1,3 +1,4 @@
+import { completionMembers, sameCompletionDay } from "../utils/completionMembers";
 import "@/lib/localStorage";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createContext, ReactNode, useCallback, useContext, useMemo, useState } from "react";
@@ -51,10 +52,6 @@ function active<T extends { deletedAt: Date | null }>(rows: T[]): T[] {
   return rows.filter((r) => r.deletedAt === null);
 }
 
-function isSameDay(a: Date, b: Date) {
-  return a.toDateString() === b.toDateString();
-}
-
 const emptyRows: HouseholdRows = {
   userId: "",
   members: [],
@@ -64,18 +61,23 @@ const emptyRows: HouseholdRows = {
   completions: [],
 };
 
-function savedHouseholdId(): string | null {
+function savedHouseholdId(userId: string): string | null {
   try {
-    return localStorage.getItem(STORAGE_KEY);
+    return localStorage.getItem(`${STORAGE_KEY}:${userId}`);
   } catch {
     return null;
   }
 }
 
 export function HouseholdDataProvider({ children }: { children: ReactNode }) {
-  const [householdId, setHouseholdId] = useState<string | null>(savedHouseholdId);
   const { session } = useAuthSession();
   const userId = session?.user.id;
+  const [householdsByUser, setHouseholdsByUser] = useState<Record<string, string | null>>({});
+  const householdId = userId
+    ? Object.hasOwn(householdsByUser, userId)
+      ? householdsByUser[userId]
+      : savedHouseholdId(userId)
+    : null;
   const queryClient = useQueryClient();
 
   // Användaren ingår i nyckeln eftersom datan säger vem som är inloggad (currentMember).
@@ -95,10 +97,15 @@ export function HouseholdDataProvider({ children }: { children: ReactNode }) {
   }, [queryClient, householdId]);
 
   const openHousehold = useCallback((id: string | null) => {
-    if (id) localStorage.setItem(STORAGE_KEY, id);
-    else localStorage.removeItem(STORAGE_KEY);
-    setHouseholdId(id);
-  }, []);
+    if (!userId) return;
+    const storageKey = `${STORAGE_KEY}:${userId}`;
+    try {
+      if (id) localStorage.setItem(storageKey, id);
+      else localStorage.removeItem(storageKey);
+    } catch {
+    }
+    setHouseholdsByUser((previous) => ({ ...previous, [userId]: id }));
+  }, [userId]);
 
   function requireHousehold(): string {
     if (!householdId) throw new Error("Öppna ett hushåll under Mina hushåll först.");
@@ -117,7 +124,14 @@ export function HouseholdDataProvider({ children }: { children: ReactNode }) {
       const done = liveCompletions
         .filter((c) => c.choreId === row.id)
         .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-      const doneToday = done.filter((c) => isSameDay(c.createdAt, today));
+      const doneToday = done.filter((c) => sameCompletionDay(c.createdAt, today));
+
+      const completedTodayBy = completionMembers(doneToday, rows.members);
+      const latestDay = done[0]?.createdAt;
+      const lastCompletedBy = completionMembers(
+        latestDay ? done.filter((c) => sameCompletionDay(c.createdAt, latestDay)) : [],
+        rows.members,
+      );
 
       // Sysslor i en rotationsgrupp har den som har gruppen just nu.
       const group = groups.find((g) => g.id === row.choreGroupId);
@@ -125,15 +139,15 @@ export function HouseholdDataProvider({ children }: { children: ReactNode }) {
       const assignees = rotating
         ? [rotating]
         : members.filter((m) =>
-            liveAssignments.some((a) => a.choreId === row.id && a.userId === m.userId),
-          );
+          liveAssignments.some((a) => a.choreId === row.id && a.userId === m.userId),
+        );
 
       return {
         ...row,
         lastDoneAt: done[0]?.createdAt ?? null,
-        doneTodayBy: doneToday
-          .map((c) => members.find((m) => m.userId === c.userId)?.avatar)
-          .filter((a) => a != null),
+
+        completedTodayBy,
+        lastCompletedBy,
         assignees,
       };
     });

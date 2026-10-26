@@ -37,7 +37,7 @@ export function IntervalPicker({ selected, onSelect }: Props<number>) {
             accessibilityState={{ selected: active }}
             style={[styles.day, active && { backgroundColor: colors.danger }]}
           >
-            <Text style={[styles.dayText, { color: active ? "#FFFFFF" : colors.text }]}>{day}</Text>
+            <Text style={[styles.dayText, { color: active ? colors.onDanger : colors.text }]}>{day}</Text>
           </Pressable>
         );
       })}
@@ -63,10 +63,12 @@ export function WeightPicker({ selected, onSelect }: Props<Weight>) {
               styles.weight,
               // Genomskinligt grått blir mörkare för varje steg, i både ljust och mörkt läge.
               { backgroundColor: `rgba(128, 128, 128, ${0.12 + i * 0.08})` },
-              active && { borderColor: colors.primary },
+              active && { backgroundColor: colors.primary },
             ]}
           >
-            <Text style={[styles.weightText, { color: colors.text }]}>{weight}</Text>
+            <Text style={[styles.weightText, { color: active ? colors.onPrimary : colors.text }]}>
+              {weight}
+            </Text>
           </Pressable>
         );
       })}
@@ -100,8 +102,6 @@ const styles = StyleSheet.create({
     width: 52,
     height: 52,
     borderRadius: 26,
-    borderWidth: 2,
-    borderColor: "transparent",
     alignItems: "center",
     justifyContent: "center",
   },
