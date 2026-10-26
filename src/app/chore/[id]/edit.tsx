@@ -26,6 +26,7 @@ export default function EditChore() {
     try {
       await removeChore(id);
       setShowDeleteDialog(false);
+      router.dismissTo("/");
     } catch (error) {
       setDeleteError(choreError(error));
       setShowDeleteDialog(false);
