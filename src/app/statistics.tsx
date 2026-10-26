@@ -1,19 +1,34 @@
-import { CompletedBy } from "../components/CompletedBy";
+import { useQuery } from "@tanstack/react-query";
 import { router, Stack } from "expo-router";
 import { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { CompletedBy } from "../components/CompletedBy";
 import { PieChart } from "../components/PieChart";
 import { Card } from "../components/ui";
 import { useHouseholdData } from "../data/HouseholdData";
+import { getPauses, pauseError } from "../data/pauses";
 import { useTheme } from "../theme/ThemeProvider";
-import { distribution, periodsWithStatistics } from "../utils/statistics";
+import { distribution, periodsWithStatistics, withoutPausedDays } from "../utils/statistics";
 
 // Statistik (#39–#44): ett stort diagram med den viktade fördelningen och ett
 // litet diagram per syssla. Pilarna går mellan nuvarande vecka, förra veckan
 // och förra månaden. Perioder utan gjorda sysslor visas inte (#44).
 export default function Statistics() {
   const { colors } = useTheme();
-  const { completions, allChores, members } = useHouseholdData();
+  const { householdId, completions: allCompletions, allChores, members } = useHouseholdData();
+  // Nyckeln börjar som pausnyckeln i hushållsvyn, så den hämtas om när någon pausas.
+  const pausesQuery = useQuery({
+    queryKey: ["pauses", householdId, "all"],
+    queryFn: () => getPauses(householdId as string, true),
+    enabled: !!householdId,
+  });
+  // Utan pauserna skulle pausade sysslor räknas, så diagrammen väntar på dem.
+  const pausesMessage = pausesQuery.isLoading
+    ? "Hämtar statistiken..."
+    : pausesQuery.error
+      ? pauseError(pausesQuery.error)
+      : "";
+  const completions = withoutPausedDays(allCompletions, pausesQuery.data ?? []);
   const periods = periodsWithStatistics(completions);
   const [index, setIndex] = useState(0);
   const period = periods[Math.min(index, periods.length - 1)];
@@ -62,7 +77,8 @@ export default function Statistics() {
             <Text style={[styles.helpTitle, { color: colors.text }]}>Totalt</Text>
             <Text style={{ color: colors.text }}>
               Poäng för allt som gjorts under perioden. Varje syssla ger lika många poäng som
-              sitt värde, så en tung syssla räknas mer än en lätt.
+              sitt värde, så en tung syssla räknas mer än en lätt. Det som görs medan man är
+              pausad räknas inte.
             </Text>
             <Text style={[styles.helpTitle, { color: colors.text }]}>De små diagrammen</Text>
             <Text style={{ color: colors.text }}>
@@ -72,7 +88,14 @@ export default function Statistics() {
         </Card>
       )}
 
-      {total.length === 0 ? (
+      {pausesMessage ? (
+        <Text
+          accessibilityRole={pausesQuery.error ? "alert" : undefined}
+          style={[styles.empty, { color: pausesQuery.error ? colors.danger : colors.textMuted }]}
+        >
+          {pausesMessage}
+        </Text>
+      ) : total.length === 0 ? (
         <Text style={[styles.empty, { color: colors.textMuted }]}>
           Ingen statistik än. Den visas när någon har gjort en syssla.
         </Text>

@@ -5,6 +5,7 @@ import { StyleSheet, Text, View } from "react-native";
 import { HouseholdHeader, HouseholdTitle } from "../components/HouseholdHeader";
 import { MemberList } from "../components/MemberList";
 import { MemberMenu } from "../components/MemberMenu";
+import { PauseDialog } from "../components/PauseDialog";
 import { Placeholder } from "../components/Placeholder";
 import { RenameHouseholdDialog } from "../components/RenameHouseholdDialog";
 import { RequestList } from "../components/RequestList";
@@ -20,6 +21,14 @@ import {
   renameHousehold,
   setMemberOwner,
 } from "../data/households";
+import {
+  addPause,
+  getPauses,
+  isPausedToday,
+  pauseError,
+  PauseSummary,
+  stopPause,
+} from "../data/pauses";
 import { useRefreshOnFocus } from "../hooks/useRefreshOnFocus";
 import { useTheme } from "../theme/ThemeProvider";
 
@@ -44,17 +53,28 @@ export default function Household() {
     queryFn: () => getMembers(householdId as string),
     enabled: !!householdId,
   });
+  const pausesQuery = useQuery({
+    queryKey: ["pauses", householdId],
+    queryFn: () => getPauses(householdId as string),
+    enabled: !!householdId,
+  });
   const household = householdQuery.data ?? null;
   const members = membersQuery.data ?? [];
+  const pauses = pausesQuery.data ?? [];
   const queryError = householdQuery.error ?? membersQuery.error;
   const error = queryError ? householdError(queryError) : "";
 
+  // Planerade pauser som inte har börjat räknas inte här.
+  const pausedUserIds = pauses.filter(isPausedToday).map((pause) => pause.userId);
+
   const { refetch: refetchHousehold } = householdQuery;
   const { refetch: refetchMembers } = membersQuery;
+  const { refetch: refetchPauses } = pausesQuery;
   const refetchAll = useCallback(() => {
     refetchHousehold();
     refetchMembers();
-  }, [refetchHousehold, refetchMembers]);
+    refetchPauses();
+  }, [refetchHousehold, refetchMembers, refetchPauses]);
   useRefreshOnFocus(refetchAll);
 
   // Den inloggade är ägare om dess egen rad bland medlemmarna har isOwner.
@@ -97,6 +117,9 @@ export default function Household() {
   const closeMenu = () => setMenuMember(null);
   // Fel från valen i menyn, visas under medlemslistan.
   const [memberError, setMemberError] = useState("");
+  // Utan pauserna kan "Pausad" saknas i listan, så felet visas på samma ställe.
+  const memberMessage =
+    memberError || (pausesQuery.error ? pauseError(pausesQuery.error) : "");
 
   // Gör medlemmen till ägare, eller tar bort ägarrollen om man råkat ge den (#19).
   const ownerMutation = useMutation({
@@ -132,10 +155,35 @@ export default function Household() {
     answerMutation.mutate({ request, approve });
   }
 
-  // TODO (#20): Pausa medlem. Lägg till en rad i pauses (user_id, household_id,
-  // start_date) och visa "Pausad" i listan. Pausade räknas inte med i statistiken.
+  // Medlemmen som dialogen "Pausa medlem" gäller, eller null när den är stängd (#20).
+  const [pausingMember, setPausingMember] = useState<MemberSummary | null>(null);
+
   function pauseMember(member: MemberSummary) {
     closeMenu();
+    setPausingMember(member);
+  }
+
+  const addPauseMutation = useMutation({
+    mutationFn: (pause: { userId: string; startDate: string; endDate: string | null }) =>
+      addPause(householdId as string, pause.userId, pause.startDate, pause.endDate),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["pauses", householdId] }),
+  });
+
+  const stopPauseMutation = useMutation({
+    mutationFn: stopPause,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["pauses", householdId] }),
+  });
+
+  // Dialogen väntar på svaret och visar felet om det misslyckas. Den stängs
+  // efter varje val, så att ingen trycker Spara paus för att komma ut.
+  async function savePause(member: MemberSummary, startDate: string, endDate: string | null) {
+    await addPauseMutation.mutateAsync({ userId: member.userId, startDate, endDate });
+    setPausingMember(null);
+  }
+
+  async function endPause(pause: PauseSummary) {
+    await stopPauseMutation.mutateAsync(pause);
+    setPausingMember(null);
   }
 
   if (!household) {
@@ -169,12 +217,13 @@ export default function Household() {
         <HouseholdHeader code={household.code} />
         <MemberList
           members={members}
+          pausedUserIds={pausedUserIds}
           canManage={isOwner}
           onOpenMenu={setMenuMember}
         />
-        {memberError ? (
+        {memberMessage ? (
           <Text accessibilityRole="alert" style={{ color: colors.danger }}>
-            {memberError}
+            {memberMessage}
           </Text>
         ) : null}
 
@@ -219,15 +268,21 @@ export default function Household() {
         onPause={pauseMember}
       />
 
+      {pausingMember && (
+        <PauseDialog
+          name={pausingMember.name}
+          pauses={pauses.filter((pause) => pause.userId === pausingMember.userId)}
+          onClose={() => setPausingMember(null)}
+          onAdd={(startDate, endDate) => savePause(pausingMember, startDate, endDate)}
+          onStop={endPause}
+        />
+      )}
+
       <Placeholder
         title="Kvar att bygga"
         area={3}
-        issues="#19, #20, #26"
-        todo={[
-          "⋯ på en medlem öppnar menyn: gör till ägare, pausa (#19, #20, ägare)",
-          'Pausade medlemmar markeras "Pausad" (#20)',
-          "Lämna hushåll (#26)",
-        ]}
+        issues="#26"
+        todo={["Lämna hushåll (#26)"]}
         tables={[
           "households (name)",
           "household_members (is_owner, is_approved, deleted_at)",

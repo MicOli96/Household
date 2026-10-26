@@ -44,7 +44,8 @@
           "cameraPermission": "Hushållet använder kameran för att ta en bild till en syssla.",
           "microphonePermission": "Hushållet använder mikrofonen för att spela in ljud till sysslor."
         }
-      ]
+      ],
+      "@react-native-community/datetimepicker"
     ],
     "experiments": {
       "typedRoutes": true,
