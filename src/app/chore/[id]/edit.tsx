@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from "expo-router";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { ChoreForm } from "../../../components/ChoreForm";
 import { ConfirmDialog, PillButton } from "../../../components/ui";
@@ -17,10 +17,12 @@ export default function EditChore() {
   const { colors } = useTheme();
   const { editChore, archiveChore, currentMember, loading } = useHouseholdData();
   const chore = useChore(id);
+  const archivingRef = useRef(false);
 
   async function handleArchive() {
-    if (!chore || !currentMember?.isOwner || isArchiving) return;
+    if (!chore || !currentMember?.isOwner || archivingRef.current) return;
 
+    archivingRef.current = true;
     setIsArchiving(true);
     setActionError("");
 
@@ -31,6 +33,7 @@ export default function EditChore() {
     } catch (reason) {
       setActionError(choreError(reason));
     } finally {
+      archivingRef.current = false;
       setIsArchiving(false);
     }
   }
