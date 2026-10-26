@@ -15,8 +15,12 @@ export default function EditChore() {
   const chore = useChore(id);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deleteError, setDeleteError] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
 
   async function handleDelete() {
+    if (isDeleting) return;
+
+    setIsDeleting(true);
     setDeleteError("");
 
     try {
@@ -25,6 +29,8 @@ export default function EditChore() {
     } catch (error) {
       setDeleteError(choreError(error));
       setShowDeleteDialog(false);
+    } finally {
+      setIsDeleting(false);
     }
   }
 
@@ -90,9 +96,10 @@ export default function EditChore() {
         visible={showDeleteDialog}
         title={`Ta bort ${chore.name}?`}
         message="Sysslan och all tillhörande statistik kommer att tas bort."
-        confirmLabel="Ta bort ändå"
+        confirmLabel={isDeleting ? "Tar bort…" : "Ta bort ändå"}
         onConfirm={handleDelete}
         onCancel={() => setShowDeleteDialog(false)}
+        isSubmitting={isDeleting}
       />
     </>
   );
