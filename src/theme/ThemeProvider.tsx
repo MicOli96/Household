@@ -14,8 +14,8 @@ type ThemeContextValue = {
 
 const STORAGE_KEY = "themeMode";
 
-//Läser det sparade läget så att valet finns kvar efter omstart (#7).
-//Temat sparas bara i telefonen, inte i Supabase.
+// Läser det sparade läget så att valet finns kvar efter omstart (#7).
+// Temat sparas bara i telefonen, inte i Supabase.
 function loadMode(): ThemeMode {
   if (typeof localStorage === "undefined") return "auto";
   const saved = localStorage.getItem(STORAGE_KEY);

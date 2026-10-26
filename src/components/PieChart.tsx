@@ -2,7 +2,7 @@ import { CompletedBy } from "./CompletedBy";
 import { View } from "react-native";
 import Svg, { Circle, Path } from "react-native-svg";
 import { avatars } from "../theme/avatars";
-import { Member } from "../data/types"; 
+import { Member } from "../data/types";
 import { Slice } from "../utils/statistics";
 
 /** Avatarens färg, grå för den som inte valt avatar än. */

@@ -1,7 +1,7 @@
-import { avatars, type AvatarEmoji } from "../theme/avatars";
 import { requireUser, supabase } from "../lib/supabase";
-import type { Household, Member } from "./types";
+import { avatars, type AvatarEmoji } from "../theme/avatars";
 import { validateName } from "./profile";
+import type { Household, Member } from "./types";
 
 export type HouseholdSummary = Pick<Household, "id" | "name" | "code">;
 
@@ -90,8 +90,7 @@ export async function listHouseholds(): Promise<HouseholdSummary[]> {
     .eq("household_members.user_id", userId)
     .eq("household_members.is_approved", true)
     .is("household_members.deleted_at", null)
-    .is("deleted_at", null)
-    .order("created_at");
+    .is("deleted_at", null).order("created_at");
   if (error) throw new Error("Kunde inte hämta hushållen. Försök igen.");
   return (data ?? []).map(({ id, name, code }) => ({ id, name, code }));
 }
@@ -128,10 +127,7 @@ export async function getMembershipStatus(householdId: string): Promise<Membersh
 export async function getHousehold(id: string): Promise<HouseholdSummary> {
   await requireUser();
   const { data, error } = await supabase.from("households")
-    .select("id, name, code")
-    .eq("id", id)
-    .is("deleted_at", null)
-    .single();
+    .select("id, name, code").eq("id", id).is("deleted_at", null).single();
   if (error || !data) throw new Error("Hushållet kunde inte öppnas. Det kanske inte finns eller så saknar du åtkomst.");
   return data;
 }
@@ -215,10 +211,8 @@ export async function renameHousehold(id: string, name: string): Promise<Househo
   if (validation) throw new Error(validation);
   await requireUser();
   const { data, error } = await supabase.from("households")
-    .update({ name: name.trim() })
-    .eq("id", id)
-    .select("id, name, code")
-    .maybeSingle();
+    .update({ name: name.trim() }).eq("id", id)
+    .select("id, name, code").maybeSingle();
   if (error || !data) throw new Error("Kunde inte byta namn. Bara ägare kan byta namn på hushållet.");
   return data;
 }
@@ -233,10 +227,8 @@ export async function setMemberOwner(
   await requireUser();
   const { data, error } = await supabase.from("household_members")
     .update({ is_owner: isOwner })
-    .eq("household_id", householdId)
-    .eq("user_id", userId)
-    .select("user_id")
-    .maybeSingle();
+    .eq("household_id", householdId).eq("user_id", userId)
+    .select("user_id").maybeSingle();
   if (error || !data) throw new Error("Kunde inte ändra ägarrollen. Bara ägare kan utse ägare.");
 }
 
@@ -269,24 +261,22 @@ export async function denyRequest(householdId: string, userId: string): Promise<
 export async function getMembers(householdId: string): Promise<MemberSummary[]> {
   const { id: userId } = await requireUser();
   const { data, error } = await supabase.from("household_members")
-    .select("user_id, name, is_owner, is_approved, avatar_id")
+    .select("user_id, name, is_owner, is_approved, avatars(emoji)")
     .eq("household_id", householdId)
-    .is("deleted_at", null)
-    .order("created_at");
+    .is("deleted_at", null).order("created_at");
   if (error) throw new Error("Kunde inte hämta medlemmarna. Försök igen.");
   return (data ?? []).map((row) => ({
     userId: row.user_id,
     name: row.name,
     isOwner: row.is_owner,
     isApproved: row.is_approved,
-    avatar: toAvatar(row.avatar_id),
+    avatar: (row.avatars as unknown as { emoji: AvatarEmoji } | null)?.emoji ?? null,
     isMe: row.user_id === userId,
   }));
 }
 
 export function householdError(error: unknown): string {
   // Importfel och tekniska fel ska inte visa konfigurationsdetaljer i gränssnittet.
-  return error instanceof Error
-    && /^(Du måste|Du är redan|Kunde inte|Hushållet|Skapandet|Ange ett|Ange en|Namnet|Välj en|Den avataren|Välj ett)/.test(error.message)
+  return error instanceof Error && /^(Du måste|Du är redan|Kunde inte|Hushållet|Skapandet|Ange ett|Ange en|Namnet|Välj en|Den avataren|Välj ett)/.test(error.message)
     ? error.message : "Kunde inte ansluta. Kontrollera anslutningen och appens inställningar.";
 }
