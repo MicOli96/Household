@@ -31,13 +31,7 @@ export function validateHouseholdName(value: string): string {
   if (!value.trim()) return "Ange ett namn för hushållet.";
   if (value.trim().length > 100) return "Namnet får innehålla högst 100 tecken.";
   return "";
-}
-
-export function validateProfileName(value: string): string {
-  if (!value.trim()) return "Ange ett namn för profilen.";
-  if (value.trim().length > 100) return "Namnet får innehålla högst 100 tecken.";
-  return "";
-}
+} 
 
 export async function createHousehold(name: string): Promise<HouseholdSummary> {
   const validation = validateHouseholdName(name);
@@ -113,7 +107,7 @@ export async function getMyProfile(householdId: string): Promise<MyProfile> {
     .maybeSingle();
 
   const takenQuery = supabase.from("household_members")
-    .select("avatar_id")
+    .select("user_id, avatar_id")
     .eq("household_id", householdId)
     .is("deleted_at", null)
     .not("avatar_id", "is", null);
@@ -134,6 +128,7 @@ export async function getMyProfile(householdId: string): Promise<MyProfile> {
   const name = profileResult.data.name;
   const avatar = toAvatar(profileResult.data?.avatar_id ?? null);
   const taken = (takenResult.data ?? [])
+    .filter((row) => row.user_id !== userId)
     .map((row) => toAvatar(Number(row.avatar_id)))
     .filter((emoji): emoji is AvatarEmoji => emoji !== null);
 
@@ -226,6 +221,6 @@ export async function getMembers(householdId: string): Promise<MemberSummary[]> 
 
 export function householdError(error: unknown): string {
   // Importfel och tekniska fel ska inte visa konfigurationsdetaljer i gränssnittet.
-  return error instanceof Error && /^(Du måste|Kunde inte|Hushållet|Skapandet|Ange ett|Namnet|Välj en)/.test(error.message)
+  return error instanceof Error && /^(Du måste|Kunde inte|Hushållet|Skapandet|Ange ett|Namnet|Välj en|Den avataren|Välj ett)/.test(error.message)
     ? error.message : "Kunde inte ansluta. Kontrollera anslutningen och appens inställningar.";
 }

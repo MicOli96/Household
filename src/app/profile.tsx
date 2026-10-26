@@ -32,7 +32,7 @@ const avatarOptions = Object.keys(avatars) as AvatarEmoji[];
 
 export default function Profile() {
   const { colors } = useTheme();
-  const { householdId, reload } = useHouseholdData();
+  const { householdId } = useHouseholdData();
   const queryClient = useQueryClient();
   const [typedName, setTypedName] = useState<string | null>(null);
   const [selectedHouseholdId, setSelectedHouseholdId] = useState<string | null>(null);
@@ -97,7 +97,10 @@ export default function Profile() {
     }) => saveMyProfile(targetHouseholdId, profileName, selectedAvatar),
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["my-profile", variables.householdId] });
-      if (variables.householdId === householdId) reload();
+      if (variables.householdId === householdId) {
+        queryClient.invalidateQueries({ queryKey: ["members"] });
+        queryClient.invalidateQueries({ queryKey: ["chores"] });
+      }
     },
   });
   const saving = saveNameMutation.isPending || saveAvatarMutation.isPending;
@@ -109,10 +112,6 @@ export default function Profile() {
     setError(validation);
     if (validation) return;
 
-    if (avatarHouseholdId && !avatar) {
-      setError("Välj ett djur.");
-      return;
-    }
     submitting.current = true;
     setError("");
     try {
@@ -148,20 +147,6 @@ export default function Profile() {
         contentContainerStyle={styles.container}
         keyboardShouldPersistTaps="handled"
       >
-        <View style={styles.header}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Tillbaka"
-            onPress={() => router.back()}
-            hitSlop={12}
-            style={styles.backButton}
-          >
-            <Text style={[styles.back, { color: colors.text }]}>‹</Text>
-          </Pressable>
-          <Text style={[styles.title, { color: colors.text }]}>Din profil</Text>
-          <View style={styles.headerSpacer} />
-        </View>
-
         {loading ? (
           <View style={styles.loading}>
             <ActivityIndicator color={colors.primary} size="large" />
@@ -297,33 +282,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 12,
     paddingBottom: 32,
-  },
-  header: {
-    height: 52,
-    alignItems: "center",
-    justifyContent: "center",
-    flexDirection: "row",
-    marginBottom: 22,
-  },
-  backButton: {
-    width: 40,
-    height: 44,
-    alignItems: "flex-start",
-    justifyContent: "center",
-  },
-  back: {
-    fontSize: 36,
-    lineHeight: 40,
-    fontWeight: "300",
-  },
-  title: {
-    flex: 1,
-    textAlign: "center",
-    fontSize: 20,
-    fontWeight: "700",
-  },
-  headerSpacer: {
-    width: 40,
   },
   loading: {
     minHeight: 260,
