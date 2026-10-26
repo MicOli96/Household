@@ -78,11 +78,13 @@ export default function Statistics() {
             <Text style={{ color: colors.text }}>
               Poäng för allt som gjorts under perioden. Varje syssla ger lika många poäng som
               sitt värde, så en tung syssla räknas mer än en lätt. Det som görs medan man är
-              pausad räknas inte.
+              pausad räknas inte. Den som varit pausad en del av perioden räknas upp efter hur
+              många dagar hen var med, så att alla jämförs rättvist.
             </Text>
             <Text style={[styles.helpTitle, { color: colors.text }]}>De små diagrammen</Text>
             <Text style={{ color: colors.text }}>
-              Hur många gånger var och en har gjort sysslan, utan värde.
+              Hur många gånger var och en har gjort sysslan, utan värde. Pauser räknas på samma
+              sätt som i Totalt.
             </Text>
           </View>
         </Card>
