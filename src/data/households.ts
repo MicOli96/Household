@@ -1,7 +1,7 @@
 import { avatars, type AvatarEmoji } from "../theme/avatars";
 import { requireUser, supabase } from "../lib/supabase";
 import type { Household, Member } from "./types";
-
+import {validateName} from "./profile";
 export type HouseholdSummary = Pick<Household, "id" | "name" | "code">;
 
 /** En medlem som hushållsvyn visar den. Avataren saknas tills medlemmen har valt en. */
@@ -140,7 +140,7 @@ export async function saveMyProfile(
   name: string,
   avatar: AvatarEmoji | null,
 ): Promise<void> {
-  const nameError = validateProfileName(name);
+  const nameError = validateName(name);
   if (nameError) throw new Error(nameError);
   if (!avatar) throw new Error("Välj en avatar.");
 
