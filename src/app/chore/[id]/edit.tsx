@@ -12,9 +12,28 @@ import { useTheme } from "../../../theme/ThemeProvider";
 export default function EditChore() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [actionError, setActionError] = useState("");
+  const [isArchiving, setIsArchiving] = useState(false);
   const { colors } = useTheme();
-  const { editChore, currentMember, loading } = useHouseholdData();
+  const { editChore, archiveChore, currentMember, loading } = useHouseholdData();
   const chore = useChore(id);
+
+  async function handleArchive() {
+    if (!chore || !currentMember?.isOwner || isArchiving) return;
+
+    setIsArchiving(true);
+    setActionError("");
+
+    try {
+      await archiveChore(chore.id);
+      setShowDeleteDialog(false);
+      router.dismissTo("/");
+    } catch (reason) {
+      setActionError(choreError(reason));
+    } finally {
+      setIsArchiving(false);
+    }
+  }
 
   if (loading) {
     return (
@@ -65,18 +84,23 @@ export default function EditChore() {
       <PillButton
         label="Ta bort syssla"
         variant="danger"
-        onPress={() => setShowDeleteDialog(true)}
+        onPress={() => {
+          setActionError("");
+          setShowDeleteDialog(true);
+        }}
       />
       <ConfirmDialog
         visible={showDeleteDialog}
+        error={actionError}
+        busy={isArchiving}
         title="Ta bort syssla?"
         message="Om du tar bort sysslan permanent försvinner också all statistik för den. Du kan arkivera sysslan istället för att behålla statistiken. "
         confirmLabel="Ta bort permanent"
         onConfirm={() => { }}
         onCancel={() => setShowDeleteDialog(false)}
         alternative={{
-          label: "Arkivera",
-          onPress: () => { },
+          label: isArchiving ? "Arkiverar..." : "Arkivera",
+          onPress: handleArchive,
         }}
       />
     </>

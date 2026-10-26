@@ -7,6 +7,8 @@ type Props = {
   visible: boolean;
   title: string;
   message: string;
+  error?: string;
+  busy?: boolean;
   /** Texten på knappen som gör det farliga, t.ex. "Ta bort ändå". */
   confirmLabel: string;
   onConfirm: () => void;
@@ -20,6 +22,8 @@ export function ConfirmDialog({
   visible,
   title,
   message,
+  error,
+  busy = false,
   confirmLabel,
   onConfirm,
   onCancel,
@@ -28,14 +32,25 @@ export function ConfirmDialog({
   const { colors } = useTheme();
 
   return (
-    <AppModal visible={visible} title={title} onClose={onCancel}>
+    <AppModal
+      visible={visible}
+      title={title}
+      onClose={() => {
+        if (!busy) onCancel();
+      }} >
       <Text style={[styles.message, { color: colors.textMuted }]}>{message}</Text>
+      {error ? (
+        <Text accessibilityRole="alert" style={{ color: colors.danger }}>
+          {error}
+        </Text>
+      ) : null}
+
       <View style={styles.buttons}>
         {alternative && (
-          <PillButton label={alternative.label} variant="primary" onPress={alternative.onPress} />
+          <PillButton label={alternative.label} variant="primary" onPress={alternative.onPress} disabled={busy} />
         )}
-        <PillButton label={confirmLabel} variant="danger" onPress={onConfirm} />
-        <PillButton label="Avbryt" onPress={onCancel} />
+        <PillButton label={confirmLabel} variant="danger" onPress={onConfirm} disabled={busy} />
+        <PillButton label="Avbryt" onPress={onCancel} disabled={busy} />
       </View>
     </AppModal>
   );
