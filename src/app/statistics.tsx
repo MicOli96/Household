@@ -33,7 +33,7 @@ export default function Statistics() {
   const [index, setIndex] = useState(0);
   const period = periods[Math.min(index, periods.length - 1)];
   const { total, perChore } = period
-    ? distribution(completions, allChores, members, period)
+    ? distribution(completions, allChores, members, period, pausesQuery.data ?? [])
     : { total: [], perChore: [] };
   const hasNext = index < periods.length - 1;
   // ? i rubriken visar vad diagrammen räknar, föreslaget av Hannes.

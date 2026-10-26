@@ -86,9 +86,20 @@ export function distribution(
   chores: ChoreRow[],
   members: Member[],
   period: Period,
+  pauses: PauseSummary[],
 ) {
   const inside = completions.filter((c) => inPeriod(c, period));
   const weightOf = new Map(chores.map((c) => [c.id, c.weight]));
+  const periodDays = daysIn(period).length;
+
+  function normalized(totals: Map<string, number>): Map<string, number> {
+    return new Map(
+      [...totals].map(([userId, value]) => {
+        const active = activeDays(userId, period, pauses);
+        return [userId, active === 0 ? 0 : (value * periodDays) / active];
+      }),
+    );
+  }
 
   const total = new Map<string, number>();
   for (const c of inside) {
@@ -101,9 +112,9 @@ export function distribution(
       for (const c of inside.filter((c) => c.choreId === chore.id)) {
         counts.set(c.userId, (counts.get(c.userId) ?? 0) + 1);
       }
-      return { chore, slices: slices(counts, members) };
+      return { chore, slices: slices(normalized(counts), members) };
     })
     .filter((c) => c.slices.length > 0);
 
-  return { total: slices(total, members), perChore };
+  return { total: slices(normalized(total), members), perChore };
 }
