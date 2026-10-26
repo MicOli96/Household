@@ -49,6 +49,22 @@ export function withoutPausedDays(completions: Completion[], pauses: PauseSummar
   });
 }
 
+export function daysIn(period: Period): string[] {
+  const days: string[] = [];
+  const day = new Date(period.start);
+  while (day < period.end) {
+    days.push(toDateString(day));
+    day.setDate(day.getDate() + 1);
+  }
+  return days;
+}
+
+export function activeDays(userId: string, period: Period, pauses: PauseSummary[]): number {
+  return daysIn(period).filter(
+    (day) => !pauses.some((pause) => pause.userId === userId && isPausedOn(pause, day)),
+  ).length;
+}
+
 export type Slice = { member: Member; value: number };
 
 function inPeriod(completion: Completion, period: Period) {
