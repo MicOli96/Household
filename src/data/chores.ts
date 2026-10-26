@@ -173,17 +173,23 @@ export async function updateChore(choreId: string, chore: NewChore): Promise<voi
   if (error) throw new Error("Kunde inte spara sysslan. Bara ägare kan redigera sysslor.");
 }
 
+/** Arkivering behåller sysslan och utförandena för statistiken. */
+export async function archiveChore(choreId: string): Promise<void> {
+  await requireUser();
+  const { data, error } = await supabase.from("chores")
+    .update({ is_archived: true }).eq("id", choreId)
+    .is("deleted_at", null).select("id").maybeSingle();
+  if (error || !data) {
+    throw new Error("Kunde inte arkivera sysslan. Kontrollera att du är ägare och försök igen.");
+  }
+}
+
 export async function deleteChore(choreId: string): Promise<void> {
   await requireUser();
-
-  const { data, error } = await supabase.rpc("delete_chore", {
-    p_chore_id: choreId,
-  });
-
+  const { data, error } = await supabase.rpc("delete_chore", { p_chore_id: choreId });
   if (error) {
     throw new Error("Kunde inte ta bort sysslan. Kontrollera att du är ägare och försök igen.");
   }
-
   if (data !== choreId) {
     throw new Error("Kunde inte bekräfta borttagningen. Uppdatera listan innan du försöker igen.");
   }

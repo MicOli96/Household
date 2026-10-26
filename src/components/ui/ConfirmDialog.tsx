@@ -7,6 +7,8 @@ type Props = {
   visible: boolean;
   title: string;
   message: string;
+  error?: string;
+  busy?: boolean;
   /** Texten på knappen som gör det farliga, t.ex. "Ta bort ändå". */
   confirmLabel: string;
   onConfirm?: () => void;
@@ -21,6 +23,8 @@ export function ConfirmDialog({
   visible,
   title,
   message,
+  error,
+  busy = false,
   confirmLabel,
   onConfirm,
   onCancel,
@@ -29,15 +33,26 @@ export function ConfirmDialog({
 }: Props) {
   const { colors } = useTheme();
 
+  // Behåll stöd för både #35:s och #37:s laddningsprop.
+  const pending = busy || isSubmitting;
+  function cancel() {
+    if (!pending) onCancel();
+  }
+
   return (
-    <AppModal visible={visible} title={title} onClose={() => { if (!isSubmitting) onCancel(); }}>
+    <AppModal visible={visible} title={title} onClose={cancel}>
       <Text style={[styles.message, { color: colors.textMuted }]}>{message}</Text>
+      {error ? (
+        <Text accessibilityRole="alert" style={{ color: colors.danger }}>{error}</Text>
+      ) : null}
       <View style={styles.buttons}>
         {alternative && (
-          <PillButton label={alternative.label} variant="primary" onPress={alternative.onPress} disabled={isSubmitting} />
+          <PillButton label={alternative.label} variant="primary"
+            onPress={alternative.onPress} disabled={pending} />
         )}
-        <PillButton label={confirmLabel} variant="danger" onPress={onConfirm} disabled={!onConfirm || isSubmitting} />
-        <PillButton label="Avbryt" onPress={onCancel} disabled={isSubmitting} />
+        <PillButton label={confirmLabel} variant="danger" onPress={onConfirm}
+          disabled={!onConfirm || pending} />
+        <PillButton label="Avbryt" onPress={cancel} disabled={pending} />
       </View>
     </AppModal>
   );
