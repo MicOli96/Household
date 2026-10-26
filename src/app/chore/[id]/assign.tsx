@@ -6,7 +6,7 @@ import { choreError } from "../../../data/chores";
 import { useChore, useHouseholdData } from "../../../data/HouseholdData";
 import { useTheme } from "../../../theme/ThemeProvider";
 
-// Tilldela syssla (#13). Öppnas som modal från "Hantera" i dagsvyn.
+// Tilldela syssla (#13). Öppnas som modal från "Tilldela syssla" i sysslans vy.
 // Ägaren bockar i vilka medlemmar som har sysslan.
 export default function AssignChore() {
   const { id } = useLocalSearchParams<{ id: string }>();

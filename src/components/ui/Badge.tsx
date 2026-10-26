@@ -19,7 +19,7 @@ export function Badge({ label, overdue = false }: Props) {
         { backgroundColor: overdue ? colors.danger : colors.background },
       ]}
     >
-      <Text style={[styles.text, { color: overdue ? "#FFFFFF" : colors.text }]}>
+      <Text style={[styles.text, { color: overdue ? colors.onDanger : colors.text }]}>
         {label}
       </Text>
     </View>
