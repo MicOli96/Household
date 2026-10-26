@@ -30,7 +30,22 @@
           "imageWidth": 200
         }
       ],
-      "expo-sqlite"
+      "expo-sqlite",
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "Hushållet använder mikrofonen för att spela in ljud till sysslor."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Hushållet behöver dina bilder för att lägga till en bild till en syssla.",
+          "cameraPermission": "Hushållet använder kameran för att ta en bild till en syssla.",
+          "microphonePermission": "Hushållet använder mikrofonen för att spela in ljud till sysslor."
+        }
+      ],
+      "@react-native-community/datetimepicker"
     ],
     "experiments": {
       "typedRoutes": true,

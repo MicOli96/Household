@@ -1,7 +1,7 @@
-import { Redirect, router } from "expo-router";
+import { Redirect, router, Stack } from "expo-router";
 import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 import { ChoreCard } from "../components/ChoreCard";
-import { PillButton } from "../components/ui";
+import { Icon, PillButton } from "../components/ui";
 import { useHouseholdData } from "../data/HouseholdData";
 import { useTheme } from "../theme/ThemeProvider";
 
@@ -17,6 +17,23 @@ export default function DailyView() {
 
   return (
     <View style={styles.container}>
+      {/* Kugghjulet leder till Inställningar, där bl.a. Logga ut finns (#77). */}
+      <Stack.Screen
+        options={{
+          headerRight: () => (
+            <Pressable
+              onPress={() => router.push("/settings")}
+              hitSlop={12}
+              accessibilityRole="button"
+              accessibilityLabel="Inställningar"
+              style={styles.headerButton}
+            >
+              <Icon name="settings" color={colors.text} />
+            </Pressable>
+          ),
+        }}
+      />
+
       {/* Raden "‹ idag ›" från skissen. › går till statistiken (#41). */}
       <View style={styles.dateRow}>
         <Text style={[styles.arrow, { color: colors.text }]}>‹</Text>
@@ -47,28 +64,20 @@ export default function DailyView() {
           <ChoreCard
             chore={item}
             onPress={() => router.push(`/chore/${item.id}`)}
-            onManage={
-              currentMember?.isOwner
-                ? () => router.push(`/chore/${item.id}/assign`)
-                : undefined
-            }
           />
         )}
       />
 
-      <View style={styles.footer}>
-        {/* Vänta tills hushållet är hämtat, så att knappen bara syns för ägare. */}
-        {!loading && currentMember?.isOwner && (
-          <PillButton label="⊕  Lägg till" onPress={() => router.push("/chore/new")} />
-        )}
-
-        {/* Tillfällig länk till temainställningarna. */}
-        <PillButton
-          label="✎  Ändra"
-          onPress={() => router.push("/settings")}
-          style={styles.alignRight}
-        />
-      </View>
+      {/* Vänta tills hushållet är hämtat, så att knappen bara syns för ägare. */}
+      {!loading && currentMember?.isOwner && (
+        <View style={styles.footer}>
+          <PillButton
+            label="+  Lägg till syssla"
+            variant="primary"
+            onPress={() => router.push("/chore/new")}
+          />
+        </View>
+      )}
     </View>
   );
 }
@@ -91,8 +100,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
   },
-  alignRight: {
-    marginLeft: "auto",
+  headerButton: {
+    paddingHorizontal: 8,
   },
   notice: {
     paddingHorizontal: 16,
@@ -104,8 +113,6 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   footer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
     padding: 16,
     paddingBottom: 32,
   },

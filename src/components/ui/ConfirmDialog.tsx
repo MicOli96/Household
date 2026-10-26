@@ -11,10 +11,11 @@ type Props = {
   busy?: boolean;
   /** Texten på knappen som gör det farliga, t.ex. "Ta bort ändå". */
   confirmLabel: string;
-  onConfirm: () => void;
+  onConfirm?: () => void;
   onCancel: () => void;
   /** Ett mildare val, t.ex. "Arkivera i stället" när man tar bort en syssla. */
   alternative?: { label: string; onPress: () => void };
+  isSubmitting?: boolean;
 };
 
 // Varningsrutan innan något tas bort eller nekas, som "Ta bort syssla" i Figma.
@@ -28,29 +29,30 @@ export function ConfirmDialog({
   onConfirm,
   onCancel,
   alternative,
+  isSubmitting = false,
 }: Props) {
   const { colors } = useTheme();
 
+  // Behåll stöd för både #35:s och #37:s laddningsprop.
+  const pending = busy || isSubmitting;
+  function cancel() {
+    if (!pending) onCancel();
+  }
+
   return (
-    <AppModal
-      visible={visible}
-      title={title}
-      onClose={() => {
-        if (!busy) onCancel();
-      }} >
+    <AppModal visible={visible} title={title} onClose={cancel}>
       <Text style={[styles.message, { color: colors.textMuted }]}>{message}</Text>
       {error ? (
-        <Text accessibilityRole="alert" style={{ color: colors.danger }}>
-          {error}
-        </Text>
+        <Text accessibilityRole="alert" style={{ color: colors.danger }}>{error}</Text>
       ) : null}
-
       <View style={styles.buttons}>
         {alternative && (
-          <PillButton label={alternative.label} variant="primary" onPress={alternative.onPress} disabled={busy} />
+          <PillButton label={alternative.label} variant="primary"
+            onPress={alternative.onPress} disabled={pending} />
         )}
-        <PillButton label={confirmLabel} variant="danger" onPress={onConfirm} disabled={busy} />
-        <PillButton label="Avbryt" onPress={onCancel} disabled={busy} />
+        <PillButton label={confirmLabel} variant="danger" onPress={onConfirm}
+          disabled={!onConfirm || pending} />
+        <PillButton label="Avbryt" onPress={cancel} disabled={pending} />
       </View>
     </AppModal>
   );

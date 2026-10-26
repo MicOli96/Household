@@ -1,5 +1,6 @@
 import { requireUser, supabase } from "../lib/supabase";
-import type { AvatarEmoji } from "../theme/avatars";
+import { avatars, type AvatarEmoji } from "../theme/avatars";
+import { validateName } from "./profile";
 import type { Household, Member } from "./types";
 
 export type HouseholdSummary = Pick<Household, "id" | "name" | "code">;
@@ -10,6 +11,22 @@ export type MemberSummary = Pick<Member, "userId" | "name" | "isOwner" | "isAppr
   /** Om det är den inloggade användaren. */
   isMe: boolean;
 };
+
+export type MyProfile = {
+  name: string;
+  avatar: AvatarEmoji | null;
+  taken: AvatarEmoji[];
+};
+
+const avatarEmojis = Object.keys(avatars) as AvatarEmoji[];
+const avatarIdByEmoji = Object.fromEntries(
+  avatarEmojis.map((emoji, index) => [emoji, index + 1]),
+) as Record<AvatarEmoji, number>;
+
+function toAvatar(avatarId: number | null | undefined): AvatarEmoji | null {
+  if (!avatarId) return null;
+  return avatarEmojis[avatarId - 1] ?? null;
+}
 
 export function validateHouseholdName(value: string): string {
   if (!value.trim()) return "Ange ett namn för hushållet.";
@@ -115,6 +132,78 @@ export async function getHousehold(id: string): Promise<HouseholdSummary> {
   return data;
 }
 
+export async function getMyProfile(householdId: string): Promise<MyProfile> {
+  const { id: userId } = await requireUser();
+
+  const profileQuery = supabase.from("household_members")
+    .select("name, avatar_id")
+    .eq("household_id", householdId)
+    .eq("user_id", userId)
+    .is("deleted_at", null)
+    .maybeSingle();
+
+  const takenQuery = supabase.from("household_members")
+    .select("user_id, avatar_id")
+    .eq("household_id", householdId)
+    .is("deleted_at", null)
+    .not("avatar_id", "is", null);
+
+  const [profileResult, takenResult] = await Promise.all([profileQuery, takenQuery]);
+
+  if (profileResult.error && profileResult.error.code !== "PGRST116") {
+    throw new Error("Kunde inte hämta din profil. Försök igen.");
+  }
+  if (takenResult.error) {
+    throw new Error("Kunde inte hämta valda avatarer. Försök igen.");
+  }
+
+  if (!profileResult.data) {
+    throw new Error("Kunde inte hitta din profil i hushållet. Kontrollera att du är medlem.");
+  }
+
+  const name = profileResult.data.name;
+  const avatar = toAvatar(profileResult.data?.avatar_id ?? null);
+  const taken = (takenResult.data ?? [])
+    .filter((row) => row.user_id !== userId)
+    .map((row) => toAvatar(Number(row.avatar_id)))
+    .filter((emoji): emoji is AvatarEmoji => emoji !== null);
+
+  return { name, avatar, taken };
+}
+
+export async function saveMyProfile(
+  householdId: string,
+  name: string,
+  avatar: AvatarEmoji | null,
+): Promise<void> {
+  const nameError = validateName(name);
+  if (nameError) throw new Error(nameError);
+  if (!avatar) throw new Error("Välj en avatar.");
+
+  const { id: userId } = await requireUser();
+  const avatarId = avatarIdByEmoji[avatar];
+
+  const saveQuery = supabase.from("household_members")
+    .update({ name: name.trim(), avatar_id: avatarId })
+    .eq("household_id", householdId)
+    .eq("user_id", userId)
+    .is("deleted_at", null)
+    .select("user_id")
+    .maybeSingle();
+  const saveResult = await saveQuery;
+
+  if (saveResult.error || !saveResult.data) {
+    if (!saveResult.error) {
+      throw new Error("Kunde inte spara profilen. Kontrollera att du är medlem i hushållet.");
+    }
+    const message = saveResult.error.message ?? "";
+    if (/duplicate|unique/i.test(message)) {
+      throw new Error("Den avataren är redan vald av någon annan i hushållet.");
+    }
+    throw new Error("Kunde inte spara profilen. Försök igen.");
+  }
+}
+
 // Byter namn på hushållet. Databasen släpper bara igenom ägare: för andra
 // ändras ingen rad, och då kommer inget hushåll tillbaka.
 export async function renameHousehold(id: string, name: string): Promise<HouseholdSummary> {
@@ -188,6 +277,6 @@ export async function getMembers(householdId: string): Promise<MemberSummary[]> 
 
 export function householdError(error: unknown): string {
   // Importfel och tekniska fel ska inte visa konfigurationsdetaljer i gränssnittet.
-  return error instanceof Error && /^(Du måste|Du är redan|Kunde inte|Hushållet|Skapandet|Ange ett|Ange en|Namnet)/.test(error.message)
+  return error instanceof Error && /^(Du måste|Du är redan|Kunde inte|Hushållet|Skapandet|Ange ett|Ange en|Namnet|Välj en|Den avataren|Välj ett)/.test(error.message)
     ? error.message : "Kunde inte ansluta. Kontrollera anslutningen och appens inställningar.";
 }

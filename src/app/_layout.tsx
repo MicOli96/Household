@@ -44,7 +44,7 @@ function ThemedStack() {
           <Stack.Screen name="chore/[id]" options={{ title: "" }} />
 
           {/* Område 2: Konto & Profil */}
-          <Stack.Screen name="profile" options={{ title: "Profil" }} />
+          <Stack.Screen name="profile" options={{ title: "Din profil" }} />
           <Stack.Screen name="households/join" options={{ title: "Gå med i hushåll" }} />
           <Stack.Screen name="households/pending" options={{ title: "Väntar på godkännande" }} />
 
