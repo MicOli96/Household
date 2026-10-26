@@ -13,6 +13,7 @@ type Props = {
   onCancel: () => void;
   /** Ett mildare val, t.ex. "Arkivera i stället" när man tar bort en syssla. */
   alternative?: { label: string; onPress: () => void };
+  isSubmitting?: boolean;
 };
 
 // Varningsrutan innan något tas bort eller nekas, som "Ta bort syssla" i Figma.
@@ -24,18 +25,19 @@ export function ConfirmDialog({
   onConfirm,
   onCancel,
   alternative,
+  isSubmitting = false,
 }: Props) {
   const { colors } = useTheme();
 
   return (
-    <AppModal visible={visible} title={title} onClose={onCancel}>
+    <AppModal visible={visible} title={title} onClose={() => { if (!isSubmitting) onCancel(); }}>
       <Text style={[styles.message, { color: colors.textMuted }]}>{message}</Text>
       <View style={styles.buttons}>
         {alternative && (
-          <PillButton label={alternative.label} variant="primary" onPress={alternative.onPress} />
+          <PillButton label={alternative.label} variant="primary" onPress={alternative.onPress} disabled={isSubmitting} />
         )}
-        <PillButton label={confirmLabel} variant="danger" onPress={onConfirm} disabled={!onConfirm} />
-        <PillButton label="Avbryt" onPress={onCancel} />
+        <PillButton label={confirmLabel} variant="danger" onPress={onConfirm} disabled={!onConfirm || isSubmitting} />
+        <PillButton label="Avbryt" onPress={onCancel} disabled={isSubmitting} />
       </View>
     </AppModal>
   );
