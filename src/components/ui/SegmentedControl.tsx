@@ -26,11 +26,10 @@ export function SegmentedControl<T extends string | number>({ options, value, on
               styles.segment,
               {
                 backgroundColor: selected ? colors.primary : colors.card,
-                borderColor: colors.border,
               },
             ]}
           >
-            <Text style={{ color: selected ? "#FFFFFF" : colors.text }}>{option.label}</Text>
+            <Text style={{ color: selected ? colors.onPrimary : colors.text }}>{option.label}</Text>
           </Pressable>
         );
       })}
@@ -48,6 +47,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 999,
-    borderWidth: 1,
   },
 });

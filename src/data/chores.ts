@@ -39,7 +39,9 @@ export async function fetchHouseholdRows(householdId: string): Promise<Household
   const { id: userId } = await requireUser();
   const [members, chores, groups, assignments, completions] = await Promise.all([
     supabase.from("household_members").select("*")
-      .eq("household_id", householdId).eq("is_approved", true).is("deleted_at", null)
+      // Historiska utföranden behöver även avatarer från medlemmar som lämnat.
+      // HouseholdData filtrerar fortfarande aktiva medlemmar för tilldelningar.
+      .eq("household_id", householdId).eq("is_approved", true)
       .order("created_at"),
     supabase.from("chores").select("*")
       .eq("household_id", householdId).is("deleted_at", null)

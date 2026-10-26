@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { router, Stack } from "expo-router";
 import { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { CompletedBy } from "../components/CompletedBy";
 import { PieChart } from "../components/PieChart";
 import { Card } from "../components/ui";
 import { useHouseholdData } from "../data/HouseholdData";
@@ -46,7 +47,7 @@ export default function Statistics() {
               onPress={() => setShowHelp((value) => !value)}
               hitSlop={12}
               accessibilityLabel="Vad visar statistiken?"
-              style={[styles.helpButton, { borderColor: colors.text }]}
+              style={[styles.helpButton, { backgroundColor: colors.card }]}
             >
               <Text style={[styles.helpText, { color: colors.text }]}>?</Text>
             </Pressable>
@@ -96,6 +97,7 @@ export default function Statistics() {
             {perChore.map(({ chore, slices }) => (
               <View key={chore.id} style={styles.small}>
                 <PieChart slices={slices} size={80} />
+                <CompletedBy members={slices.map((slice) => slice.member)} size={16} />
                 <Text style={[styles.smallCaption, { color: colors.text }]} numberOfLines={1}>
                   {chore.name}
                 </Text>
@@ -117,7 +119,6 @@ const styles = StyleSheet.create({
     width: 26,
     height: 26,
     borderRadius: 13,
-    borderWidth: 1.5,
     alignItems: "center",
     justifyContent: "center",
   },

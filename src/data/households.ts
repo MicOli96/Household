@@ -27,6 +27,45 @@ export async function createHousehold(name: string): Promise<HouseholdSummary> {
   return { id: data.id, name: data.name, code: data.code };
 }
 
+export function householdCode(value: string): string {
+  return value.trim().toUpperCase();
+}
+
+export function validateHouseholdCode(value: string): string {
+  const code = householdCode(value);
+  if (!code) return "Ange en hushållskod.";
+  if (!/^[A-Z0-9]{1,10}$/.test(code)) {
+    return "Ange en kod med högst 10 bokstäver eller siffror.";
+  }
+  return "";
+}
+
+export async function joinHousehold(value: string): Promise<string> {
+  const validation = validateHouseholdCode(value);
+  if (validation) throw new Error(validation);
+
+  await requireUser();
+  const { data, error } = await supabase.rpc("join_household", {
+    p_code: householdCode(value),
+  });
+
+  if (error) {
+    if (error.message.startsWith("Det finns inget hushåll med koden")) {
+      throw new Error("Hushållet kunde inte hittas. Kontrollera koden.");
+    }
+    if (error.message === "Du är redan med i hushållet eller väntar på svar") {
+      throw new Error("Du är redan med i hushållet eller väntar på svar. Kontrollera Mina hushåll.");
+    }
+    throw new Error("Kunde inte skicka förfrågan. Försök igen.");
+  }
+
+  if (typeof data !== "string" || !data.trim()) {
+    throw new Error("Kunde inte bekräfta förfrågan. Kontrollera Mina hushåll innan du försöker igen.");
+  }
+
+  return data;
+}
+
 export async function listHouseholds(): Promise<HouseholdSummary[]> {
   const { id: userId } = await requireUser();
   const { data, error } = await supabase.from("households")
@@ -104,6 +143,31 @@ export async function setMemberOwner(
   if (error || !data) throw new Error("Kunde inte ändra ägarrollen. Bara ägare kan utse ägare.");
 }
 
+// Godkänner en förfrågan så att personen blir medlem (#18). Databasen släpper
+// bara igenom ägare: för andra ändras ingen rad, och då kommer inget tillbaka.
+// Bara obesvarade förfrågningar ändras, så två ägare kan inte svara samtidigt.
+export async function approveRequest(householdId: string, userId: string): Promise<void> {
+  await requireUser();
+  const { data, error } = await supabase.from("household_members")
+    .update({ is_approved: true })
+    .eq("household_id", householdId).eq("user_id", userId)
+    .eq("is_approved", false).is("deleted_at", null)
+    .select("user_id").maybeSingle();
+  if (error || !data) throw new Error("Kunde inte godkänna förfrågan. Den kan redan vara besvarad.");
+}
+
+// Nekar en förfrågan (#18). Raden tas bort genom att deleted_at sätts, och
+// den som frågade ser "Förfrågan nekades". Personen kan fråga igen med koden.
+export async function denyRequest(householdId: string, userId: string): Promise<void> {
+  await requireUser();
+  const { data, error } = await supabase.from("household_members")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("household_id", householdId).eq("user_id", userId)
+    .eq("is_approved", false).is("deleted_at", null)
+    .select("user_id").maybeSingle();
+  if (error || !data) throw new Error("Kunde inte neka förfrågan. Den kan redan vara besvarad.");
+}
+
 // Medlemmar och förfrågningar (is_approved = false) som inte har lämnat, äldst först.
 export async function getMembers(householdId: string): Promise<MemberSummary[]> {
   const { id: userId } = await requireUser();
@@ -124,6 +188,6 @@ export async function getMembers(householdId: string): Promise<MemberSummary[]> 
 
 export function householdError(error: unknown): string {
   // Importfel och tekniska fel ska inte visa konfigurationsdetaljer i gränssnittet.
-  return error instanceof Error && /^(Du måste|Kunde inte|Hushållet|Skapandet|Ange ett|Namnet)/.test(error.message)
+  return error instanceof Error && /^(Du måste|Du är redan|Kunde inte|Hushållet|Skapandet|Ange ett|Ange en|Namnet)/.test(error.message)
     ? error.message : "Kunde inte ansluta. Kontrollera anslutningen och appens inställningar.";
 }

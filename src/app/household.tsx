@@ -12,6 +12,8 @@ import { RequestList } from "../components/RequestList";
 import { PillButton } from "../components/ui";
 import { useHouseholdData } from "../data/HouseholdData";
 import {
+  approveRequest,
+  denyRequest,
   getHousehold,
   getMembers,
   householdError,
@@ -123,6 +125,26 @@ export default function Household() {
     ownerMutation.mutate(member);
   }
 
+  // Fel från Godkänn och Neka, visas under förfrågningarna.
+  const [requestError, setRequestError] = useState("");
+
+  // Godkänner eller nekar en förfrågan (#18). Medlemslistan hämtas om efteråt,
+  // även vid fel (t.ex. om en annan ägare redan har svarat), så att förfrågan
+  // försvinner och en godkänd person syns bland medlemmarna.
+  const answerMutation = useMutation({
+    mutationFn: ({ request, approve }: { request: MemberSummary; approve: boolean }) =>
+      approve
+        ? approveRequest(householdId as string, request.userId)
+        : denyRequest(householdId as string, request.userId),
+    onError: (reason) => setRequestError(householdError(reason)),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ["members", householdId] }),
+  });
+
+  function answerRequest(request: MemberSummary, approve: boolean) {
+    setRequestError("");
+    answerMutation.mutate({ request, approve });
+  }
+
   // Medlemmen som dialogen "Pausa medlem" gäller, eller null när den är stängd (#20).
   const [pausingMember, setPausingMember] = useState<MemberSummary | null>(null);
 
@@ -195,8 +217,20 @@ export default function Household() {
           </Text>
         ) : null}
 
-        {/* Bara ägare ser förfrågningarna (#17). */}
-        {isOwner && <RequestList requests={requests} />}
+        {/* Bara ägare ser och svarar på förfrågningarna (#17, #18). */}
+        {isOwner && (
+          <RequestList
+            requests={requests}
+            onApprove={(request) => answerRequest(request, true)}
+            onDeny={(request) => answerRequest(request, false)}
+            disabled={answerMutation.isPending}
+          />
+        )}
+        {requestError ? (
+          <Text accessibilityRole="alert" style={{ color: colors.danger }}>
+            {requestError}
+          </Text>
+        ) : null}
 
         {/* Väljer hushållet för dagsvyn och går dit (#12). */}
         <PillButton
@@ -237,11 +271,8 @@ export default function Household() {
       <Placeholder
         title="Kvar att bygga"
         area={3}
-        issues="#18, #26"
-        todo={[
-          "Förfrågningar: acceptera eller neka (#18, ägare)",
-          "Lämna hushåll (#26)",
-        ]}
+        issues="#26"
+        todo={["Lämna hushåll (#26)"]}
         tables={[
           "households (name)",
           "household_members (is_owner, is_approved, deleted_at)",

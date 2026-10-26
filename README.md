@@ -193,3 +193,9 @@ Manuell kontroll:
    Mina hushåll och öppna samma hushåll igen.
 5. Kontrollera i backend att medlemskapets user_id är rätt och att is_owner och
    is_approved är true. Kontrollera även fel vid utloggat läge och nätverksfel.
+
+
+### Avatarer vid utförda sysslor (#32)
+
+Implementationen och återstående telefon-/backendtest beskrivs i
+[verifieringsguiden för #32](docs/issue-32-avatarer.md). Avatarvalet hanteras separat i #29/#30.
