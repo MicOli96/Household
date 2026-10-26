@@ -1,7 +1,8 @@
 import { router, useLocalSearchParams } from "expo-router";
+import { useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { ChoreForm } from "../../../components/ChoreForm";
-import { PillButton } from "../../../components/ui";
+import { ConfirmDialog, PillButton } from "../../../components/ui";
 import { choreError } from "../../../data/chores";
 import { useChore, useHouseholdData } from "../../../data/HouseholdData";
 import { useTheme } from "../../../theme/ThemeProvider";
@@ -10,6 +11,7 @@ import { useTheme } from "../../../theme/ThemeProvider";
 // Ta bort och arkivera (#35, #37) läggs till senare.
 export default function EditChore() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const { colors } = useTheme();
   const { editChore, currentMember, loading } = useHouseholdData();
   const chore = useChore(id);
@@ -42,23 +44,42 @@ export default function EditChore() {
   }
 
   return (
-    <ChoreForm
-      initial={{
-        name: chore.name,
-        description: chore.description,
-        intervalDays: chore.intervalDays,
-        weight: chore.weight,
-      }}
-      onSave={async (values) => {
-        try {
-          await editChore(chore.id, values);
-        } catch (reason) {
-          throw new Error(choreError(reason));
-        }
-        router.back();
-      }}
-      onClose={() => router.back()}
-    />
+    <>
+      <ChoreForm
+        initial={{
+          name: chore.name,
+          description: chore.description,
+          intervalDays: chore.intervalDays,
+          weight: chore.weight,
+        }}
+        onSave={async (values) => {
+          try {
+            await editChore(chore.id, values);
+          } catch (reason) {
+            throw new Error(choreError(reason));
+          }
+          router.back();
+        }}
+        onClose={() => router.back()}
+      />
+      <PillButton
+        label="Ta bort syssla"
+        variant="danger"
+        onPress={() => setShowDeleteDialog(true)}
+      />
+      <ConfirmDialog
+        visible={showDeleteDialog}
+        title="Ta bort syssla?"
+        message="Om du tar bort sysslan permanent försvinner också all statistik för den. Du kan arkivera sysslan istället för att behålla statistiken. "
+        confirmLabel="Ta bort permanent"
+        onConfirm={() => { }}
+        onCancel={() => setShowDeleteDialog(false)}
+        alternative={{
+          label: "Arkivera",
+          onPress: () => { },
+        }}
+      />
+    </>
   );
 }
 
