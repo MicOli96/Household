@@ -11,9 +11,22 @@ import { useState } from "react";
 export default function EditChore() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { colors } = useTheme();
-  const { editChore, currentMember, loading } = useHouseholdData();
+  const { editChore, currentMember, loading, removeChore } = useHouseholdData();
   const chore = useChore(id);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
+
+  async function handleDelete() {
+    setDeleteError("");
+
+    try {
+      await removeChore(id);
+      setShowDeleteDialog(false);
+    } catch (error) {
+      setDeleteError(choreError(error));
+      setShowDeleteDialog(false);
+    }
+  }
 
   if (loading) {
     return (
@@ -70,11 +83,15 @@ export default function EditChore() {
         }}
         onClose={() => router.back()}
       />
+      {deleteError && (
+        <Text style={{ color: colors.danger, padding: 24 }}>{deleteError}</Text>
+      )}
       <ConfirmDialog
         visible={showDeleteDialog}
         title={`Ta bort ${chore.name}?`}
         message="Sysslan och all tillhörande statistik kommer att tas bort."
         confirmLabel="Ta bort ändå"
+        onConfirm={handleDelete}
         onCancel={() => setShowDeleteDialog(false)}
       />
     </>
