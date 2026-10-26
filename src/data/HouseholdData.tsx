@@ -11,6 +11,7 @@ import {
   updateChore,
   NewChore,
   saveAssignees,
+  deleteChore,
 } from "./chores";
 import { useAuthSession } from "./AuthSession";
 import { Chore, ChoreGroup, ChoreRow, Completion, Member } from "./types";
@@ -42,6 +43,7 @@ type HouseholdDataValue = {
   addGroup: (name: string, rotationDays: number, choreIds: string[]) => Promise<void>;
   addChore: (chore: NewChore) => Promise<void>;
   editChore: (choreId: string, chore: NewChore) => Promise<void>;
+  removeChore: (choreId: string) => Promise<void>;
 };
 
 const HouseholdDataContext = createContext<HouseholdDataValue | null>(null);
@@ -182,6 +184,11 @@ export function HouseholdDataProvider({ children }: { children: ReactNode }) {
     async editChore(choreId, chore) {
       requireHousehold();
       await updateChore(choreId, chore);
+      reload();
+    },
+    async removeChore(choreId) {
+      requireHousehold();
+      await deleteChore(choreId);
       reload();
     },
   };
