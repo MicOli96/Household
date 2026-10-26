@@ -6,7 +6,7 @@ import { CompletedBy } from "../components/CompletedBy";
 import { PieChart } from "../components/PieChart";
 import { Card } from "../components/ui";
 import { useHouseholdData } from "../data/HouseholdData";
-import { getPauses } from "../data/pauses";
+import { getPauses, pauseError } from "../data/pauses";
 import { useTheme } from "../theme/ThemeProvider";
 import { distribution, periodsWithStatistics, withoutPausedDays } from "../utils/statistics";
 
@@ -22,6 +22,12 @@ export default function Statistics() {
     queryFn: () => getPauses(householdId as string, true),
     enabled: !!householdId,
   });
+  // Utan pauserna skulle pausade sysslor räknas, så diagrammen väntar på dem.
+  const pausesMessage = pausesQuery.isLoading
+    ? "Hämtar statistiken..."
+    : pausesQuery.error
+      ? pauseError(pausesQuery.error)
+      : "";
   const completions = withoutPausedDays(allCompletions, pausesQuery.data ?? []);
   const periods = periodsWithStatistics(completions);
   const [index, setIndex] = useState(0);
@@ -82,7 +88,14 @@ export default function Statistics() {
         </Card>
       )}
 
-      {total.length === 0 ? (
+      {pausesMessage ? (
+        <Text
+          accessibilityRole={pausesQuery.error ? "alert" : undefined}
+          style={[styles.empty, { color: pausesQuery.error ? colors.danger : colors.textMuted }]}
+        >
+          {pausesMessage}
+        </Text>
+      ) : total.length === 0 ? (
         <Text style={[styles.empty, { color: colors.textMuted }]}>
           Ingen statistik än. Den visas när någon har gjort en syssla.
         </Text>
