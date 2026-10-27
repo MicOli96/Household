@@ -39,13 +39,14 @@ export default function PendingHousehold() {
   });
   const name = nameQuery.data?.name ?? "";
 
-  // När ägaren har svarat ska Mina hushåll visa det, och vid ja öppnas hushållet.
+  // När ägaren har svarat ska Mina hushåll visa det, och vid ja öppnas hushållet
+  // på Sysslor. dismissTo stänger Mina hushåll, så tillbaka går inte dit (#104).
   useEffect(() => {
     if (!householdId || (status !== "approved" && status !== "denied")) return;
     queryClient.invalidateQueries({ queryKey: ["households"] });
     if (status === "approved") {
       openHousehold(householdId);
-      router.replace("/");
+      router.dismissTo("/");
     }
   }, [status, householdId, openHousehold, queryClient]);
 
