@@ -17,10 +17,10 @@ export default function Settings() {
     <View style={styles.container}>
       <Text style={[styles.title, { color: colors.text }]}>Utseende</Text>
       <SegmentedControl options={modes} value={mode} onChange={setMode} />
-      {/* Länkar som i Figma-skärmen "8 Inställningar". Hushåll och medlemmar
-          är en egen flik sedan #104. */}
+      {/* Här finns bara det som gäller hela appen (#107). Byt hushåll finns
+          på fliken Hushåll. Rotationsgrupper flyttar dit med #105 och tas
+          bort härifrån då. */}
       <PillButton label="Rotationsgrupper (ägare)" onPress={() => router.push("/groups")} />
-      <PillButton label="Byt hushåll" onPress={() => router.push("/households")} />
       <SignOutButton />
     </View>
   );

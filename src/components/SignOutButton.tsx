@@ -5,7 +5,7 @@ import { useHouseholdData } from "../data/HouseholdData";
 import { useTheme } from "../theme/ThemeProvider";
 import { PillButton } from "./ui";
 
-// Knappen "Logga ut" i Inställningar och Mina hushåll (#75).
+// Knappen "Logga ut" i Inställningar (#75, #107).
 // Efter utloggningen skickar _layout.tsx vidare till inloggningen.
 export function SignOutButton() {
   const { colors } = useTheme();
