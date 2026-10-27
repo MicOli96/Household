@@ -1,9 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { router } from "expo-router";
+import { router, Stack } from "expo-router";
 import { useCallback, useRef, useState } from "react";
-import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
-import { SignOutButton } from "../../components/SignOutButton";
-import { AppModal, Card, PillButton, TextField } from "../../components/ui";
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { AppModal, Card, Icon, PillButton, TextField } from "../../components/ui";
 import { useHouseholdData } from "../../data/HouseholdData";
 import { createHousehold, householdError, listHouseholds, listPendingHouseholds, saveNewMemberProfile, validateHouseholdName } from "../../data/households";
 import { getMyName, NAME_MAX_LENGTH, validateName } from "../../data/profile";
@@ -103,6 +102,23 @@ export default function Households() {
 
   return (
     <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+      {/* Kugghjulet som på flikarna, så att Inställningar och Logga ut går
+          att nå även utan hushåll (#107). */}
+      <Stack.Screen
+        options={{
+          headerLeft: () => (
+            <Pressable
+              onPress={() => router.push("/settings")}
+              hitSlop={12}
+              accessibilityRole="button"
+              accessibilityLabel="Inställningar"
+              style={styles.headerButton}
+            >
+              <Icon name="settings" color={colors.text} />
+            </Pressable>
+          ),
+        }}
+      />
       <Text style={[styles.title, { color: colors.text }]}>Mina hushåll</Text>
       {loading ? <Text style={{ color: colors.textMuted }}>Hämtar hushåll...</Text> : null}
       {loadError ? (
@@ -136,7 +152,6 @@ export default function Households() {
       }} />
       <PillButton label="Gå med i hushåll" onPress={() => router.push("/households/join")} />
       <PillButton label="Profil" onPress={() => router.push("/profile")} />
-      <SignOutButton />
       <AppModal visible={showCreateModal} title="Skapa nytt hushåll" onClose={closeModal}
         footer={<>
           <PillButton label="Avbryt" onPress={closeModal} disabled={isCreating} />
@@ -160,4 +175,5 @@ const styles = StyleSheet.create({
   cardTitle: { fontSize: 17, fontWeight: "600", flexShrink: 1 },
   section: { gap: 12 },
   sectionTitle: { fontSize: 15, fontWeight: "600", marginTop: 8 },
+  headerButton: { paddingHorizontal: 16 },
 });
