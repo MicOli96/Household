@@ -1,4 +1,5 @@
 import { SymbolView } from "expo-symbols";
+import type { ColorValue } from "react-native";
 
 // Ikonerna som används i appen. SF Symbols på iPhone och Material Symbols på
 // Android och webben, så att de ser likadana ut överallt. Tecken som ✎ och ⚙
@@ -6,13 +7,17 @@ import { SymbolView } from "expo-symbols";
 const icons = {
   settings: { ios: "gearshape", android: "settings" },
   edit: { ios: "pencil", android: "edit" },
+  profile: { ios: "person.crop.circle", android: "account_circle" },
+  household: { ios: "house", android: "home" },
+  chores: { ios: "checklist", android: "checklist" },
+  statistics: { ios: "chart.pie", android: "pie_chart" },
 } as const;
 
 export type IconName = keyof typeof icons;
 
 type Props = {
   name: IconName;
-  color: string;
+  color: ColorValue;
   size?: number;
 };
 

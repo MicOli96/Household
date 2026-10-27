@@ -1,14 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
-import { router, Stack } from "expo-router";
 import { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { CompletedBy } from "../components/CompletedBy";
-import { PieChart } from "../components/PieChart";
-import { Card } from "../components/ui";
-import { useHouseholdData } from "../data/HouseholdData";
-import { getPauses, pauseError } from "../data/pauses";
-import { useTheme } from "../theme/ThemeProvider";
-import { distribution, periodsWithStatistics, withoutPausedDays } from "../utils/statistics";
+import { CompletedBy } from "../../components/CompletedBy";
+import { PieChart } from "../../components/PieChart";
+import { Card } from "../../components/ui";
+import { useHouseholdData } from "../../data/HouseholdData";
+import { getPauses, pauseError } from "../../data/pauses";
+import { useTheme } from "../../theme/ThemeProvider";
+import { distribution, periodsWithStatistics, withoutPausedDays } from "../../utils/statistics";
 
 // Statistik (#39–#44): ett stort diagram med den viktade fördelningen och ett
 // litet diagram per syssla. Pilarna går mellan nuvarande vecka, förra veckan
@@ -31,42 +30,50 @@ export default function Statistics() {
   const completions = withoutPausedDays(allCompletions, pausesQuery.data ?? []);
   const periods = periodsWithStatistics(completions);
   const [index, setIndex] = useState(0);
-  const period = periods[Math.min(index, periods.length - 1)];
+  const current = Math.max(0, Math.min(index, periods.length - 1));
+  const period = periods[current];
   const { total, perChore } = period
     ? distribution(completions, allChores, members, period, pausesQuery.data ?? [])
     : { total: [], perChore: [] };
-  const hasNext = index < periods.length - 1;
-  // ? i rubriken visar vad diagrammen räknar, föreslaget av Hannes.
+  const hasPrevious = current > 0;
+  const hasNext = current < periods.length - 1;
+  // ? visar vad diagrammen räknar, föreslaget av Hannes. Den ligger vid
+  // perioden, eftersom rubrikraden är samma på alla flikar (#104).
   const [showHelp, setShowHelp] = useState(false);
-
-  function previous() {
-    if (index === 0) router.back();
-    else setIndex(index - 1);
-  }
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Stack.Screen
-        options={{
-          headerRight: () => (
-            <Pressable
-              onPress={() => setShowHelp((value) => !value)}
-              hitSlop={12}
-              accessibilityLabel="Vad visar statistiken?"
-              style={[styles.helpButton, { backgroundColor: colors.card }]}
-            >
-              <Text style={[styles.helpText, { color: colors.text }]}>?</Text>
-            </Pressable>
-          ),
-        }}
-      />
-      {/* Pilarna går mellan perioderna, ‹ på den första tillbaka till dagsvyn. */}
+      {/* Pilarna bläddrar bara mellan perioderna. ‹ syns inte på den första
+          och › inte på den sista (#104). De ligger kvar så att rubriken inte
+          flyttar sig, men aria-hidden döljer dem för skärmläsare också. */}
       <View style={styles.periodRow}>
-        <Pressable onPress={previous} hitSlop={12}>
-          <Text style={[styles.arrow, { color: colors.text }]}>‹</Text>
+        <Pressable
+          onPress={() => setIndex(current - 1)}
+          disabled={!hasPrevious}
+          aria-hidden={!hasPrevious}
+          hitSlop={12}
+          accessibilityLabel="Föregående period"
+        >
+          <Text style={[styles.arrow, { color: colors.text, opacity: hasPrevious ? 1 : 0 }]}>‹</Text>
         </Pressable>
-        <Text style={[styles.period, { color: colors.text }]}>{period?.label ?? "statistik"}</Text>
-        <Pressable onPress={() => setIndex(index + 1)} disabled={!hasNext} hitSlop={12}>
+        <View style={styles.periodTitle}>
+          <Text style={[styles.period, { color: colors.text }]}>{period?.label ?? "statistik"}</Text>
+          <Pressable
+            onPress={() => setShowHelp((value) => !value)}
+            hitSlop={12}
+            accessibilityLabel="Vad visar statistiken?"
+            style={[styles.helpButton, { backgroundColor: colors.card }]}
+          >
+            <Text style={[styles.helpText, { color: colors.text }]}>?</Text>
+          </Pressable>
+        </View>
+        <Pressable
+          onPress={() => setIndex(current + 1)}
+          disabled={!hasNext}
+          aria-hidden={!hasNext}
+          hitSlop={12}
+          accessibilityLabel="Nästa period"
+        >
           <Text style={[styles.arrow, { color: colors.text, opacity: hasNext ? 1 : 0 }]}>›</Text>
         </Pressable>
       </View>
@@ -156,6 +163,11 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: 4,
+  },
+  periodTitle: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
   },
   arrow: {
     fontSize: 26,

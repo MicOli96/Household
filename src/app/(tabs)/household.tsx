@@ -1,16 +1,16 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { router, Stack, useLocalSearchParams } from "expo-router";
+import { router } from "expo-router";
+import { Tabs } from "expo-router/js-tabs";
 import { useCallback, useEffect, useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
-import { HouseholdHeader, HouseholdTitle } from "../components/HouseholdHeader";
-import { MemberList } from "../components/MemberList";
-import { MemberMenu } from "../components/MemberMenu";
-import { PauseDialog } from "../components/PauseDialog";
-import { Placeholder } from "../components/Placeholder";
-import { RenameHouseholdDialog } from "../components/RenameHouseholdDialog";
-import { RequestList } from "../components/RequestList";
-import { PillButton } from "../components/ui";
-import { useHouseholdData } from "../data/HouseholdData";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { HouseholdHeader, HouseholdTitle } from "../../components/HouseholdHeader";
+import { MemberList } from "../../components/MemberList";
+import { MemberMenu } from "../../components/MemberMenu";
+import { PauseDialog } from "../../components/PauseDialog";
+import { RenameHouseholdDialog } from "../../components/RenameHouseholdDialog";
+import { RequestList } from "../../components/RequestList";
+import { PillButton } from "../../components/ui";
+import { useHouseholdData } from "../../data/HouseholdData";
 import {
   approveRequest,
   denyRequest,
@@ -20,7 +20,7 @@ import {
   MemberSummary,
   renameHousehold,
   setMemberOwner,
-} from "../data/households";
+} from "../../data/households";
 import {
   addPause,
   getPauses,
@@ -28,19 +28,16 @@ import {
   pauseError,
   PauseSummary,
   stopPause,
-} from "../data/pauses";
-import { useRefreshOnFocus } from "../hooks/useRefreshOnFocus";
-import { useTheme } from "../theme/ThemeProvider";
+} from "../../data/pauses";
+import { useRefreshOnFocus } from "../../hooks/useRefreshOnFocus";
+import { useTheme } from "../../theme/ThemeProvider";
 
-// TODO (område 3): Resten av hushållsvyn, se #16–#21 och #26.
-// Byt ut Placeholder mot den riktiga vyn.
+// Fliken Hushåll (#104): det öppnade hushållets namn, kod och medlemmar.
 // Byt namn och medlemsmenyn (gör till ägare, pausa) är modaler (AppModal), inte egna skärmar.
 export default function Household() {
   const { colors } = useTheme();
-  const { openHousehold } = useHouseholdData();
+  const { householdId } = useHouseholdData();
   const queryClient = useQueryClient();
-  const { id } = useLocalSearchParams<{ id?: string | string[] }>();
-  const householdId = Array.isArray(id) ? id[0] : id;
 
   // Id:t ingår i nycklarna, så att varje hushåll får en egen låda i cachen.
   const householdQuery = useQuery({
@@ -186,21 +183,29 @@ export default function Household() {
     setPausingMember(null);
   }
 
+  // Går hushållet inte att hämta (t.ex. om det är borttaget) ska man ändå
+  // kunna byta till ett annat härifrån.
   if (!household) {
     return (
       <View style={styles.message}>
-        <Text style={{ color: error ? colors.danger : colors.textMuted }}>
-          {error ||
-            (householdId ? "Hämtar hushållet..." : "Inget hushåll är valt.")}
+        <Text
+          accessibilityRole={error ? "alert" : undefined}
+          style={{ color: error ? colors.danger : colors.textMuted }}
+        >
+          {error || "Hämtar hushållet..."}
         </Text>
+        {error ? (
+          <PillButton label="Byt hushåll" onPress={() => router.push("/households")} />
+        ) : null}
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      {/* Rubriken högst upp visar hushållets namn i stället för "Hushåll", som i Figma. */}
-      <Stack.Screen
+    <ScrollView contentContainerStyle={styles.container}>
+      {/* Ägare får en penna bredvid namnet i rubriken, som i Figma. Kugghjulet
+          och profilen kommer från flikarnas layout. */}
+      <Tabs.Screen
         options={{
           headerTitle: () => (
             <HouseholdTitle
@@ -209,49 +214,47 @@ export default function Household() {
               onEdit={() => setRenaming(true)}
             />
           ),
-          headerTitleAlign: "center",
         }}
       />
 
-      <View style={styles.header}>
-        <HouseholdHeader code={household.code} />
-        <MemberList
-          members={members}
-          pausedUserIds={pausedUserIds}
-          canManage={isOwner}
-          onOpenMenu={setMenuMember}
-        />
-        {memberMessage ? (
-          <Text accessibilityRole="alert" style={{ color: colors.danger }}>
-            {memberMessage}
-          </Text>
-        ) : null}
+      <HouseholdHeader code={household.code} />
+      <MemberList
+        members={members}
+        pausedUserIds={pausedUserIds}
+        canManage={isOwner}
+        onOpenMenu={setMenuMember}
+      />
+      {memberMessage ? (
+        <Text accessibilityRole="alert" style={{ color: colors.danger }}>
+          {memberMessage}
+        </Text>
+      ) : null}
 
-        {/* Bara ägare ser och svarar på förfrågningarna (#17, #18). */}
-        {isOwner && (
-          <RequestList
-            requests={requests}
-            onApprove={(request) => answerRequest(request, true)}
-            onDeny={(request) => answerRequest(request, false)}
-            disabled={answerMutation.isPending}
-          />
-        )}
-        {requestError ? (
-          <Text accessibilityRole="alert" style={{ color: colors.danger }}>
-            {requestError}
-          </Text>
-        ) : null}
-
-        {/* Väljer hushållet för dagsvyn och går dit (#12). */}
-        <PillButton
-          label="Visa sysslor"
-          variant="primary"
-          onPress={() => {
-            openHousehold(household.id);
-            router.dismissTo("/");
-          }}
+      {/* Bara ägare ser och svarar på förfrågningarna (#17, #18). */}
+      {isOwner && (
+        <RequestList
+          requests={requests}
+          onApprove={(request) => answerRequest(request, true)}
+          onDeny={(request) => answerRequest(request, false)}
+          disabled={answerMutation.isPending}
         />
-      </View>
+      )}
+      {requestError ? (
+        <Text accessibilityRole="alert" style={{ color: colors.danger }}>
+          {requestError}
+        </Text>
+      ) : null}
+
+      {isOwner && (
+        <View style={styles.rotationSection}>
+          <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>
+            ROTATIONSGRUPPER
+          </Text>
+          <PillButton label="Hantera rotationsgrupper" onPress={() => router.push("/groups")} />
+        </View>
+      )}
+
+      <PillButton label="Byt hushåll" onPress={() => router.push("/households")} />
 
       {renaming && (
         <RenameHouseholdDialog
@@ -277,32 +280,25 @@ export default function Household() {
           onStop={endPause}
         />
       )}
-
-      <Placeholder
-        title="Kvar att bygga"
-        area={3}
-        issues="#26"
-        todo={["Lämna hushåll (#26)"]}
-        tables={[
-          "households (name)",
-          "household_members (is_owner, is_approved, deleted_at)",
-          "pauses",
-        ]}
-      />
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-  },
-  header: {
     padding: 16,
-    paddingBottom: 0,
     gap: 24,
   },
   message: {
     padding: 24,
+    gap: 24,
+  },
+  rotationSection: {
+    gap: 8,
+  },
+  sectionTitle: {
+    fontSize: 13,
+    fontWeight: "600",
+    marginBottom: 4,
   },
 });
