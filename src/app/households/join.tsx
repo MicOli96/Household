@@ -6,7 +6,7 @@ import { useTheme } from "../../theme/ThemeProvider";
 
 export default function JoinHousehold() {
   const { colors } = useTheme();
-  const { code, setCode, error, name, setName, nameError, isSubmitting, submit } = useJoinHouseholdForm();
+  const { code, setCode, codeLocked, error, name, setName, nameError, isSubmitting, submit } = useJoinHouseholdForm();
 
   return (
     <KeyboardAvoidingView
@@ -29,7 +29,7 @@ export default function JoinHousehold() {
             onChangeText={setCode}
             autoCapitalize="characters"
             autoCorrect={false}
-            editable={!isSubmitting}
+            editable={!isSubmitting && !codeLocked}
             error={error}
           />
 

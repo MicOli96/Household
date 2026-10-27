@@ -12,6 +12,7 @@ export function useJoinHouseholdForm() {
   const [nameError, setNameError] = useState("");
   const accountName = useQuery({ queryKey: ["profile"], queryFn: getMyName });
   const name = typedName ?? accountName.data ?? "";
+  const [sentHouseholdId, setSentHouseholdId] = useState<string | null>(null);
   const submitting = useRef(false);
   const mounted = useRef(true);
 
@@ -21,12 +22,16 @@ export function useJoinHouseholdForm() {
   }, []);
 
   const join = useMutation({
-    mutationFn: async (values: { code: string; name: string }) => {
-      const householdId = await joinHousehold(values.code);
-      await saveNewMemberProfile(householdId, values.name).catch(() => undefined);
-      return householdId;
+    mutationFn: async (values: { code: string; name: string; householdId: string | null }) => {
+      const householdId = values.householdId ?? await joinHousehold(values.code);
+      try {
+        await saveNewMemberProfile(householdId, values.name);
+        return { householdId, profileSaved: true };
+      } catch {
+        return { householdId, profileSaved: false };
+      }
     },
-    onSuccess: (householdId) => {
+    onSuccess: ({ householdId }) => {
       queryClient.removeQueries({ queryKey: ["membership", householdId], exact: true });
       void queryClient.invalidateQueries({ queryKey: ["households"] });
     },
@@ -43,8 +48,17 @@ export function useJoinHouseholdForm() {
 
     submitting.current = true;
     try {
-      const householdId = await join.mutateAsync({ code, name });
+      const { householdId, profileSaved } = await join.mutateAsync({
+        code,
+        name,
+        householdId: sentHouseholdId,
+      });
       if (!mounted.current) return;
+      if (!profileSaved) {
+        setSentHouseholdId(householdId);
+        setNameError("Förfrågan är skickad, men ditt namn kunde inte sparas. Tryck Skicka förfrågan för att försöka igen.");
+        return;
+      }
       router.replace({ pathname: "/households/pending", params: { id: householdId } });
     } catch (reason) {
       if (mounted.current) setError(householdError(reason));
@@ -58,5 +72,15 @@ export function useJoinHouseholdForm() {
     setNameError("");
   }
 
-  return { code, setCode, error, name, setName, nameError, isSubmitting: join.isPending, submit };
+  return {
+    code,
+    setCode,
+    codeLocked: sentHouseholdId !== null,
+    error,
+    name,
+    setName,
+    nameError,
+    isSubmitting: join.isPending,
+    submit,
+  };
 }
