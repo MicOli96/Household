@@ -245,6 +245,15 @@ export default function Household() {
         </Text>
       ) : null}
 
+      {isOwner && (
+        <View style={styles.rotationSection}>
+          <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>
+            ROTATIONSGRUPPER
+          </Text>
+          <PillButton label="Hantera rotationsgrupper" onPress={() => router.push("/groups")} />
+        </View>
+      )}
+
       <PillButton label="Byt hushåll" onPress={() => router.push("/households")} />
 
       {renaming && (
@@ -283,5 +292,13 @@ const styles = StyleSheet.create({
   message: {
     padding: 24,
     gap: 24,
+  },
+  rotationSection: {
+    gap: 8,
+  },
+  sectionTitle: {
+    fontSize: 13,
+    fontWeight: "600",
+    marginBottom: 4,
   },
 });
