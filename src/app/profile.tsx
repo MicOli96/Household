@@ -10,15 +10,8 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Avatar, ConfirmDialog, PillButton, TextField } from "../components/ui";
-import { useHouseholdData } from "../data/HouseholdData";
-import {
-  getHousehold,
-  getMyProfile,
-  householdError,
-  leaveHousehold,
-  saveMyProfile,
-} from "../data/households";
+import { Avatar, PillButton, TextField } from "../components/ui";
+import { getMyProfile, householdError, saveMyProfile } from "../data/households";
 import { getMyName, NAME_MAX_LENGTH, saveMyName } from "../data/profile";
 import { useTheme } from "../theme/ThemeProvider";
 import { avatars, type AvatarEmoji } from "../theme/avatars";
@@ -31,9 +24,7 @@ const avatarOptions = Object.keys(avatars) as AvatarEmoji[];
 export default function Profile() {
   const { colors } = useTheme();
   const { householdId } = useLocalSearchParams<{ householdId?: string }>();
-  const { householdId: openHouseholdId, openHousehold } = useHouseholdData();
   const queryClient = useQueryClient();
-  const [confirmLeave, setConfirmLeave] = useState(false);
   const [typedName, setTypedName] = useState<string | null>(null);
   const [selectedAvatar, setSelectedAvatar] = useState<AvatarEmoji | null>(null);
   const submitting = useRef(false);
@@ -69,24 +60,6 @@ export default function Profile() {
       queryClient.invalidateQueries({ queryKey: ["chores"] });
     },
   });
-  // Samma nyckel som flikarna, så att namnet redan finns i cachen.
-  const householdQuery = useQuery({
-    queryKey: ["household", householdId],
-    queryFn: () => getHousehold(householdId as string),
-    enabled: !!householdId,
-  });
-  const leaveMutation = useMutation({
-    mutationFn: () => leaveHousehold(householdId as string),
-    onSuccess: () => {
-      setConfirmLeave(false);
-      if (openHouseholdId === householdId) openHousehold(null);
-      queryClient.invalidateQueries({ queryKey: ["households"] });
-      // Mina hushåll visas utan flikar, och hushållet finns inte längre i listan.
-      if (router.canDismiss()) router.dismissAll();
-      router.replace("/households");
-    },
-  });
-
   const saving = saveMutation.isPending;
   const saveError = saveMutation.error ? householdError(saveMutation.error) : "";
   const error = saveError || loadError;
@@ -195,33 +168,9 @@ export default function Profile() {
               disabled={saving || loading || !householdId}
               style={styles.saveButton}
             />
-
-            {householdId ? (
-              <PillButton
-                label="Lämna hushåll"
-                variant="danger"
-                onPress={() => {
-                  leaveMutation.reset();
-                  setConfirmLeave(true);
-                }}
-                disabled={saving}
-                style={styles.leaveButton}
-              />
-            ) : null}
           </>
         )}
       </ScrollView>
-
-      <ConfirmDialog
-        visible={confirmLeave}
-        title="Lämna hushåll"
-        message={`Vill du lämna ”${householdQuery.data?.name ?? "hushållet"}”? Du kan gå med igen med koden, men då måste en ägare godkänna dig.`}
-        error={leaveMutation.error ? householdError(leaveMutation.error) : undefined}
-        busy={leaveMutation.isPending}
-        confirmLabel="Lämna"
-        onConfirm={() => leaveMutation.mutate()}
-        onCancel={() => setConfirmLeave(false)}
-      />
     </SafeAreaView>
   );
 }
@@ -276,11 +225,6 @@ const styles = StyleSheet.create({
   saveButton: {
     width: "100%",
     marginTop: 48,
-    paddingVertical: 14,
-  },
-  leaveButton: {
-    width: "100%",
-    marginTop: 16,
     paddingVertical: 14,
   },
 });
