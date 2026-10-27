@@ -4,7 +4,8 @@ import { useCallback, useRef, useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { SignOutButton } from "../../components/SignOutButton";
 import { AppModal, Card, PillButton, TextField } from "../../components/ui";
-import { createHousehold, householdError, listHouseholds, listPendingHouseholds, validateHouseholdName } from "../../data/households";
+import { createHousehold, householdError, listHouseholds, listPendingHouseholds, saveNewMemberProfile, validateHouseholdName } from "../../data/households";
+import { getMyName, NAME_MAX_LENGTH, validateName } from "../../data/profile";
 import { useRefreshOnFocus } from "../../hooks/useRefreshOnFocus";
 import { useTheme } from "../../theme/ThemeProvider";
 
@@ -14,6 +15,8 @@ export default function Households() {
   const [householdName, setHouseholdName] = useState("");
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [nameError, setNameError] = useState("");
+  const [typedMemberName, setTypedMemberName] = useState<string | null>(null);
+  const [memberNameError, setMemberNameError] = useState("");
   const submitting = useRef(false);
   const [message, setMessage] = useState("");
 
@@ -34,8 +37,19 @@ export default function Households() {
   }, [refetchApproved, refetchWaiting]);
   useRefreshOnFocus(refetchAll);
 
+  const accountName = useQuery({ queryKey: ["profile"], queryFn: getMyName });
+  const memberName = typedMemberName ?? accountName.data ?? "";
+
   const create = useMutation({
-    mutationFn: createHousehold,
+    mutationFn: async (names: { household: string; member: string }) => {
+      const household = await createHousehold(names.household);
+      try {
+        await saveNewMemberProfile(household.id, names.member);
+        return { household, profileSaved: true };
+      } catch {
+        return { household, profileSaved: false };
+      }
+    },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["households"] }),
   });
   const isCreating = create.isPending;
@@ -45,19 +59,31 @@ export default function Households() {
     setShowCreateModal(false);
     setHouseholdName("");
     setNameError("");
+    setTypedMemberName(null);
+    setMemberNameError("");
   }
 
   async function handleCreate() {
     if (submitting.current) return;
-    const validation = validateHouseholdName(householdName);
-    setNameError(validation);
-    if (validation) return;
+    const householdValidation = validateHouseholdName(householdName);
+    const memberValidation = validateName(memberName);
+    setNameError(householdValidation);
+    setMemberNameError(memberValidation);
+    if (householdValidation || memberValidation) return;
     submitting.current = true;
     try {
-      const household = await create.mutateAsync(householdName);
-      setMessage(`Hushållet ”${household.name}” har skapats. Tryck på kortet för att öppna det.`);
+      const { household, profileSaved } = await create.mutateAsync({
+        household: householdName,
+        member: memberName,
+      });
+      setMessage(
+        profileSaved
+          ? `Hushållet ”${household.name}” har skapats. Tryck på kortet för att öppna det.`
+          : `Hushållet ”${household.name}” har skapats, men ditt namn kunde inte sparas. Ändra det i profilen.`,
+      );
       setShowCreateModal(false);
       setHouseholdName("");
+      setTypedMemberName(null);
     } catch (error) {
       setNameError(householdError(error));
     } finally {
@@ -111,6 +137,10 @@ export default function Households() {
         <TextField accessibilityLabel="Hushållets namn" placeholder="Hushållets namn" value={householdName}
           onChangeText={(value) => { setHouseholdName(value); setNameError(""); }}
           editable={!isCreating} error={nameError} />
+        <TextField accessibilityLabel="Ditt namn" placeholder="Ditt namn" value={memberName}
+          onChangeText={(value) => { setTypedMemberName(value); setMemberNameError(""); }}
+          maxLength={NAME_MAX_LENGTH} autoCapitalize="words"
+          editable={!isCreating} error={memberNameError} />
       </AppModal>
     </ScrollView>
   );
