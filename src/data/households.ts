@@ -276,7 +276,7 @@ export async function approveRequest(householdId: string, userId: string): Promi
 export async function denyRequest(householdId: string, userId: string): Promise<void> {
   await requireUser();
   const { data, error } = await supabase.from("household_members")
-    .update({ deleted_at: new Date().toISOString() })
+    .update({ deleted_at: new Date().toISOString(), avatar_id: null })
     .eq("household_id", householdId).eq("user_id", userId)
     .eq("is_approved", false).is("deleted_at", null)
     .select("user_id").maybeSingle();
