@@ -183,12 +183,20 @@ export default function Household() {
     setPausingMember(null);
   }
 
+  // Går hushållet inte att hämta (t.ex. om det är borttaget) ska man ändå
+  // kunna byta till ett annat härifrån.
   if (!household) {
     return (
       <View style={styles.message}>
-        <Text style={{ color: error ? colors.danger : colors.textMuted }}>
+        <Text
+          accessibilityRole={error ? "alert" : undefined}
+          style={{ color: error ? colors.danger : colors.textMuted }}
+        >
           {error || "Hämtar hushållet..."}
         </Text>
+        {error ? (
+          <PillButton label="Byt hushåll" onPress={() => router.push("/households")} />
+        ) : null}
       </View>
     );
   }
@@ -274,5 +282,6 @@ const styles = StyleSheet.create({
   },
   message: {
     padding: 24,
+    gap: 24,
   },
 });
