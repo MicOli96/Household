@@ -44,11 +44,13 @@ export default function Statistics() {
   return (
     <ScrollView contentContainerStyle={styles.container}>
       {/* Pilarna bläddrar bara mellan perioderna. ‹ syns inte på den första
-          och › inte på den sista (#104). */}
+          och › inte på den sista (#104). De ligger kvar så att rubriken inte
+          flyttar sig, men aria-hidden döljer dem för skärmläsare också. */}
       <View style={styles.periodRow}>
         <Pressable
           onPress={() => setIndex(current - 1)}
           disabled={!hasPrevious}
+          aria-hidden={!hasPrevious}
           hitSlop={12}
           accessibilityLabel="Föregående period"
         >
@@ -68,6 +70,7 @@ export default function Statistics() {
         <Pressable
           onPress={() => setIndex(current + 1)}
           disabled={!hasNext}
+          aria-hidden={!hasNext}
           hitSlop={12}
           accessibilityLabel="Nästa period"
         >
