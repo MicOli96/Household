@@ -1,6 +1,5 @@
-import { router } from "expo-router";
 import { StyleSheet, Text, View } from "react-native";
-import { PillButton, SegmentedControl } from "../components/ui";
+import { SegmentedControl } from "../components/ui";
 import { SignOutButton } from "../components/SignOutButton";
 import { ThemeMode, useTheme } from "../theme/ThemeProvider";
 
@@ -17,10 +16,8 @@ export default function Settings() {
     <View style={styles.container}>
       <Text style={[styles.title, { color: colors.text }]}>Utseende</Text>
       <SegmentedControl options={modes} value={mode} onChange={setMode} />
-      {/* Länkar som i Figma-skärmen "8 Inställningar". Hushåll och medlemmar
-          är en egen flik sedan #104. */}
-      <PillButton label="Rotationsgrupper (ägare)" onPress={() => router.push("/groups")} />
-      <PillButton label="Byt hushåll" onPress={() => router.push("/households")} />
+      {/* Här finns bara det som gäller hela appen (#107). Byt hushåll och
+          Rotationsgrupper finns på fliken Hushåll (#105). */}
       <SignOutButton />
     </View>
   );
