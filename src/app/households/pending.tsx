@@ -40,13 +40,15 @@ export default function PendingHousehold() {
   const name = nameQuery.data?.name ?? "";
 
   // När ägaren har svarat ska Mina hushåll visa det, och vid ja öppnas hushållet
-  // på Sysslor. dismissTo stänger Mina hushåll, så tillbaka går inte dit (#104).
+  // på Sysslor. Mina hushåll ligger under den här skärmen, så stacken stängs ner
+  // till den och den byts mot flikarna. Annars går tillbaka dit (#104).
   useEffect(() => {
     if (!householdId || (status !== "approved" && status !== "denied")) return;
     queryClient.invalidateQueries({ queryKey: ["households"] });
     if (status === "approved") {
       openHousehold(householdId);
-      router.dismissTo("/");
+      if (router.canDismiss()) router.dismissAll();
+      router.replace("/");
     }
   }, [status, householdId, openHousehold, queryClient]);
 
