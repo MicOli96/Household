@@ -4,18 +4,25 @@ import { useCallback, useRef, useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { SignOutButton } from "../../components/SignOutButton";
 import { AppModal, Card, PillButton, TextField } from "../../components/ui";
+import { useHouseholdData } from "../../data/HouseholdData";
 import { createHousehold, householdError, listHouseholds, listPendingHouseholds, validateHouseholdName } from "../../data/households";
 import { useRefreshOnFocus } from "../../hooks/useRefreshOnFocus";
 import { useTheme } from "../../theme/ThemeProvider";
 
 export default function Households() {
   const { colors } = useTheme();
+  const { openHousehold } = useHouseholdData();
   const queryClient = useQueryClient();
   const [householdName, setHouseholdName] = useState("");
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [nameError, setNameError] = useState("");
   const submitting = useRef(false);
-  const [message, setMessage] = useState("");
+
+  // Ett hushåll öppnas direkt på fliken Sysslor (#104).
+  function open(id: string) {
+    openHousehold(id);
+    router.dismissTo("/");
+  }
 
   // Båda nycklarna börjar med "households", så invalidateQueries({ queryKey: ["households"] })
   // märker båda listorna som gamla.
@@ -55,9 +62,10 @@ export default function Households() {
     submitting.current = true;
     try {
       const household = await create.mutateAsync(householdName);
-      setMessage(`Hushållet ”${household.name}” har skapats. Tryck på kortet för att öppna det.`);
       setShowCreateModal(false);
       setHouseholdName("");
+      // Ett nyskapat hushåll öppnas av sig självt (#104).
+      open(household.id);
     } catch (error) {
       setNameError(householdError(error));
     } finally {
@@ -68,7 +76,6 @@ export default function Households() {
   return (
     <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
       <Text style={[styles.title, { color: colors.text }]}>Mina hushåll</Text>
-      {message ? <Text accessibilityLiveRegion="polite" style={{ color: colors.text }}>{message}</Text> : null}
       {loading ? <Text style={{ color: colors.textMuted }}>Hämtar hushåll...</Text> : null}
       {loadError ? (
         <View style={styles.section}>
@@ -80,7 +87,7 @@ export default function Households() {
         <Text style={{ color: colors.textMuted }}>Du har inga hushåll ännu.</Text>
       ) : null}
       {households.map((household) => (
-        <Card key={household.id} onPress={() => router.push({ pathname: "/household", params: { id: household.id } })}>
+        <Card key={household.id} onPress={() => open(household.id)}>
           <Text style={[styles.cardTitle, { color: colors.text }]}>{household.name}</Text>
           <Text style={{ color: colors.textMuted }}>›</Text>
         </Card>
@@ -97,7 +104,6 @@ export default function Households() {
       <PillButton label="Skapa nytt hushåll" variant="primary" disabled={loading} onPress={() => {
         setNameError("");
         setHouseholdName("");
-        setMessage("");
         setShowCreateModal(true);
       }} />
       <PillButton label="Gå med i hushåll" onPress={() => router.push("/households/join")} />

@@ -33,13 +33,16 @@ function ThemedStack() {
           headerTintColor: colors.text,
           headerShadowVisible: false,
           contentStyle: { backgroundColor: colors.background },
+          // Bara pilen, annars står det "(tabs)" bredvid den på iPhone.
+          headerBackButtonDisplayMode: "minimal",
         }}
       >
         {/* Skärmarna för den som är inloggad (#75). Loggar man ut skickas man
-            till inloggningen, och loggar man in hamnar man i dagsvyn, som i
+            till inloggningen, och loggar man in hamnar man i flikarna, som i
             sin tur skickar vidare till Mina hushåll om inget hushåll är öppnat. */}
         <Stack.Protected guard={!!session}>
-          <Stack.Screen name="index" options={{ title: "Sysslor" }} />
+          {/* Flikarna Hushåll, Sysslor och Statistik har sin egen rubrikrad (#104). */}
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="settings" options={{ title: "Inställningar" }} />
           <Stack.Screen name="chore/[id]" options={{ title: "" }} />
 
@@ -50,7 +53,6 @@ function ThemedStack() {
 
           {/* Område 3: Hushåll */}
           <Stack.Screen name="households/index" options={{ title: "Mina hushåll" }} />
-          <Stack.Screen name="household" options={{ title: "Hushåll" }} />
 
           {/* Område 4: Sysslor */}
           <Stack.Screen
@@ -65,9 +67,6 @@ function ThemedStack() {
             options={{ title: "Tilldela", presentation: "modal" }}
           />
           <Stack.Screen name="groups" options={{ title: "Rotationsgrupper" }} />
-
-          {/* Område 6: Statistik */}
-          <Stack.Screen name="statistics" options={{ title: "Statistik" }} />
         </Stack.Protected>
 
         {/* Inloggningen går bara att öppna när ingen är inloggad. */}
