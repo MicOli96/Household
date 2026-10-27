@@ -131,7 +131,8 @@ export default function Profile() {
           return;
         }
       }
-      router.dismissTo("/households");
+      // Profilen öppnas både från flikarna och från Mina hushåll.
+      router.back();
     } finally {
       submitting.current = false;
     }
