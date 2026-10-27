@@ -250,6 +250,7 @@ export default function Household() {
           <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>
             ROTATIONSGRUPPER
           </Text>
+          <PillButton label="Hantera rotationsgrupper" onPress={() => router.push("/groups")} />
         </View>
       )}
 
