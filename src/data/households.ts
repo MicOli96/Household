@@ -204,6 +204,32 @@ export async function saveMyProfile(
   }
 }
 
+// Provar ett nytt slumpat djur om någon annan hann ta det först.
+export async function saveNewMemberProfile(householdId: string, name: string): Promise<void> {
+  const nameError = validateName(name);
+  if (nameError) throw new Error(nameError);
+
+  const { taken } = await getMyProfile(householdId);
+  const free = avatarEmojis.filter((emoji) => !taken.includes(emoji));
+  while (free.length > 0) {
+    const [avatar] = free.splice(Math.floor(Math.random() * free.length), 1);
+    try {
+      await saveMyProfile(householdId, name, avatar);
+      return;
+    } catch (reason) {
+      if (!(reason instanceof Error && reason.message.startsWith("Den avataren"))) throw reason;
+    }
+  }
+
+  const { id: userId } = await requireUser();
+  const { error } = await supabase.from("household_members")
+    .update({ name: name.trim() })
+    .eq("household_id", householdId)
+    .eq("user_id", userId)
+    .is("deleted_at", null);
+  if (error) throw new Error("Kunde inte spara ditt namn i hushållet. Ändra det i profilen.");
+}
+
 // Byter namn på hushållet. Databasen släpper bara igenom ägare: för andra
 // ändras ingen rad, och då kommer inget hushåll tillbaka.
 export async function renameHousehold(id: string, name: string): Promise<HouseholdSummary> {
