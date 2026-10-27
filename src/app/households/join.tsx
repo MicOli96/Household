@@ -1,11 +1,12 @@
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from "react-native";
 import { PillButton, TextField } from "../../components/ui";
+import { NAME_MAX_LENGTH } from "../../data/profile";
 import { useJoinHouseholdForm } from "../../hooks/useJoinHouseholdForm";
 import { useTheme } from "../../theme/ThemeProvider";
 
 export default function JoinHousehold() {
   const { colors } = useTheme();
-  const { code, setCode, error, isSubmitting, submit } = useJoinHouseholdForm();
+  const { code, setCode, error, name, setName, nameError, isSubmitting, submit } = useJoinHouseholdForm();
 
   return (
     <KeyboardAvoidingView
@@ -30,6 +31,17 @@ export default function JoinHousehold() {
             autoCorrect={false}
             editable={!isSubmitting}
             error={error}
+          />
+
+          <TextField
+            accessibilityLabel="Ditt namn"
+            placeholder="Ditt namn"
+            value={name}
+            onChangeText={setName}
+            maxLength={NAME_MAX_LENGTH}
+            autoCapitalize="words"
+            editable={!isSubmitting}
+            error={nameError}
             returnKeyType="send"
             onSubmitEditing={submit}
           />
