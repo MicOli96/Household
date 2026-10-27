@@ -2,9 +2,9 @@ import { useQuery } from "@tanstack/react-query";
 import { Redirect, router } from "expo-router";
 import { Tabs } from "expo-router/js-tabs";
 import { Pressable, StyleSheet } from "react-native";
-import { Icon } from "../../components/ui";
+import { Avatar, Icon } from "../../components/ui";
 import { useHouseholdData } from "../../data/HouseholdData";
-import { getHousehold } from "../../data/households";
+import { getHousehold, getMembers } from "../../data/households";
 import { useTheme } from "../../theme/ThemeProvider";
 
 // Flikarna längst ner (#104): Hushåll, Sysslor och Statistik. Alla tre har
@@ -27,6 +27,16 @@ export default function TabsLayout() {
     queryFn: () => getHousehold(householdId as string),
     enabled: !!householdId,
   });
+
+  // Profilikonen visar ens djur i hushållet, eller gubben tills man har valt
+  // ett. Samma nyckel som i fliken Hushåll, och profilen uppdaterar den när
+  // man sparar.
+  const membersQuery = useQuery({
+    queryKey: ["members", householdId],
+    queryFn: () => getMembers(householdId as string),
+    enabled: !!householdId,
+  });
+  const myAvatar = membersQuery.data?.find((m) => m.isMe)?.avatar ?? null;
 
   // Utan öppnat hushåll visas Mina hushåll, utan flikar (#75).
   if (!householdId) return <Redirect href="/households" />;
@@ -59,7 +69,11 @@ export default function TabsLayout() {
             accessibilityLabel="Din profil"
             style={styles.headerButton}
           >
-            <Icon name="profile" color={colors.text} />
+            {myAvatar ? (
+              <Avatar emoji={myAvatar} size={28} />
+            ) : (
+              <Icon name="profile" color={colors.text} />
+            )}
           </Pressable>
         ),
         sceneStyle: { backgroundColor: colors.background },
