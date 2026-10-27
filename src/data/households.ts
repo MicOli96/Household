@@ -279,6 +279,6 @@ export async function getMembers(householdId: string): Promise<MemberSummary[]> 
 
 export function householdError(error: unknown): string {
   // Importfel och tekniska fel ska inte visa konfigurationsdetaljer i gränssnittet.
-  return error instanceof Error && /^(Du måste|Du är redan|Kunde inte|Hushållet|Skapandet|Ange ett|Ange en|Namnet|Välj en|Den avataren|Välj ett)/.test(error.message)
+  return error instanceof Error && /^(Du måste|Du är redan|Kunde inte|Hushållet|Skapandet|Ange ett|Ange en|Ange ditt|Namnet|Välj en|Den avataren|Välj ett)/.test(error.message)
     ? error.message : "Kunde inte ansluta. Kontrollera anslutningen och appens inställningar.";
 }
