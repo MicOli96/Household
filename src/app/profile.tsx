@@ -131,8 +131,11 @@ export default function Profile() {
           return;
         }
       }
-      // Profilen öppnas både från flikarna och från Mina hushåll.
-      router.back();
+      // Profilen öppnas både från flikarna och från Mina hushåll. Öppnas den
+      // direkt på webben finns ingen historik, och då går vi till Sysslor, som
+      // i sin tur visar Mina hushåll om inget hushåll är öppnat.
+      if (router.canGoBack()) router.back();
+      else router.replace("/");
     } finally {
       submitting.current = false;
     }
