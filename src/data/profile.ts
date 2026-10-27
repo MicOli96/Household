@@ -1,10 +1,9 @@
 import { z } from "zod";
 import { requireUser, supabase } from "../lib/supabase";
 
-// Användarens namn (#27). Namnet sparas på kontot (user_metadata.name), så att
-// det finns redan innan man har ett hushåll. create_household och
-// join_household kopierar det därifrån till household_members.name, och när
-// man byter namn ändras det i hushållen man redan är med i också.
+// Användarens namn (#27). Namnet hör till hushållet och sparas i
+// household_members.name (#106). Det senaste namnet sparas även på kontot
+// (user_metadata.name) och föreslås när man går med i ett nytt hushåll.
 
 export const NAME_MAX_LENGTH = 100;
 
@@ -28,24 +27,16 @@ export async function getMyName(): Promise<string> {
   return result.success ? result.data : "";
 }
 
-/** Sparar namnet och returnerar det som det sparades (utan mellanslag runt). */
+/** Sparar namnet på kontot och returnerar det som det sparades (utan mellanslag runt). */
 export async function saveMyName(value: string): Promise<string> {
   const validation = validateName(value);
   if (validation) throw new Error(validation);
   // Samma som nameSchema gör innan namnet kontrolleras.
   const name = value.trim();
 
-  const user = await requireUser();
+  await requireUser();
   const { error } = await supabase.auth.updateUser({ data: { name } });
   if (error) throw new Error("Kunde inte spara namnet. Försök igen.");
-
-  // Hushållen visar namnet från household_members. Även väntande förfrågningar
-  // ändras, så att ägaren ser det nya namnet.
-  const { error: memberError } = await supabase.from("household_members")
-    .update({ name })
-    .eq("user_id", user.id)
-    .is("deleted_at", null);
-  if (memberError) throw new Error("Kunde inte ändra namnet i dina hushåll. Försök igen.");
 
   return name;
 }

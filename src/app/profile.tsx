@@ -12,128 +12,71 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Avatar, PillButton, TextField } from "../components/ui";
 import { useHouseholdData } from "../data/HouseholdData";
-import {
-  getMyProfile,
-  householdError,
-  listHouseholds,
-  saveMyProfile,
-} from "../data/households";
-import {
-  getMyName,
-  NAME_MAX_LENGTH,
-  profileError,
-  saveMyName,
-} from "../data/profile";
+import { getMyProfile, householdError, saveMyProfile } from "../data/households";
+import { getMyName, NAME_MAX_LENGTH, saveMyName } from "../data/profile";
 import { useTheme } from "../theme/ThemeProvider";
 import { avatars, type AvatarEmoji } from "../theme/avatars";
 
 const avatarOptions = Object.keys(avatars) as AvatarEmoji[];
 
+// Profilen för ett hushåll (#106). Namn och djur hör till hushållet, så
+// profilen ändrar bara det hushåll som är öppet.
 export default function Profile() {
   const { colors } = useTheme();
   const { householdId } = useHouseholdData();
   const queryClient = useQueryClient();
   const [typedName, setTypedName] = useState<string | null>(null);
-  const [selectedHouseholdId, setSelectedHouseholdId] = useState<string | null>(null);
-  const [avatarSelection, setAvatarSelection] = useState<{
-    householdId: string;
-    avatar: AvatarEmoji;
-  } | null>(null);
+  const [selectedAvatar, setSelectedAvatar] = useState<AvatarEmoji | null>(null);
   const submitting = useRef(false);
 
-  const profileQuery = useQuery({ queryKey: ["profile"], queryFn: getMyName });
-  const name = typedName ?? profileQuery.data ?? "";
-  const householdsQuery = useQuery({
-    queryKey: ["households"],
-    queryFn: listHouseholds,
-    enabled: !householdId,
+  const myProfileQuery = useQuery({
+    queryKey: ["my-profile", householdId],
+    queryFn: () => getMyProfile(householdId as string),
+    enabled: !!householdId,
   });
-  const householdOptions = householdsQuery.data ?? [];
-  const avatarHouseholdId = householdId
-    ?? householdOptions.find((household) => household.id === selectedHouseholdId)?.id
-    ?? householdOptions[0]?.id
-    ?? null;
-  const avatarQuery = useQuery({
-    queryKey: ["my-profile", avatarHouseholdId],
-    queryFn: () => {
-      if (!avatarHouseholdId) throw new Error("Välj ett hushåll.");
-      return getMyProfile(avatarHouseholdId);
-    },
-    enabled: avatarHouseholdId !== null,
-  });
-  const avatar = avatarSelection?.householdId === avatarHouseholdId
-    ? avatarSelection.avatar
-    : avatarQuery.data?.avatar ?? null;
-  const taken = avatarQuery.data?.taken ?? [];
-  const loading = profileQuery.isLoading || householdsQuery.isLoading || avatarQuery.isLoading;
-  const loadError = profileQuery.error
-    ? profileError(profileQuery.error)
-    : householdsQuery.error
-      ? householdError(householdsQuery.error)
-      : avatarQuery.error
-        ? householdError(avatarQuery.error)
-        : "";
-
-  const saveNameMutation = useMutation({
-    mutationFn: saveMyName,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["profile"] });
-      queryClient.invalidateQueries({ queryKey: ["members"] });
-      queryClient.invalidateQueries({ queryKey: ["chores"] });
-      setTypedName(null);
-    },
-  });
-  const saveAvatarMutation = useMutation({
-    mutationFn: ({
-      householdId: targetHouseholdId,
-      name: profileName,
-      avatar: selectedAvatar,
-    }: {
-      householdId: string;
-      name: string;
-      avatar: AvatarEmoji;
-    }) => saveMyProfile(targetHouseholdId, profileName, selectedAvatar),
-    onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["my-profile", variables.householdId] });
-      if (variables.householdId === householdId) {
-        queryClient.invalidateQueries({ queryKey: ["members"] });
-        queryClient.invalidateQueries({ queryKey: ["chores"] });
-      }
-    },
-  });
-  const saving = saveNameMutation.isPending || saveAvatarMutation.isPending;
-  const saveError = saveNameMutation.error
-    ? profileError(saveNameMutation.error)
-    : saveAvatarMutation.error
-      ? householdError(saveAvatarMutation.error)
+  // Namnet på kontot föreslås tills man har ett namn i hushållet.
+  const accountNameQuery = useQuery({ queryKey: ["profile"], queryFn: getMyName });
+  const name = typedName ?? (myProfileQuery.data?.name || accountNameQuery.data || "");
+  const avatar = selectedAvatar ?? myProfileQuery.data?.avatar ?? null;
+  const taken = myProfileQuery.data?.taken ?? [];
+  const loading = myProfileQuery.isLoading || accountNameQuery.isLoading;
+  const loadError = !householdId
+    ? "Öppna profilen från ett hushåll."
+    : myProfileQuery.error
+      ? householdError(myProfileQuery.error)
       : "";
 
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      await saveMyProfile(householdId as string, name, avatar);
+      // Namnet på kontot är bara ett förslag när man går med i nästa hushåll,
+      // så det gör inget om det inte går att spara.
+      await saveMyName(name).catch(() => undefined);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["my-profile", householdId] });
+      queryClient.invalidateQueries({ queryKey: ["profile"] });
+      queryClient.invalidateQueries({ queryKey: ["members", householdId] });
+      queryClient.invalidateQueries({ queryKey: ["chores"] });
+    },
+  });
+  const saving = saveMutation.isPending;
+  const saveError = saveMutation.error ? householdError(saveMutation.error) : "";
+  const error = saveError || loadError;
+
   async function save() {
-    if (submitting.current) return;
+    if (submitting.current || !householdId) return;
 
     submitting.current = true;
     try {
       try {
-        await saveNameMutation.mutateAsync(name);
+        await saveMutation.mutateAsync();
       } catch {
         // React Query retains the mutation error for display below.
         return;
       }
-      if (avatarHouseholdId && avatar) {
-        try {
-          await saveAvatarMutation.mutateAsync({
-            householdId: avatarHouseholdId,
-            name,
-            avatar,
-          });
-        } catch {
-          // React Query retains the mutation error for display below.
-          return;
-        }
-      }
-      // Profilen öppnas både från flikarna och från Mina hushåll. Öppnas den
-      // direkt på webben finns ingen historik, och då går vi till Sysslor, som
-      // i sin tur visar Mina hushåll om inget hushåll är öppnat.
+      // Tillbaka till fliken man kom ifrån. Öppnas profilen direkt på webben
+      // finns ingen historik, och då går vi till Sysslor.
       if (router.canGoBack()) router.back();
       else router.replace("/");
     } finally {
@@ -158,8 +101,7 @@ export default function Profile() {
               value={name}
               onChangeText={(value) => {
                 setTypedName(value);
-                saveNameMutation.reset();
-                saveAvatarMutation.reset();
+                saveMutation.reset();
               }}
               placeholder="Ditt namn"
               autoCapitalize="words"
@@ -168,51 +110,12 @@ export default function Profile() {
               maxLength={NAME_MAX_LENGTH}
               returnKeyType="done"
               onSubmitEditing={save}
-              editable={!saving}
+              editable={!saving && !!householdId}
               style={styles.nameInput}
-              error={saveError || loadError || undefined}
+              error={error || undefined}
             />
 
-            {!householdId && householdOptions.length > 1 ? (
-              <View style={styles.householdPicker}>
-                <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>
-                  AVATAR FÖR HUSHÅLL
-                </Text>
-                <View style={styles.householdOptions}>
-                  {householdOptions.map((household) => (
-                    <Pressable
-                      key={household.id}
-                      accessibilityRole="button"
-                      accessibilityState={{ selected: avatarHouseholdId === household.id }}
-                      onPress={() => {
-                        setSelectedHouseholdId(household.id);
-                        setAvatarSelection(null);
-                        saveAvatarMutation.reset();
-                      }}
-                      style={[
-                        styles.householdOption,
-                        {
-                          backgroundColor:
-                            avatarHouseholdId === household.id ? colors.primary : colors.card,
-                          borderColor: colors.border,
-                        },
-                      ]}
-                    >
-                      <Text
-                        style={{
-                          color: avatarHouseholdId === household.id ? "#FFFFFF" : colors.text,
-                        }}
-                        numberOfLines={1}
-                      >
-                        {household.name}
-                      </Text>
-                    </Pressable>
-                  ))}
-                </View>
-              </View>
-            ) : null}
-
-            {avatarHouseholdId ? (
+            {householdId ? (
               <View style={styles.section}>
                 <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>
                   VÄLJ AVATAR
@@ -229,10 +132,8 @@ export default function Profile() {
                         accessibilityState={{ selected, disabled }}
                         onPress={() => {
                           if (!disabled) {
-                            if (avatarHouseholdId) {
-                              setAvatarSelection({ householdId: avatarHouseholdId, avatar: emoji });
-                            }
-                            saveAvatarMutation.reset();
+                            setSelectedAvatar(emoji);
+                            saveMutation.reset();
                           }
                         }}
                         disabled={disabled || saving}
@@ -254,9 +155,9 @@ export default function Profile() {
               </View>
             ) : null}
 
-            {saveError || loadError ? (
+            {error ? (
               <Text accessibilityRole="alert" style={[styles.error, { color: colors.danger }]}>
-                {saveError || loadError}
+                {error}
               </Text>
             ) : null}
 
@@ -264,7 +165,7 @@ export default function Profile() {
               label={saving ? "Sparar..." : "Spara"}
               variant="primary"
               onPress={save}
-              disabled={saving || loading}
+              disabled={saving || loading || !householdId}
               style={styles.saveButton}
             />
           </>
@@ -296,21 +197,6 @@ const styles = StyleSheet.create({
   },
   section: {
     marginTop: 28,
-  },
-  householdPicker: {
-    marginTop: 24,
-  },
-  householdOptions: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-  },
-  householdOption: {
-    maxWidth: "100%",
-    borderWidth: 1,
-    borderRadius: 999,
-    paddingHorizontal: 14,
-    paddingVertical: 9,
   },
   sectionTitle: {
     fontSize: 12,

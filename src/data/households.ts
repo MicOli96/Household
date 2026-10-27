@@ -178,13 +178,15 @@ export async function saveMyProfile(
 ): Promise<void> {
   const nameError = validateName(name);
   if (nameError) throw new Error(nameError);
-  if (!avatar) throw new Error("Välj en avatar.");
 
   const { id: userId } = await requireUser();
-  const avatarId = avatarIdByEmoji[avatar];
+  // Utan valt djur sparas bara namnet.
+  const changes = avatar
+    ? { name: name.trim(), avatar_id: avatarIdByEmoji[avatar] }
+    : { name: name.trim() };
 
   const saveQuery = supabase.from("household_members")
-    .update({ name: name.trim(), avatar_id: avatarId })
+    .update(changes)
     .eq("household_id", householdId)
     .eq("user_id", userId)
     .is("deleted_at", null)
@@ -303,6 +305,6 @@ export async function getMembers(householdId: string): Promise<MemberSummary[]> 
 
 export function householdError(error: unknown): string {
   // Importfel och tekniska fel ska inte visa konfigurationsdetaljer i gränssnittet.
-  return error instanceof Error && /^(Du måste|Du är redan|Kunde inte|Hushållet|Skapandet|Ange ett|Ange en|Namnet|Välj en|Den avataren|Välj ett)/.test(error.message)
+  return error instanceof Error && /^(Du måste|Du är redan|Kunde inte|Hushållet|Skapandet|Ange ett|Ange en|Ange ditt|Namnet|Välj en|Den avataren|Välj ett)/.test(error.message)
     ? error.message : "Kunde inte ansluta. Kontrollera anslutningen och appens inställningar.";
 }
