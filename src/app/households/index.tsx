@@ -1,11 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { router } from "expo-router";
+import { router, Stack } from "expo-router";
 import { useCallback, useRef, useState } from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
-import { SignOutButton } from "../../components/SignOutButton";
-import { AppModal, Card, PillButton, TextField } from "../../components/ui";
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { AppModal, Card, Icon, PillButton, TextField } from "../../components/ui";
 import { useHouseholdData } from "../../data/HouseholdData";
-import { createHousehold, householdError, listHouseholds, listPendingHouseholds, validateHouseholdName } from "../../data/households";
+import { createHousehold, householdError, listHouseholds, listPendingHouseholds, saveNewMemberProfile, validateHouseholdName } from "../../data/households";
+import { getMyName, NAME_MAX_LENGTH, validateName } from "../../data/profile";
 import { useRefreshOnFocus } from "../../hooks/useRefreshOnFocus";
 import { useTheme } from "../../theme/ThemeProvider";
 
@@ -16,6 +16,8 @@ export default function Households() {
   const [householdName, setHouseholdName] = useState("");
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [nameError, setNameError] = useState("");
+  const [typedMemberName, setTypedMemberName] = useState<string | null>(null);
+  const [memberNameError, setMemberNameError] = useState("");
   const submitting = useRef(false);
 
   // Ett hushåll öppnas direkt på fliken Sysslor (#104).
@@ -41,8 +43,19 @@ export default function Households() {
   }, [refetchApproved, refetchWaiting]);
   useRefreshOnFocus(refetchAll);
 
+  const accountName = useQuery({ queryKey: ["profile"], queryFn: getMyName });
+  const memberName = typedMemberName ?? accountName.data ?? "";
+
   const create = useMutation({
-    mutationFn: createHousehold,
+    mutationFn: async (names: { household: string; member: string }) => {
+      const household = await createHousehold(names.household);
+      try {
+        await saveNewMemberProfile(household.id, names.member);
+        return { household, profileSaved: true };
+      } catch {
+        return { household, profileSaved: false };
+      }
+    },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["households"] }),
   });
   const isCreating = create.isPending;
@@ -52,18 +65,32 @@ export default function Households() {
     setShowCreateModal(false);
     setHouseholdName("");
     setNameError("");
+    setTypedMemberName(null);
+    setMemberNameError("");
   }
 
   async function handleCreate() {
     if (submitting.current) return;
-    const validation = validateHouseholdName(householdName);
-    setNameError(validation);
-    if (validation) return;
+    const householdValidation = validateHouseholdName(householdName);
+    const memberValidation = validateName(memberName);
+    setNameError(householdValidation);
+    setMemberNameError(memberValidation);
+    if (householdValidation || memberValidation) return;
     submitting.current = true;
     try {
-      const household = await create.mutateAsync(householdName);
+      const { household, profileSaved } = await create.mutateAsync({
+        household: householdName,
+        member: memberName,
+      });
       setShowCreateModal(false);
       setHouseholdName("");
+      setTypedMemberName(null);
+      if (!profileSaved) {
+        Alert.alert(
+          "Ditt namn kunde inte sparas",
+          `Hushållet ”${household.name}” har skapats. Ändra ditt namn i profilen.`,
+        );
+      }
       // Ett nyskapat hushåll öppnas av sig självt (#104).
       open(household.id);
     } catch (error) {
@@ -75,6 +102,23 @@ export default function Households() {
 
   return (
     <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+      {/* Kugghjulet som på flikarna, så att Inställningar och Logga ut går
+          att nå även utan hushåll (#107). */}
+      <Stack.Screen
+        options={{
+          headerLeft: () => (
+            <Pressable
+              onPress={() => router.push("/settings")}
+              hitSlop={12}
+              accessibilityRole="button"
+              accessibilityLabel="Inställningar"
+              style={styles.headerButton}
+            >
+              <Icon name="settings" color={colors.text} />
+            </Pressable>
+          ),
+        }}
+      />
       <Text style={[styles.title, { color: colors.text }]}>Mina hushåll</Text>
       {loading ? <Text style={{ color: colors.textMuted }}>Hämtar hushåll...</Text> : null}
       {loadError ? (
@@ -107,7 +151,6 @@ export default function Households() {
         setShowCreateModal(true);
       }} />
       <PillButton label="Gå med i hushåll" onPress={() => router.push("/households/join")} />
-      <SignOutButton />
       <AppModal visible={showCreateModal} title="Skapa nytt hushåll" onClose={closeModal}
         footer={<>
           <PillButton label="Avbryt" onPress={closeModal} disabled={isCreating} />
@@ -116,6 +159,10 @@ export default function Households() {
         <TextField accessibilityLabel="Hushållets namn" placeholder="Hushållets namn" value={householdName}
           onChangeText={(value) => { setHouseholdName(value); setNameError(""); }}
           editable={!isCreating} error={nameError} />
+        <TextField accessibilityLabel="Ditt namn" placeholder="Ditt namn" value={memberName}
+          onChangeText={(value) => { setTypedMemberName(value); setMemberNameError(""); }}
+          maxLength={NAME_MAX_LENGTH} autoCapitalize="words"
+          editable={!isCreating} error={memberNameError} />
       </AppModal>
     </ScrollView>
   );
@@ -127,4 +174,5 @@ const styles = StyleSheet.create({
   cardTitle: { fontSize: 17, fontWeight: "600", flexShrink: 1 },
   section: { gap: 12 },
   sectionTitle: { fontSize: 15, fontWeight: "600", marginTop: 8 },
+  headerButton: { paddingHorizontal: 16 },
 });
