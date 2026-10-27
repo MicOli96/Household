@@ -178,13 +178,15 @@ export async function saveMyProfile(
 ): Promise<void> {
   const nameError = validateName(name);
   if (nameError) throw new Error(nameError);
-  if (!avatar) throw new Error("Välj en avatar.");
 
   const { id: userId } = await requireUser();
-  const avatarId = avatarIdByEmoji[avatar];
+  // Utan valt djur sparas bara namnet.
+  const changes = avatar
+    ? { name: name.trim(), avatar_id: avatarIdByEmoji[avatar] }
+    : { name: name.trim() };
 
   const saveQuery = supabase.from("household_members")
-    .update({ name: name.trim(), avatar_id: avatarId })
+    .update(changes)
     .eq("household_id", householdId)
     .eq("user_id", userId)
     .is("deleted_at", null)

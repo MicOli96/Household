@@ -63,7 +63,7 @@ export default function TabsLayout() {
         ),
         headerRight: () => (
           <Pressable
-            onPress={() => router.push("/profile")}
+            onPress={() => router.push({ pathname: "/profile", params: { householdId } })}
             hitSlop={12}
             accessibilityRole="button"
             accessibilityLabel="Din profil"

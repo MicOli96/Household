@@ -107,7 +107,6 @@ export default function Households() {
         setShowCreateModal(true);
       }} />
       <PillButton label="Gå med i hushåll" onPress={() => router.push("/households/join")} />
-      <PillButton label="Profil" onPress={() => router.push("/profile")} />
       <SignOutButton />
       <AppModal visible={showCreateModal} title="Skapa nytt hushåll" onClose={closeModal}
         footer={<>
