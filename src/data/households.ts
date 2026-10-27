@@ -259,6 +259,27 @@ export async function denyRequest(householdId: string, userId: string): Promise<
   if (error || !data) throw new Error("Kunde inte neka förfrågan. Den kan redan vara besvarad.");
 }
 
+// Lämnar hushållet (#26, #106). Raden tas inte bort, utan deleted_at sätts, så
+// att statistiken kan visa namn och djur. Enda ägaren får inte lämna när det
+// finns andra medlemmar. Databasen kontrollerar inte det än (se #26), så
+// appen gör det här.
+export async function leaveHousehold(householdId: string): Promise<void> {
+  const { id: userId } = await requireUser();
+  const members = (await getMembers(householdId)).filter((m) => m.isApproved);
+  const me = members.find((m) => m.userId === userId);
+  const otherOwners = members.some((m) => m.isOwner && m.userId !== userId);
+  if (me?.isOwner && !otherOwners && members.length > 1) {
+    throw new Error("Du är enda ägaren, så gör någon annan till ägare först.");
+  }
+
+  const { data, error } = await supabase.from("household_members")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("household_id", householdId).eq("user_id", userId)
+    .is("deleted_at", null)
+    .select("user_id").maybeSingle();
+  if (error || !data) throw new Error("Kunde inte lämna hushållet. Försök igen.");
+}
+
 // Medlemmar och förfrågningar (is_approved = false) som inte har lämnat, äldst först.
 export async function getMembers(householdId: string): Promise<MemberSummary[]> {
   const { id: userId } = await requireUser();
@@ -279,6 +300,6 @@ export async function getMembers(householdId: string): Promise<MemberSummary[]> 
 
 export function householdError(error: unknown): string {
   // Importfel och tekniska fel ska inte visa konfigurationsdetaljer i gränssnittet.
-  return error instanceof Error && /^(Du måste|Du är redan|Kunde inte|Hushållet|Skapandet|Ange ett|Ange en|Namnet|Välj en|Den avataren|Välj ett)/.test(error.message)
+  return error instanceof Error && /^(Du måste|Du är redan|Du är enda|Kunde inte|Hushållet|Skapandet|Ange ett|Ange en|Namnet|Välj en|Den avataren|Välj ett)/.test(error.message)
     ? error.message : "Kunde inte ansluta. Kontrollera anslutningen och appens inställningar.";
 }
