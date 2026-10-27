@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { router, useLocalSearchParams } from "expo-router";
+import { router } from "expo-router";
 import { useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Avatar, PillButton, TextField } from "../components/ui";
+import { useHouseholdData } from "../data/HouseholdData";
 import { getMyProfile, householdError, saveMyProfile } from "../data/households";
 import { getMyName, NAME_MAX_LENGTH, saveMyName } from "../data/profile";
 import { useTheme } from "../theme/ThemeProvider";
@@ -19,11 +20,10 @@ import { avatars, type AvatarEmoji } from "../theme/avatars";
 const avatarOptions = Object.keys(avatars) as AvatarEmoji[];
 
 // Profilen för ett hushåll (#106). Namn och djur hör till hushållet, så
-// profilen öppnas från flikarna med hushållets id och ändrar bara det
-// hushållet.
+// profilen ändrar bara det hushåll som är öppet.
 export default function Profile() {
   const { colors } = useTheme();
-  const { householdId } = useLocalSearchParams<{ householdId?: string }>();
+  const { householdId } = useHouseholdData();
   const queryClient = useQueryClient();
   const [typedName, setTypedName] = useState<string | null>(null);
   const [selectedAvatar, setSelectedAvatar] = useState<AvatarEmoji | null>(null);
