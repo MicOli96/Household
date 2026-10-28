@@ -119,9 +119,11 @@ export function HouseholdDataProvider({ children }: { children: ReactNode }) {
     setHouseholdsByUser((previous) => ({ ...previous, [userId]: id }));
   }, [userId]);
 
-  function requireHousehold(): string {
+  /** Kör en ändring i det öppnade hushållet och hämtar sedan om datan. */
+  async function change(save: (householdId: string) => Promise<void>) {
     if (!householdId) throw new UserError("Öppna ett hushåll under Mina hushåll först.");
-    return householdId;
+    await save(householdId);
+    reload();
   }
 
   const members = useMemo(() => active(rows.members), [rows.members]);
@@ -177,44 +179,16 @@ export function HouseholdDataProvider({ children }: { children: ReactNode }) {
     allChores: active(rows.choreRows),
     groups,
     completions: active(rows.completions),
-    async markDone(choreId) {
-      requireHousehold();
-      await insertCompletion(choreId);
-      reload();
-    },
-    async setAssignees(choreId, userIds) {
-      requireHousehold();
-      await saveAssignees(choreId, active(rows.assignments), userIds);
-      reload();
-    },
-    async addGroup(name, rotationDays, choreIds) {
-      await insertGroup(requireHousehold(), name, rotationDays, choreIds);
-      reload();
-    },
-    async addChore(chore) {
-      await insertChore(requireHousehold(), chore);
-      reload();
-    },
-    async editChore(choreId, chore) {
-      requireHousehold();
-      await updateChore(choreId, chore);
-      reload();
-    },
-    async archiveChore(choreId) {
-      requireHousehold();
-      await archiveChore(choreId);
-      reload();
-    },
-    async removeChore(choreId) {
-      requireHousehold();
-      await deleteChore(choreId);
-      reload();
-    },
-    async addChoreMedia(chore, kind, file) {
-      requireHousehold();
-      await saveChoreMedia(chore, kind, file);
-      reload();
-    },
+    markDone: (choreId) => change(() => insertCompletion(choreId)),
+    setAssignees: (choreId, userIds) =>
+      change(() => saveAssignees(choreId, active(rows.assignments), userIds)),
+    addGroup: (name, rotationDays, choreIds) =>
+      change((id) => insertGroup(id, name, rotationDays, choreIds)),
+    addChore: (chore) => change((id) => insertChore(id, chore)),
+    editChore: (choreId, chore) => change(() => updateChore(choreId, chore)),
+    archiveChore: (choreId) => change(() => archiveChore(choreId)),
+    removeChore: (choreId) => change(() => deleteChore(choreId)),
+    addChoreMedia: (chore, kind, file) => change(() => saveChoreMedia(chore, kind, file)),
   };
 
   return (
