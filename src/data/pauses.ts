@@ -1,4 +1,5 @@
 import { requireUser, supabase } from "../lib/supabase";
+import { daysFromToday } from "../utils/dates";
 
 // Pauser för medlemmar (#20). En rad per paus, och end_date = null betyder
 // tills vidare. Avslutade pauser ligger kvar, eftersom statistiken behöver
@@ -11,28 +12,6 @@ export type PauseSummary = {
   startDate: string;
   endDate: string | null;
 };
-
-/** Datumet i telefonens tid. toISOString räknar i UTC och kan ge fel dag. */
-export function toDateString(date: Date): string {
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${date.getFullYear()}-${month}-${day}`;
-}
-
-function daysFromToday(days: number): string {
-  const date = new Date();
-  date.setDate(date.getDate() + days);
-  return toDateString(date);
-}
-
-// Datumen kan jämföras som text eftersom året står först.
-export function isPausedOn(pause: PauseSummary, day: string): boolean {
-  return pause.startDate <= day && (pause.endDate === null || pause.endDate >= day);
-}
-
-export function isPausedToday(pause: PauseSummary): boolean {
-  return isPausedOn(pause, daysFromToday(0));
-}
 
 // Pauser som pågår eller är planerade. Statistiken behöver även avslutade.
 export async function getPauses(householdId: string, includeEnded = false): Promise<PauseSummary[]> {

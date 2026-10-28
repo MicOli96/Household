@@ -1,4 +1,4 @@
-# Kör typkontroll och lint på varje PR och push till main (issue #8).
+# Kör typkontroll, lint och tester på varje PR och push till main (issue #8).
 # Om något steg misslyckas blir PR:en röd, så att fel inte hamnar i main.
 name: CI
 
@@ -27,3 +27,6 @@ jobs:
 
       - name: Lint
         run: npm run lint
+
+      - name: Tester
+        run: npm test

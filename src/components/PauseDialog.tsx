@@ -1,7 +1,9 @@
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useState } from "react";
 import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
-import { isPausedToday, pauseError, PauseSummary, toDateString } from "../data/pauses";
+import { pauseError, PauseSummary } from "../data/pauses";
+import { fromDateString, toDateString } from "../utils/dates";
+import { isPausedToday } from "../utils/pauses";
 import { useTheme } from "../theme/ThemeProvider";
 import { AppModal, PillButton, SegmentedControl } from "./ui";
 
@@ -21,12 +23,6 @@ const MONTHS = ["jan", "feb", "mar", "apr", "maj", "jun", "jul", "aug", "sep", "
 function formatDate(value: string): string {
   const [, month, day] = value.split("-").map(Number);
   return `${day} ${MONTHS[month - 1]}`;
-}
-
-// new Date("2026-11-03") räknas i UTC och kan bli fel dag, därför delas texten upp.
-function fromDateString(value: string): Date {
-  const [year, month, day] = value.split("-").map(Number);
-  return new Date(year, month - 1, day);
 }
 
 // Dialogen "Pausa medlem" (#20). Det finns ingen Figma, så den följer

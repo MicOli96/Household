@@ -21,15 +21,9 @@ import {
   renameHousehold,
   setMemberOwner,
 } from "../../data/households";
-import {
-  addPause,
-  getPauses,
-  isPausedToday,
-  pauseError,
-  PauseSummary,
-  stopPause,
-} from "../../data/pauses";
+import { addPause, getPauses, pauseError, PauseSummary, stopPause } from "../../data/pauses";
 import { useRefreshOnFocus } from "../../hooks/useRefreshOnFocus";
+import { isPausedToday } from "../../utils/pauses";
 import { useTheme } from "../../theme/ThemeProvider";
 
 // Fliken Hushåll (#104): det öppnade hushållets namn, kod och medlemmar.

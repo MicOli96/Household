@@ -1,6 +1,7 @@
 import { requireUser, supabase } from "../lib/supabase";
 import { avatars, AvatarEmoji } from "../theme/avatars";
 import { validateChore } from "../utils/choreValidation";
+import { fromDateString } from "../utils/dates";
 import type { Assignment, ChoreGroup, ChoreRow, Completion, Member } from "./types";
 
 // Läser och sparar dagsvyns data i Supabase: medlemmar, sysslor,
@@ -27,12 +28,6 @@ function timestamps(row: TimestampColumns) {
     updatedAt: new Date(row.updated_at),
     deletedAt: row.deleted_at ? new Date(row.deleted_at) : null,
   };
-}
-
-/** Kolumner av typen date ("2026-10-14") läses som lokal midnatt. */
-function localDate(value: string): Date {
-  const [year, month, day] = value.split("-").map(Number);
-  return new Date(year, month - 1, day);
 }
 
 export async function fetchHouseholdRows(householdId: string): Promise<HouseholdRows> {
@@ -86,7 +81,7 @@ export async function fetchHouseholdRows(householdId: string): Promise<Household
       householdId: g.household_id,
       name: g.name,
       rotationDays: g.rotation_days,
-      startDate: localDate(g.start_date),
+      startDate: fromDateString(g.start_date),
       ...timestamps(g),
     })),
     assignments: assignments.data.map((a) => ({

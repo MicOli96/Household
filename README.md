@@ -76,6 +76,7 @@ Samma kontroller körs automatiskt i GitHub Actions på varje PR mot `main`. Kö
 ```bash
 npm run typecheck   # TypeScript
 npm run lint        # ESLint
+npm test            # Tester för uträkningarna i src/utils
 ```
 
 ## Databasstruktur
