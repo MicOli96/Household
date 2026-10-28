@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { joinHousehold, saveNewMemberProfile, validateHouseholdCode } from "../data/households";
 import { getMyName, validateName } from "../data/profile";
 import { errorMessage } from "../lib/errors";
@@ -14,13 +14,6 @@ export function useJoinHouseholdForm() {
   const accountName = useQuery({ queryKey: ["profile"], queryFn: getMyName });
   const name = typedName ?? accountName.data ?? "";
   const [sentHouseholdId, setSentHouseholdId] = useState<string | null>(null);
-  const submitting = useRef(false);
-  const mounted = useRef(true);
-
-  useEffect(() => {
-    mounted.current = true;
-    return () => { mounted.current = false; };
-  }, []);
 
   const join = useMutation({
     mutationFn: async (values: { code: string; name: string; householdId: string | null }) => {
@@ -38,8 +31,8 @@ export function useJoinHouseholdForm() {
     },
   });
 
-  async function submit() {
-    if (submitting.current) return;
+  function submit() {
+    if (join.isPending) return;
 
     const codeValidation = validateHouseholdCode(code);
     const nameValidation = validateName(name);
@@ -47,25 +40,18 @@ export function useJoinHouseholdForm() {
     setNameError(nameValidation);
     if (codeValidation || nameValidation) return;
 
-    submitting.current = true;
-    try {
-      const { householdId, profileSaved } = await join.mutateAsync({
-        code,
-        name,
-        householdId: sentHouseholdId,
-      });
-      if (!mounted.current) return;
-      if (!profileSaved) {
-        setSentHouseholdId(householdId);
-        setNameError("Förfrågan är skickad, men ditt namn kunde inte sparas. Tryck Skicka förfrågan för att försöka igen.");
-        return;
-      }
-      router.replace({ pathname: "/households/pending", params: { id: householdId } });
-    } catch (reason) {
-      if (mounted.current) setError(errorMessage(reason));
-    } finally {
-      submitting.current = false;
-    }
+    // Svaren nedan körs inte om skärmen har stängts under tiden.
+    join.mutate({ code, name, householdId: sentHouseholdId }, {
+      onSuccess: ({ householdId, profileSaved }) => {
+        if (!profileSaved) {
+          setSentHouseholdId(householdId);
+          setNameError("Förfrågan är skickad, men ditt namn kunde inte sparas. Tryck Skicka förfrågan för att försöka igen.");
+          return;
+        }
+        router.replace({ pathname: "/households/pending", params: { id: householdId } });
+      },
+      onError: (reason) => setError(errorMessage(reason)),
+    });
   }
 
   function setName(value: string) {

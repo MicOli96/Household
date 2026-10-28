@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
-import { useRef, useState } from "react";
+import { useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -28,7 +28,6 @@ export default function Profile() {
   const queryClient = useQueryClient();
   const [typedName, setTypedName] = useState<string | null>(null);
   const [selectedAvatar, setSelectedAvatar] = useState<AvatarEmoji | null>(null);
-  const submitting = useRef(false);
 
   const myProfileQuery = useQuery({
     queryKey: ["my-profile", householdId],
@@ -65,24 +64,13 @@ export default function Profile() {
   const saveError = saveMutation.error ? errorMessage(saveMutation.error) : "";
   const error = saveError || loadError;
 
-  async function save() {
-    if (submitting.current || !householdId) return;
-
-    submitting.current = true;
-    try {
-      try {
-        await saveMutation.mutateAsync();
-      } catch {
-        // React Query retains the mutation error for display below.
-        return;
-      }
+  function save() {
+    if (saving || !householdId) return;
+    saveMutation.mutate(undefined, {
       // Tillbaka till fliken man kom ifrån. Öppnas profilen direkt på webben
       // finns ingen historik, och då går vi till Sysslor.
-      if (router.canGoBack()) router.back();
-      else router.replace("/");
-    } finally {
-      submitting.current = false;
-    }
+      onSuccess: () => (router.canGoBack() ? router.back() : router.replace("/")),
+    });
   }
 
   return (
