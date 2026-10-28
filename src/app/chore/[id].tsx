@@ -1,6 +1,6 @@
 import { CompletedBy } from "../../components/CompletedBy";
 import { router, Stack, useLocalSearchParams } from "expo-router";
-import { useState } from "react";
+import { useMutation } from "@tanstack/react-query";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { ChoreMedia } from "../../components/ChoreMedia";
 import { Card, Icon, PillButton } from "../../components/ui";
@@ -15,10 +15,15 @@ import { errorMessage } from "../../lib/errors";
 export default function ChoreDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { colors } = useTheme();
-  const [done, setDone] = useState(false);
-  const [error, setError] = useState("");
   const chore = useChore(id);
   const { markDone, currentMember } = useHouseholdData();
+  // Blir en rad i completions i Supabase (#12).
+  const doneMutation = useMutation({
+    mutationFn: markDone,
+    onSuccess: () => setTimeout(() => router.back(), 600),
+  });
+  const done = doneMutation.isPending || doneMutation.isSuccess;
+  const error = doneMutation.error ? errorMessage(doneMutation.error) : "";
 
   if (!chore) {
     return (
@@ -32,19 +37,10 @@ export default function ChoreDetail() {
   const lastDone =
     days === null ? "Aldrig" : days === 0 ? "Idag" : days === 1 ? "Igår" : `För ${days} dagar sedan`;
 
-  // Blir en rad i completions i Supabase (#12).
-  async function markAsDone() {
+  function markAsDone() {
     // Bara ett tryck räknas, annars blir det flera rader i completions.
     if (!chore || done) return;
-    setDone(true);
-    setError("");
-    try {
-      await markDone(chore.id);
-      setTimeout(() => router.back(), 600);
-    } catch (reason) {
-      setError(errorMessage(reason));
-      setDone(false);
-    }
+    doneMutation.mutate(chore.id);
   }
 
   return (

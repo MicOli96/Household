@@ -1,3 +1,4 @@
+import { useMutation } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
@@ -54,8 +55,6 @@ export default function AssignChore() {
 function AssignForm({ chore }: { chore: Chore }) {
   const { colors } = useTheme();
   const { members, setAssignees } = useHouseholdData();
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
   const [selected, setSelected] = useState(() => new Set(chore.assignees.map((m) => m.userId)));
 
   function toggle(userId: string) {
@@ -67,16 +66,16 @@ function AssignForm({ chore }: { chore: Chore }) {
     });
   }
 
-  async function save() {
-    if (saving) return;
-    setSaving(true);
-    try {
-      await setAssignees(chore.id, [...selected]);
-      router.back();
-    } catch (reason) {
-      setError(errorMessage(reason));
-      setSaving(false);
-    }
+  const saveMutation = useMutation({
+    mutationFn: () => setAssignees(chore.id, [...selected]),
+    onSuccess: () => router.back(),
+  });
+  // Knappen är tryckt tills skärmen har stängts.
+  const saving = saveMutation.isPending || saveMutation.isSuccess;
+  const error = saveMutation.error ? errorMessage(saveMutation.error) : "";
+
+  function save() {
+    if (!saving) saveMutation.mutate();
   }
 
   return (

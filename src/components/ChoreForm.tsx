@@ -1,3 +1,4 @@
+import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -56,23 +57,18 @@ export function ChoreForm({ initial, onSave, onClose }: Props) {
   // Vilket kort som visar sin väljare i stället för värdet, eller null.
   const [picking, setPicking] = useState<"interval" | "weight" | null>(null);
   const [errors, setErrors] = useState<ChoreErrors>({});
-  const [saveError, setSaveError] = useState("");
-  const [saving, setSaving] = useState(false);
+  const saveMutation = useMutation({ mutationFn: onSave });
+  // Knappen är tryckt tills skärmen har stängts.
+  const saving = saveMutation.isPending || saveMutation.isSuccess;
+  const saveError = saveMutation.error ? errorMessage(saveMutation.error) : "";
 
-  async function save() {
+  function save() {
     if (saving) return;
     // Ogiltiga värden hindrar sparandet och visas vid fältet (#31).
     const found = validateChore({ name, description, intervalDays, weight });
     setErrors(found);
     if (Object.keys(found).length > 0) return;
-    setSaving(true);
-    setSaveError("");
-    try {
-      await onSave({ name, description, intervalDays, weight });
-    } catch (reason) {
-      setSaveError(errorMessage(reason));
-      setSaving(false);
-    }
+    saveMutation.mutate({ name, description, intervalDays, weight });
   }
 
   return (

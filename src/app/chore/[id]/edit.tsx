@@ -1,5 +1,6 @@
 import { router, Stack, useLocalSearchParams } from "expo-router";
-import { useRef, useState } from "react";
+import { useMutation } from "@tanstack/react-query";
+import { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { ChoreForm } from "../../../components/ChoreForm";
 import { ConfirmDialog, PillButton } from "../../../components/ui";
@@ -11,52 +12,34 @@ import { errorMessage } from "../../../lib/errors";
 export default function EditChore() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [actionError, setActionError] = useState("");
-  const [isArchiving, setIsArchiving] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-  // Ett gemensamt lås hindrar även att arkivering och borttagning körs samtidigt.
-  const actionRef = useRef(false);
   const { colors } = useTheme();
   const { editChore, archiveChore, removeChore, currentMember, loading } = useHouseholdData();
   const chore = useChore(id);
-  const busy = isArchiving || isDeleting;
 
-  async function handleArchive() {
-    if (!chore || !currentMember?.isOwner || actionRef.current) return;
-    actionRef.current = true;
-    setIsArchiving(true);
-    setActionError("");
-    try {
-      await archiveChore(chore.id);
-      setShowDeleteDialog(false);
-      router.dismissTo("/");
-    } catch (reason) {
-      setActionError(errorMessage(reason));
-    } finally {
-      actionRef.current = false;
-      setIsArchiving(false);
-    }
+  function leave() {
+    setShowDeleteDialog(false);
+    router.dismissTo("/");
+  }
+  const archive = useMutation({ mutationFn: archiveChore, onSuccess: leave });
+  const remove = useMutation({ mutationFn: removeChore, onSuccess: leave });
+  // Arkivering och borttagning får inte köras samtidigt.
+  const busy = archive.isPending || remove.isPending;
+  const actionReason = archive.error ?? remove.error;
+  const actionError = actionReason ? errorMessage(actionReason) : "";
+
+  function clearError() {
+    archive.reset();
+    remove.reset();
   }
 
-  async function handleDelete() {
-    if (!chore || !currentMember?.isOwner || actionRef.current) return;
-    actionRef.current = true;
-    setIsDeleting(true);
-    setActionError("");
-    try {
-      await removeChore(chore.id);
-      setShowDeleteDialog(false);
-      router.dismissTo("/");
-    } catch (reason) {
-      setActionError(errorMessage(reason));
-    } finally {
-      actionRef.current = false;
-      setIsDeleting(false);
-    }
+  function run(action: typeof archive) {
+    if (!chore || !currentMember?.isOwner || busy) return;
+    clearError();
+    action.mutate(chore.id);
   }
 
   function closeDialog() {
-    if (!actionRef.current) setShowDeleteDialog(false);
+    if (!busy) setShowDeleteDialog(false);
   }
 
   if (loading) {
@@ -82,8 +65,8 @@ export default function EditChore() {
       <Stack.Screen options={{
         headerRight: () => (
           <Pressable disabled={busy} hitSlop={12} onPress={() => {
-            if (actionRef.current) return;
-            setActionError("");
+            if (busy) return;
+            clearError();
             setShowDeleteDialog(true);
           }}>
             <Text style={{ color: colors.danger, fontSize: 16 }}>Ta bort syssla</Text>
@@ -105,10 +88,10 @@ export default function EditChore() {
         message="Om du tar bort sysslan försvinner den och all tillhörande statistik från appen. Arkivera istället för att behålla statistiken."
         error={actionError}
         busy={busy}
-        confirmLabel={isDeleting ? "Tar bort…" : "Ta bort permanent"}
-        onConfirm={handleDelete}
+        confirmLabel={remove.isPending ? "Tar bort…" : "Ta bort permanent"}
+        onConfirm={() => run(remove)}
         onCancel={closeDialog}
-        alternative={{ label: isArchiving ? "Arkiverar…" : "Arkivera", onPress: handleArchive }}
+        alternative={{ label: archive.isPending ? "Arkiverar…" : "Arkivera", onPress: () => run(archive) }}
       />
     </>
   );
