@@ -8,6 +8,7 @@ import { choreError } from "../../data/chores";
 import { useChore, useHouseholdData } from "../../data/HouseholdData";
 import { useTheme } from "../../theme/ThemeProvider";
 import { daysSinceDone, isOverdue } from "../../utils/chores";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 // Detaljvyn för en syssla. Krav: "När en användare väljer en syssla ska
 // beskrivningen av sysslan visas och det ska även med ett enkelt tryck gå
@@ -15,6 +16,7 @@ import { daysSinceDone, isOverdue } from "../../utils/chores";
 export default function ChoreDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const [done, setDone] = useState(false);
   const [error, setError] = useState("");
   const chore = useChore(id);
@@ -48,13 +50,17 @@ export default function ChoreDetail() {
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Stack.Screen
-        options={{
-          title: chore.name,
-          // Bara ägare kan redigera sysslan (#34).
-          headerRight: currentMember?.isOwner
-            ? () => (
+    <View style={{ flex: 1 }}>
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={styles.container}
+      >
+        <Stack.Screen
+          options={{
+            title: chore.name,
+            // Bara ägare kan redigera sysslan (#34).
+            headerRight: currentMember?.isOwner
+              ? () => (
                 <Pressable
                   onPress={() => router.push(`/chore/${chore.id}/edit`)}
                   hitSlop={12}
@@ -65,57 +71,66 @@ export default function ChoreDetail() {
                   <Icon name="edit" color={colors.primaryText} />
                 </Pressable>
               )
-            : undefined,
-        }}
-      />
-
-      <Card style={styles.info}>
-        <View style={styles.infoContent}>
-          <Text style={[styles.label, { color: colors.textMuted }]}>Beskrivning</Text>
-          <Text style={[styles.description, { color: colors.text }]}>
-            {chore.description}
-          </Text>
-          <Text style={[styles.meta, { color: colors.textMuted }]}>
-            Återkommer: var {chore.intervalDays}:e dag
-          </Text>
-          <Text style={[styles.meta, { color: colors.textMuted }]}>
-            Värde: {chore.weight}
-          </Text>
-          <Text style={[styles.meta, { color: colors.textMuted }]}>
-            Tilldelad:{" "}
-            {chore.assignees.length > 0
-              ? chore.assignees.map((m) => m.name).join(", ")
-              : "ingen"}
-          </Text>
-        </View>
-      </Card>
-
-      {/* Tilldelningen flyttades hit från dagsvyn och syns bara för ägare (#77). */}
-      {currentMember?.isOwner && (
-        <PillButton
-          label="Tilldela syssla"
-          onPress={() => router.push(`/chore/${chore.id}/assign`)}
+              : undefined,
+          }}
         />
-      )}
 
-      <View style={styles.section}>
-        <Text style={[styles.label, { color: colors.textMuted }]}>SENAST GJORD</Text>
-        <Text style={[styles.lastDone, { color: isOverdue(chore) ? colors.danger : colors.text }]}>
-          {lastDone}
-        </Text>
-        <CompletedBy members={chore.lastCompletedBy} size={32} />
+        <Card style={styles.info}>
+          <View style={styles.infoContent}>
+            <Text style={[styles.label, { color: colors.textMuted }]}>Beskrivning</Text>
+            <Text style={[styles.description, { color: colors.text }]}>
+              {chore.description}
+            </Text>
+            <Text style={[styles.meta, { color: colors.textMuted }]}>
+              Återkommer: var {chore.intervalDays}:e dag
+            </Text>
+            <Text style={[styles.meta, { color: colors.textMuted }]}>
+              Värde: {chore.weight}
+            </Text>
+            <Text style={[styles.meta, { color: colors.textMuted }]}>
+              Tilldelad:{" "}
+              {chore.assignees.length > 0
+                ? chore.assignees.map((m) => m.name).join(", ")
+                : "ingen"}
+            </Text>
+          </View>
+        </Card>
+
+        {/* Tilldelningen flyttades hit från dagsvyn och syns bara för ägare (#77). */}
+        {currentMember?.isOwner && (
+          <PillButton
+            label="Tilldela syssla"
+            onPress={() => router.push(`/chore/${chore.id}/assign`)}
+          />
+        )}
+
+        <View style={styles.section}>
+          <Text style={[styles.label, { color: colors.textMuted }]}>SENAST GJORD</Text>
+          <Text style={[styles.lastDone, { color: isOverdue(chore) ? colors.danger : colors.text }]}>
+            {lastDone}
+          </Text>
+          <CompletedBy members={chore.lastCompletedBy} size={32} />
+        </View>
+
+        <ChoreMedia chore={chore} />
+      </ScrollView>
+      <View
+        style={{
+          padding: 16,
+          paddingBottom: insets.bottom + 16,
+          backgroundColor: colors.card,
+          gap: 8,
+        }}
+      >
+        {error ? <Text style={{ color: colors.danger }}>{error}</Text> : null}
+        <PillButton
+          label={done ? "✓  Markerad som gjord" : "✓  Markera som gjord"}
+          variant="primary"
+          onPress={markAsDone}
+          style={styles.doneButton}
+        />
       </View>
-
-      <ChoreMedia chore={chore} />
-
-      {error ? <Text style={{ color: colors.danger }}>{error}</Text> : null}
-      <PillButton
-        label={done ? "✓  Markerad som gjord" : "✓  Markera som gjord"}
-        variant="primary"
-        onPress={markAsDone}
-        style={styles.doneButton}
-      />
-    </ScrollView>
+    </View>
   );
 }
 
@@ -152,8 +167,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   doneButton: {
-    marginTop: "auto",
-    marginBottom: 24,
     paddingVertical: 18,
   },
 });
