@@ -1,7 +1,7 @@
 import { AvatarEmoji } from "../theme/avatars";
 
-// Typerna följer tabellerna i Supabase, så att testdatan kan bytas mot
-// riktiga anrop utan att skärmarna behöver ändras.
+// Typerna följer tabellerna i Supabase, med appens namn (camelCase).
+// src/data/chores.ts och households.ts översätter raderna hit.
 
 /**
  * Kolumnerna som finns i alla tabeller. Inget raderas på riktigt:

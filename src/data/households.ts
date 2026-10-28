@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { UserError } from "../lib/errors";
 import { requireUser, supabase } from "../lib/supabase";
-import { avatars, type AvatarEmoji } from "../theme/avatars";
+import { avatarEmojis, avatarFromId, type AvatarEmoji } from "../theme/avatars";
 import { validateName } from "./profile";
 import type { Household, Member } from "./types";
 
@@ -20,15 +20,10 @@ export type MyProfile = {
   taken: AvatarEmoji[];
 };
 
-const avatarEmojis = Object.keys(avatars) as AvatarEmoji[];
 const avatarIdByEmoji = Object.fromEntries(
   avatarEmojis.map((emoji, index) => [emoji, index + 1]),
 ) as Record<AvatarEmoji, number>;
 
-function toAvatar(avatarId: number | null | undefined): AvatarEmoji | null {
-  if (!avatarId) return null;
-  return avatarEmojis[avatarId - 1] ?? null;
-}
 
 export const HOUSEHOLD_NAME_MAX_LENGTH = 100;
 
@@ -175,10 +170,10 @@ export async function getMyProfile(householdId: string): Promise<MyProfile> {
   }
 
   const name = profileResult.data.name;
-  const avatar = toAvatar(profileResult.data?.avatar_id ?? null);
+  const avatar = avatarFromId(profileResult.data?.avatar_id ?? null);
   const taken = (takenResult.data ?? [])
     .filter((row) => row.user_id !== userId)
-    .map((row) => toAvatar(Number(row.avatar_id)))
+    .map((row) => avatarFromId(Number(row.avatar_id)))
     .filter((emoji): emoji is AvatarEmoji => emoji !== null);
 
   return { name, avatar, taken };

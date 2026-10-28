@@ -1,6 +1,6 @@
 import { UserError } from "../lib/errors";
 import { requireUser, supabase } from "../lib/supabase";
-import { avatars, AvatarEmoji } from "../theme/avatars";
+import { avatarFromId } from "../theme/avatars";
 import { validateChore } from "../utils/choreValidation";
 import { fromDateString } from "../utils/dates";
 import type { Assignment, ChoreGroup, ChoreRow, Completion, Member } from "./types";
@@ -17,9 +17,6 @@ export type HouseholdRows = {
   assignments: Assignment[];
   completions: Completion[];
 };
-
-// avatars.id 1–8 är samma ordning som i src/theme/avatars.ts.
-const avatarEmojis = Object.keys(avatars) as AvatarEmoji[];
 
 type TimestampColumns = { created_at: string; updated_at: string; deleted_at: string | null };
 
@@ -83,7 +80,7 @@ export async function fetchHouseholdRows(householdId: string): Promise<Household
       userId: m.user_id,
       householdId: m.household_id,
       name: m.name,
-      avatar: m.avatar_id ? (avatarEmojis[m.avatar_id - 1] ?? null) : null,
+      avatar: avatarFromId(m.avatar_id),
       isOwner: m.is_owner,
       isApproved: m.is_approved,
       ...timestamps(m),

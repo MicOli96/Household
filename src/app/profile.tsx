@@ -15,10 +15,9 @@ import { useHouseholdData } from "../data/HouseholdData";
 import { getMyProfile, saveMyProfile } from "../data/households";
 import { getMyName, NAME_MAX_LENGTH, saveMyName } from "../data/profile";
 import { useTheme } from "../theme/ThemeProvider";
-import { avatars, type AvatarEmoji } from "../theme/avatars";
+import { avatarEmojis, type AvatarEmoji } from "../theme/avatars";
 import { errorMessage } from "../lib/errors";
 
-const avatarOptions = Object.keys(avatars) as AvatarEmoji[];
 
 // Profilen för ett hushåll (#106). Namn och djur hör till hushållet, så
 // profilen ändrar bara det hushåll som är öppet.
@@ -109,7 +108,7 @@ export default function Profile() {
                   VÄLJ AVATAR
                 </Text>
                 <View style={styles.avatarGrid}>
-                  {avatarOptions.map((emoji) => {
+                  {avatarEmojis.map((emoji) => {
                     const selected = avatar === emoji;
                     const disabled = taken.includes(emoji) && !selected;
                     return (

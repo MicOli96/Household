@@ -10,7 +10,7 @@ Nästan alla krav i kravspecen är byggda och ligger på `main`. Det som återst
 
 ## Funktioner
 
-- **Konto:** registrera dig och logga in med e-post och lösenord, logga ut.
+- **Konto:** registrera dig och logga in med användarnamn och lösenord, logga ut.
 - **Hushåll:** skapa ett hushåll med namn och en genererad kod, byt namn, ansök om att gå med med koden och vänta på att en ägare godkänner. Har du flera hushåll väljer du vilket du vill öppna i Mina hushåll.
 - **Medlemmar:** alla ser vilka som är med. Ägare ser förfrågningar, godkänner eller nekar dem, gör andra till ägare och pausar medlemmar under en period.
 - **Profil:** ange ditt namn och välj en djuravatar. Avatarer som någon annan i hushållet redan har går inte att välja.
