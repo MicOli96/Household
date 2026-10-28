@@ -1,3 +1,4 @@
+import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Avatar, Card, PillButton, TextField } from "../components/ui";
@@ -22,20 +23,25 @@ export default function Groups() {
     setChoreIds((prev) => (prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]));
   }
 
-  async function save() {
+  const createMutation = useMutation({
+    mutationFn: (rotationDays: number) => addGroup(name.trim(), rotationDays, choreIds),
+    onSuccess: () => {
+      setName("");
+      setChoreIds([]);
+    },
+  });
+  const message = error ?? (createMutation.error ? errorMessage(createMutation.error) : undefined);
+
+  function save() {
+    // Ett andra tryck medan gruppen skapas skulle skapa den två gånger.
+    if (createMutation.isPending) return;
     const rotationDays = Number(days);
     if (!name.trim()) return setError("Gruppen behöver ett namn");
     if (!Number.isInteger(rotationDays) || rotationDays < 1)
       return setError("Ange antal dagar, minst 1");
     if (choreIds.length === 0) return setError("Välj minst en syssla");
-    try {
-      await addGroup(name.trim(), rotationDays, choreIds);
-      setName("");
-      setChoreIds([]);
-      setError(undefined);
-    } catch (reason) {
-      setError(errorMessage(reason));
-    }
+    setError(undefined);
+    createMutation.mutate(rotationDays);
   }
 
   return (
@@ -90,8 +96,13 @@ export default function Groups() {
               );
             })}
           </View>
-          {error && <Text style={{ color: colors.danger }}>{error}</Text>}
-          <PillButton label="Skapa grupp" variant="primary" onPress={save} />
+          {message && <Text style={{ color: colors.danger }}>{message}</Text>}
+          <PillButton
+            label={createMutation.isPending ? "Skapar..." : "Skapa grupp"}
+            variant="primary"
+            onPress={save}
+            disabled={createMutation.isPending}
+          />
         </>
       )}
     </ScrollView>
