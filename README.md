@@ -69,6 +69,8 @@ npx supabase link --project-ref <projekt-id>
 npx supabase db push
 ```
 
+`supabase/tests/medlemskap.sql` kontrollerar reglerna för medlemskap, till exempel att ingen kan göra sig själv till ägare. Det körs i en transaktion som rullas tillbaka, och instruktionerna står överst i filen.
+
 ### Kontroller
 
 Samma kontroller körs automatiskt i GitHub Actions på varje PR mot `main`. Kör dem gärna själv innan du pushar:
