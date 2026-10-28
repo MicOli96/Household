@@ -20,3 +20,16 @@ export function daysFromToday(days: number): string {
   date.setDate(date.getDate() + days);
   return toDateString(date);
 }
+
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+/**
+ * Hur många kalenderdagar det är från from till to i telefonens tid. Från
+ * kl. 22 i går till kl. 8 i dag är en dag. Räknas på datumen, så sommartid
+ * (dagar med 23 eller 25 timmar) ger inte fel.
+ */
+export function calendarDaysBetween(from: Date, to: Date): number {
+  const start = Date.UTC(from.getFullYear(), from.getMonth(), from.getDate());
+  const end = Date.UTC(to.getFullYear(), to.getMonth(), to.getDate());
+  return Math.round((end - start) / MS_PER_DAY);
+}

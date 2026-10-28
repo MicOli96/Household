@@ -30,3 +30,6 @@ jobs:
 
       - name: Tester
         run: npm test
+        # Appen räknar dagar i telefonens tid, så testerna körs i svensk tid.
+        env:
+          TZ: Europe/Stockholm

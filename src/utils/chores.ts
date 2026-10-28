@@ -1,11 +1,10 @@
 import type { Chore } from "../data/types";
+import { calendarDaysBetween } from "./dates";
 
-const MS_PER_DAY = 24 * 60 * 60 * 1000;
-
-/** Antal hela dagar sedan sysslan gjordes, eller null om den aldrig gjorts. */
+/** Antal kalenderdagar sedan sysslan gjordes, eller null om den aldrig gjorts. */
 export function daysSinceDone(chore: Chore): number | null {
   if (!chore.lastDoneAt) return null;
-  return Math.floor((Date.now() - chore.lastDoneAt.getTime()) / MS_PER_DAY);
+  return calendarDaysBetween(chore.lastDoneAt, new Date());
 }
 
 /**

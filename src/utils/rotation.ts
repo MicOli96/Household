@@ -1,6 +1,5 @@
 import type { ChoreGroup, Member } from "../data/types";
-
-const MS_PER_DAY = 24 * 60 * 60 * 1000;
+import { calendarDaysBetween } from "./dates";
 
 /**
  * Vem har rotationsgruppen idag? Gruppen går runt i medlemslistans ordning
@@ -12,13 +11,13 @@ export function currentRotationMember(
   today: Date = new Date(),
 ): Member | null {
   if (members.length === 0) return null;
-  const days = Math.floor((today.getTime() - group.startDate.getTime()) / MS_PER_DAY);
+  const days = calendarDaysBetween(group.startDate, today);
   const turn = Math.floor(Math.max(days, 0) / group.rotationDays);
   return members[turn % members.length];
 }
 
 /** Hur många dagar till gruppen roterar till nästa person. */
 export function daysUntilRotation(group: ChoreGroup, today: Date = new Date()): number {
-  const days = Math.floor((today.getTime() - group.startDate.getTime()) / MS_PER_DAY);
+  const days = calendarDaysBetween(group.startDate, today);
   return group.rotationDays - (Math.max(days, 0) % group.rotationDays);
 }

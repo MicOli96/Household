@@ -30,7 +30,7 @@ export default function ChoreDetail() {
 
   const days = daysSinceDone(chore);
   const lastDone =
-    days === null ? "Aldrig" : days === 0 ? "Idag" : `För ${days} dagar sedan`;
+    days === null ? "Aldrig" : days === 0 ? "Idag" : days === 1 ? "Igår" : `För ${days} dagar sedan`;
 
   // Blir en rad i completions i Supabase (#12).
   async function markAsDone() {
