@@ -1,3 +1,4 @@
+import { UserError } from "../lib/errors";
 import { requireUser, supabase } from "../lib/supabase";
 import { avatars, type AvatarEmoji } from "../theme/avatars";
 import { validateName } from "./profile";
@@ -36,11 +37,11 @@ export function validateHouseholdName(value: string): string {
 
 export async function createHousehold(name: string): Promise<HouseholdSummary> {
   const validation = validateHouseholdName(name);
-  if (validation) throw new Error(validation);
+  if (validation) throw new UserError(validation);
   await requireUser();
   const { data, error } = await supabase.rpc("create_household", { p_name: name.trim() });
-  if (error) throw new Error("Kunde inte skapa hushållet. Försök igen.");
-  if (!data?.id) throw new Error("Skapandet kunde inte bekräftas. Uppdatera hushållslistan innan du försöker igen.");
+  if (error) throw new UserError("Kunde inte skapa hushållet. Försök igen.");
+  if (!data?.id) throw new UserError("Skapandet kunde inte bekräftas. Uppdatera hushållslistan innan du försöker igen.");
   return { id: data.id, name: data.name, code: data.code };
 }
 
@@ -59,7 +60,7 @@ export function validateHouseholdCode(value: string): string {
 
 export async function joinHousehold(value: string): Promise<string> {
   const validation = validateHouseholdCode(value);
-  if (validation) throw new Error(validation);
+  if (validation) throw new UserError(validation);
 
   await requireUser();
   const { data, error } = await supabase.rpc("join_household", {
@@ -68,16 +69,16 @@ export async function joinHousehold(value: string): Promise<string> {
 
   if (error) {
     if (error.message.startsWith("Det finns inget hushåll med koden")) {
-      throw new Error("Hushållet kunde inte hittas. Kontrollera koden.");
+      throw new UserError("Hushållet kunde inte hittas. Kontrollera koden.");
     }
     if (error.message === "Du är redan med i hushållet eller väntar på svar") {
-      throw new Error("Du är redan med i hushållet eller väntar på svar. Kontrollera Mina hushåll.");
+      throw new UserError("Du är redan med i hushållet eller väntar på svar. Kontrollera Mina hushåll.");
     }
-    throw new Error("Kunde inte skicka förfrågan. Försök igen.");
+    throw new UserError("Kunde inte skicka förfrågan. Försök igen.");
   }
 
   if (typeof data !== "string" || !data.trim()) {
-    throw new Error("Kunde inte bekräfta förfrågan. Kontrollera Mina hushåll innan du försöker igen.");
+    throw new UserError("Kunde inte bekräfta förfrågan. Kontrollera Mina hushåll innan du försöker igen.");
   }
 
   return data;
@@ -91,7 +92,7 @@ export async function listHouseholds(): Promise<HouseholdSummary[]> {
     .eq("household_members.is_approved", true)
     .is("household_members.deleted_at", null)
     .is("deleted_at", null).order("created_at");
-  if (error) throw new Error("Kunde inte hämta hushållen. Försök igen.");
+  if (error) throw new UserError("Kunde inte hämta hushållen. Försök igen.");
   return (data ?? []).map(({ id, name, code }) => ({ id, name, code }));
 }
 
@@ -104,7 +105,7 @@ export async function listPendingHouseholds(): Promise<HouseholdSummary[]> {
     .eq("household_members.is_approved", false)
     .is("household_members.deleted_at", null)
     .is("deleted_at", null).order("created_at");
-  if (error) throw new Error("Kunde inte hämta förfrågningarna. Försök igen.");
+  if (error) throw new UserError("Kunde inte hämta förfrågningarna. Försök igen.");
   return (data ?? []).map(({ id, name, code }) => ({ id, name, code }));
 }
 
@@ -119,7 +120,7 @@ export async function getMembershipStatus(householdId: string): Promise<Membersh
   const { data, error } = await supabase.from("household_members")
     .select("is_approved, deleted_at")
     .eq("household_id", householdId).eq("user_id", userId).maybeSingle();
-  if (error) throw new Error("Kunde inte hämta förfrågan. Försök igen.");
+  if (error) throw new UserError("Kunde inte hämta förfrågan. Försök igen.");
   if (!data || data.deleted_at) return "denied";
   return data.is_approved ? "approved" : "pending";
 }
@@ -128,7 +129,7 @@ export async function getHousehold(id: string): Promise<HouseholdSummary> {
   await requireUser();
   const { data, error } = await supabase.from("households")
     .select("id, name, code").eq("id", id).is("deleted_at", null).single();
-  if (error || !data) throw new Error("Hushållet kunde inte öppnas. Det kanske inte finns eller så saknar du åtkomst.");
+  if (error || !data) throw new UserError("Hushållet kunde inte öppnas. Det kanske inte finns eller så saknar du åtkomst.");
   return data;
 }
 
@@ -151,14 +152,14 @@ export async function getMyProfile(householdId: string): Promise<MyProfile> {
   const [profileResult, takenResult] = await Promise.all([profileQuery, takenQuery]);
 
   if (profileResult.error && profileResult.error.code !== "PGRST116") {
-    throw new Error("Kunde inte hämta din profil. Försök igen.");
+    throw new UserError("Kunde inte hämta din profil. Försök igen.");
   }
   if (takenResult.error) {
-    throw new Error("Kunde inte hämta valda avatarer. Försök igen.");
+    throw new UserError("Kunde inte hämta valda avatarer. Försök igen.");
   }
 
   if (!profileResult.data) {
-    throw new Error("Kunde inte hitta din profil i hushållet. Kontrollera att du är medlem.");
+    throw new UserError("Kunde inte hitta din profil i hushållet. Kontrollera att du är medlem.");
   }
 
   const name = profileResult.data.name;
@@ -177,7 +178,7 @@ export async function saveMyProfile(
   avatar: AvatarEmoji | null,
 ): Promise<void> {
   const nameError = validateName(name);
-  if (nameError) throw new Error(nameError);
+  if (nameError) throw new UserError(nameError);
 
   const { id: userId } = await requireUser();
   // Utan valt djur sparas bara namnet.
@@ -196,20 +197,20 @@ export async function saveMyProfile(
 
   if (saveResult.error || !saveResult.data) {
     if (!saveResult.error) {
-      throw new Error("Kunde inte spara profilen. Kontrollera att du är medlem i hushållet.");
+      throw new UserError("Kunde inte spara profilen. Kontrollera att du är medlem i hushållet.");
     }
     const message = saveResult.error.message ?? "";
     if (/duplicate|unique/i.test(message)) {
-      throw new Error("Den avataren är redan vald av någon annan i hushållet.");
+      throw new UserError("Den avataren är redan vald av någon annan i hushållet.");
     }
-    throw new Error("Kunde inte spara profilen. Försök igen.");
+    throw new UserError("Kunde inte spara profilen. Försök igen.");
   }
 }
 
 // Provar ett nytt slumpat djur om någon annan hann ta det först.
 export async function saveNewMemberProfile(householdId: string, name: string): Promise<void> {
   const nameError = validateName(name);
-  if (nameError) throw new Error(nameError);
+  if (nameError) throw new UserError(nameError);
 
   const { taken } = await getMyProfile(householdId);
   const free = avatarEmojis.filter((emoji) => !taken.includes(emoji));
@@ -229,19 +230,19 @@ export async function saveNewMemberProfile(householdId: string, name: string): P
     .eq("household_id", householdId)
     .eq("user_id", userId)
     .is("deleted_at", null);
-  if (error) throw new Error("Kunde inte spara ditt namn i hushållet. Ändra det i profilen.");
+  if (error) throw new UserError("Kunde inte spara ditt namn i hushållet. Ändra det i profilen.");
 }
 
 // Byter namn på hushållet. Databasen släpper bara igenom ägare: för andra
 // ändras ingen rad, och då kommer inget hushåll tillbaka.
 export async function renameHousehold(id: string, name: string): Promise<HouseholdSummary> {
   const validation = validateHouseholdName(name);
-  if (validation) throw new Error(validation);
+  if (validation) throw new UserError(validation);
   await requireUser();
   const { data, error } = await supabase.from("households")
     .update({ name: name.trim() }).eq("id", id)
     .select("id, name, code").maybeSingle();
-  if (error || !data) throw new Error("Kunde inte byta namn. Bara ägare kan byta namn på hushållet.");
+  if (error || !data) throw new UserError("Kunde inte byta namn. Bara ägare kan byta namn på hushållet.");
   return data;
 }
 
@@ -257,7 +258,7 @@ export async function setMemberOwner(
     .update({ is_owner: isOwner })
     .eq("household_id", householdId).eq("user_id", userId)
     .select("user_id").maybeSingle();
-  if (error || !data) throw new Error("Kunde inte ändra ägarrollen. Bara ägare kan utse ägare.");
+  if (error || !data) throw new UserError("Kunde inte ändra ägarrollen. Bara ägare kan utse ägare.");
 }
 
 // Godkänner en förfrågan så att personen blir medlem (#18). Databasen släpper
@@ -270,7 +271,7 @@ export async function approveRequest(householdId: string, userId: string): Promi
     .eq("household_id", householdId).eq("user_id", userId)
     .eq("is_approved", false).is("deleted_at", null)
     .select("user_id").maybeSingle();
-  if (error || !data) throw new Error("Kunde inte godkänna förfrågan. Den kan redan vara besvarad.");
+  if (error || !data) throw new UserError("Kunde inte godkänna förfrågan. Den kan redan vara besvarad.");
 }
 
 // Nekar en förfrågan (#18). Raden tas bort genom att deleted_at sätts, och
@@ -282,7 +283,7 @@ export async function denyRequest(householdId: string, userId: string): Promise<
     .eq("household_id", householdId).eq("user_id", userId)
     .eq("is_approved", false).is("deleted_at", null)
     .select("user_id").maybeSingle();
-  if (error || !data) throw new Error("Kunde inte neka förfrågan. Den kan redan vara besvarad.");
+  if (error || !data) throw new UserError("Kunde inte neka förfrågan. Den kan redan vara besvarad.");
 }
 
 // Medlemmar och förfrågningar (is_approved = false) som inte har lämnat, äldst först.
@@ -292,7 +293,7 @@ export async function getMembers(householdId: string): Promise<MemberSummary[]> 
     .select("user_id, name, is_owner, is_approved, avatars(emoji)")
     .eq("household_id", householdId)
     .is("deleted_at", null).order("created_at");
-  if (error) throw new Error("Kunde inte hämta medlemmarna. Försök igen.");
+  if (error) throw new UserError("Kunde inte hämta medlemmarna. Försök igen.");
   return (data ?? []).map((row) => ({
     userId: row.user_id,
     name: row.name,
@@ -301,10 +302,4 @@ export async function getMembers(householdId: string): Promise<MemberSummary[]> 
     avatar: (row.avatars as unknown as { emoji: AvatarEmoji } | null)?.emoji ?? null,
     isMe: row.user_id === userId,
   }));
-}
-
-export function householdError(error: unknown): string {
-  // Importfel och tekniska fel ska inte visa konfigurationsdetaljer i gränssnittet.
-  return error instanceof Error && /^(Du måste|Du är redan|Kunde inte|Hushållet|Skapandet|Ange ett|Ange en|Ange ditt|Namnet|Välj en|Den avataren|Välj ett)/.test(error.message)
-    ? error.message : "Kunde inte ansluta. Kontrollera anslutningen och appens inställningar.";
 }

@@ -4,8 +4,9 @@ import { useEffect } from "react";
 import { ActivityIndicator, ScrollView, StyleSheet, Text } from "react-native";
 import { PillButton } from "../../components/ui";
 import { useHouseholdData } from "../../data/HouseholdData";
-import { getHousehold, getMembershipStatus, householdError } from "../../data/households";
+import { getHousehold, getMembershipStatus } from "../../data/households";
 import { useTheme } from "../../theme/ThemeProvider";
+import { errorMessage } from "../../lib/errors";
 
 // Hur ofta förfrågan kontrolleras medan skärmen är öppen.
 const CHECK_INTERVAL_MS = 5000;
@@ -28,7 +29,7 @@ export default function PendingHousehold() {
       query.state.data === "approved" || query.state.data === "denied" ? false : CHECK_INTERVAL_MS,
   });
   const status = statusQuery.data ?? null;
-  const error = statusQuery.error ? householdError(statusQuery.error) : "";
+  const error = statusQuery.error ? errorMessage(statusQuery.error) : "";
 
   // Namnet går bara att läsa medan förfrågan finns kvar. React Query behåller
   // det senast hämtade namnet även om en senare hämtning misslyckas.

@@ -6,6 +6,7 @@ import { useTheme } from "../theme/ThemeProvider";
 import { ChoreErrors, DESCRIPTION_MAX_LENGTH, NAME_MAX_LENGTH, validateChore } from "../utils/choreValidation";
 import { IntervalPicker, WeightPicker } from "./ChorePickers";
 import { Badge, Card, TextField } from "./ui";
+import { errorMessage } from "../lib/errors";
 
 /** Det som fylls i i formuläret. */
 export type ChoreFormValues = {
@@ -69,7 +70,7 @@ export function ChoreForm({ initial, onSave, onClose }: Props) {
     try {
       await onSave({ name, description, intervalDays, weight });
     } catch (reason) {
-      setSaveError(reason instanceof Error ? reason.message : "Kunde inte spara sysslan.");
+      setSaveError(errorMessage(reason));
       setSaving(false);
     }
   }

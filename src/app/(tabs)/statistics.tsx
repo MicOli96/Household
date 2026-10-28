@@ -5,9 +5,10 @@ import { CompletedBy } from "../../components/CompletedBy";
 import { PieChart } from "../../components/PieChart";
 import { Card } from "../../components/ui";
 import { useHouseholdData } from "../../data/HouseholdData";
-import { getPauses, pauseError } from "../../data/pauses";
+import { getPauses } from "../../data/pauses";
 import { useTheme } from "../../theme/ThemeProvider";
 import { distribution, periodsWithStatistics, withoutPausedDays } from "../../utils/statistics";
+import { errorMessage } from "../../lib/errors";
 
 // Statistik (#39–#44): ett stort diagram med den viktade fördelningen och ett
 // litet diagram per syssla. Pilarna går mellan nuvarande vecka, förra veckan
@@ -25,7 +26,7 @@ export default function Statistics() {
   const pausesMessage = pausesQuery.isLoading
     ? "Hämtar statistiken..."
     : pausesQuery.error
-      ? pauseError(pausesQuery.error)
+      ? errorMessage(pausesQuery.error)
       : "";
   const completions = withoutPausedDays(allCompletions, pausesQuery.data ?? []);
   const periods = periodsWithStatistics(completions);

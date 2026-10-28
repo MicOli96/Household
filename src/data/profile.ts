@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { UserError } from "../lib/errors";
 import { requireUser, supabase } from "../lib/supabase";
 
 // Användarens namn (#27). Namnet hör till hushållet och sparas i
@@ -30,19 +31,13 @@ export async function getMyName(): Promise<string> {
 /** Sparar namnet på kontot och returnerar det som det sparades (utan mellanslag runt). */
 export async function saveMyName(value: string): Promise<string> {
   const validation = validateName(value);
-  if (validation) throw new Error(validation);
+  if (validation) throw new UserError(validation);
   // Samma som nameSchema gör innan namnet kontrolleras.
   const name = value.trim();
 
   await requireUser();
   const { error } = await supabase.auth.updateUser({ data: { name } });
-  if (error) throw new Error("Kunde inte spara namnet. Försök igen.");
+  if (error) throw new UserError("Kunde inte spara namnet. Försök igen.");
 
   return name;
-}
-
-export function profileError(error: unknown): string {
-  // Tekniska fel ska inte visa konfigurationsdetaljer i gränssnittet.
-  return error instanceof Error && /^(Du måste|Kunde inte|Ange ditt|Namnet)/.test(error.message)
-    ? error.message : "Kunde inte ansluta. Kontrollera anslutningen och appens inställningar.";
 }

@@ -4,10 +4,10 @@ import { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { ChoreMedia } from "../../components/ChoreMedia";
 import { Card, Icon, PillButton } from "../../components/ui";
-import { choreError } from "../../data/chores";
 import { useChore, useHouseholdData } from "../../data/HouseholdData";
 import { useTheme } from "../../theme/ThemeProvider";
 import { daysSinceDone, isOverdue } from "../../utils/chores";
+import { errorMessage } from "../../lib/errors";
 
 // Detaljvyn för en syssla. Krav: "När en användare väljer en syssla ska
 // beskrivningen av sysslan visas och det ska även med ett enkelt tryck gå
@@ -42,7 +42,7 @@ export default function ChoreDetail() {
       await markDone(chore.id);
       setTimeout(() => router.back(), 600);
     } catch (reason) {
-      setError(choreError(reason));
+      setError(errorMessage(reason));
       setDone(false);
     }
   }

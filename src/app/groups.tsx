@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Avatar, Card, PillButton, TextField } from "../components/ui";
-import { choreError } from "../data/chores";
 import { useHouseholdData } from "../data/HouseholdData";
 import { useTheme } from "../theme/ThemeProvider";
 import { currentRotationMember, daysUntilRotation } from "../utils/rotation";
+import { errorMessage } from "../lib/errors";
 
 // Rotationsgrupper (#14). Ägaren samlar sysslor i en grupp som går runt
 // mellan medlemmarna, t.ex. "Köket" som byter person varje vecka.
@@ -34,7 +34,7 @@ export default function Groups() {
       setChoreIds([]);
       setError(undefined);
     } catch (reason) {
-      setError(choreError(reason));
+      setError(errorMessage(reason));
     }
   }
 

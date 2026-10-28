@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { Pressable, StyleSheet, Text } from "react-native";
-import { householdError, validateHouseholdName } from "../data/households";
+import { validateHouseholdName } from "../data/households";
 import { useTheme } from "../theme/ThemeProvider";
 import { AppModal, PillButton, TextField } from "./ui";
+import { errorMessage } from "../lib/errors";
 
 type Props = {
   /** Namnet som står i fältet när dialogen öppnas. */
@@ -35,7 +36,7 @@ export function RenameHouseholdDialog({ currentName, onClose, onSave }: Props) {
     try {
       await onSave(name.trim());
     } catch (reason) {
-      setError(householdError(reason));
+      setError(errorMessage(reason));
       setSaving(false);
     }
   }

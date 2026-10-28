@@ -1,3 +1,4 @@
+import { UserError } from "../lib/errors";
 import { requireUser, supabase } from "../lib/supabase";
 import { daysFromToday } from "../utils/dates";
 
@@ -22,7 +23,7 @@ export async function getPauses(householdId: string, includeEnded = false): Prom
     .is("deleted_at", null);
   if (!includeEnded) query = query.or(`end_date.is.null,end_date.gte.${daysFromToday(0)}`);
   const { data, error } = await query.order("start_date");
-  if (error) throw new Error("Kunde inte hämta pauserna. Försök igen.");
+  if (error) throw new UserError("Kunde inte hämta pauserna. Försök igen.");
   return (data ?? []).map((row) => ({
     id: row.id,
     userId: row.user_id,
@@ -39,12 +40,12 @@ export async function addPause(
   endDate: string | null,
 ): Promise<void> {
   if (endDate !== null && endDate < startDate) {
-    throw new Error("Slutdatumet kan inte vara före startdatumet.");
+    throw new UserError("Slutdatumet kan inte vara före startdatumet.");
   }
   await requireUser();
   const { error } = await supabase.from("pauses")
     .insert({ household_id: householdId, user_id: userId, start_date: startDate, end_date: endDate });
-  if (error) throw new Error("Kunde inte pausa medlemmen. Bara ägare kan pausa medlemmar.");
+  if (error) throw new UserError("Kunde inte pausa medlemmen. Bara ägare kan pausa medlemmar.");
 }
 
 // Pausen slutar igår, så att medlemmen är aktiv redan idag. En paus som
@@ -57,10 +58,5 @@ export async function stopPause(pause: PauseSummary): Promise<void> {
   const { data, error } = await supabase.from("pauses")
     .update(change).eq("id", pause.id)
     .select("id").maybeSingle();
-  if (error || !data) throw new Error("Kunde inte avsluta pausen. Bara ägare kan ändra pauser.");
-}
-
-export function pauseError(error: unknown): string {
-  return error instanceof Error && /^(Du måste|Kunde inte|Slutdatumet)/.test(error.message)
-    ? error.message : "Kunde inte ansluta. Kontrollera anslutningen och appens inställningar.";
+  if (error || !data) throw new UserError("Kunde inte avsluta pausen. Bara ägare kan ändra pauser.");
 }

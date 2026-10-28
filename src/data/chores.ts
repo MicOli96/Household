@@ -1,3 +1,4 @@
+import { UserError } from "../lib/errors";
 import { requireUser, supabase } from "../lib/supabase";
 import { avatars, AvatarEmoji } from "../theme/avatars";
 import { validateChore } from "../utils/choreValidation";
@@ -49,7 +50,7 @@ export async function fetchHouseholdRows(householdId: string): Promise<Household
       .eq("chores.household_id", householdId).is("deleted_at", null),
   ]);
   if (members.error || chores.error || groups.error || assignments.error || completions.error) {
-    throw new Error("Kunde inte hämta sysslorna. Försök igen.");
+    throw new UserError("Kunde inte hämta sysslorna. Försök igen.");
   }
 
   return {
@@ -103,7 +104,7 @@ export async function fetchHouseholdRows(householdId: string): Promise<Household
 export async function insertCompletion(choreId: string): Promise<void> {
   const { id: userId } = await requireUser();
   const { error } = await supabase.from("completions").insert({ chore_id: choreId, user_id: userId });
-  if (error) throw new Error("Kunde inte markera sysslan som gjord. Försök igen.");
+  if (error) throw new UserError("Kunde inte markera sysslan som gjord. Försök igen.");
 }
 
 /** Sätter vilka som har sysslan. Borttagna tilldelningar får deleted_at. */
@@ -120,12 +121,12 @@ export async function saveAssignees(
     const { error } = await supabase.from("chore_assignments")
       .update({ deleted_at: new Date().toISOString() })
       .in("id", removed.map((a) => a.id));
-    if (error) throw new Error("Kunde inte spara tilldelningen. Försök igen.");
+    if (error) throw new UserError("Kunde inte spara tilldelningen. Försök igen.");
   }
   if (added.length > 0) {
     const { error } = await supabase.from("chore_assignments")
       .insert(added.map((userId) => ({ chore_id: choreId, user_id: userId })));
-    if (error) throw new Error("Kunde inte spara tilldelningen. Försök igen.");
+    if (error) throw new UserError("Kunde inte spara tilldelningen. Försök igen.");
   }
 }
 
@@ -140,7 +141,7 @@ export type NewChore = Pick<ChoreRow, "name" | "description" | "intervalDays" | 
  */
 export async function insertChore(householdId: string, chore: NewChore): Promise<void> {
   const invalid = Object.values(validateChore(chore))[0];
-  if (invalid) throw new Error(`Kunde inte skapa sysslan. ${invalid}`);
+  if (invalid) throw new UserError(`Kunde inte skapa sysslan. ${invalid}`);
   await requireUser();
   const { error } = await supabase.from("chores").insert({
     household_id: householdId,
@@ -149,13 +150,13 @@ export async function insertChore(householdId: string, chore: NewChore): Promise
     interval_days: chore.intervalDays,
     weight: chore.weight,
   });
-  if (error) throw new Error("Kunde inte skapa sysslan. Bara ägare kan lägga till sysslor.");
+  if (error) throw new UserError("Kunde inte skapa sysslan. Bara ägare kan lägga till sysslor.");
 }
 
 /** Sparar ändringar i en syssla (#34). Databasen släpper bara igenom ägare. */
 export async function updateChore(choreId: string, chore: NewChore): Promise<void> {
-  if (!chore.name.trim()) throw new Error("Kunde inte spara sysslan utan titel.");
-  if (chore.description.length > 500) throw new Error("Kunde inte spara sysslan, beskrivningen är för lång.");
+  if (!chore.name.trim()) throw new UserError("Kunde inte spara sysslan utan titel.");
+  if (chore.description.length > 500) throw new UserError("Kunde inte spara sysslan, beskrivningen är för lång.");
   await requireUser();
   const { error } = await supabase.from("chores")
     .update({
@@ -165,7 +166,7 @@ export async function updateChore(choreId: string, chore: NewChore): Promise<voi
       weight: chore.weight,
     })
     .eq("id", choreId);
-  if (error) throw new Error("Kunde inte spara sysslan. Bara ägare kan redigera sysslor.");
+  if (error) throw new UserError("Kunde inte spara sysslan. Bara ägare kan redigera sysslor.");
 }
 
 /** Arkivering behåller sysslan och utförandena för statistiken. */
@@ -175,7 +176,7 @@ export async function archiveChore(choreId: string): Promise<void> {
     .update({ is_archived: true }).eq("id", choreId)
     .is("deleted_at", null).select("id").maybeSingle();
   if (error || !data) {
-    throw new Error("Kunde inte arkivera sysslan. Kontrollera att du är ägare och försök igen.");
+    throw new UserError("Kunde inte arkivera sysslan. Kontrollera att du är ägare och försök igen.");
   }
 }
 
@@ -183,10 +184,10 @@ export async function deleteChore(choreId: string): Promise<void> {
   await requireUser();
   const { data, error } = await supabase.rpc("delete_chore", { p_chore_id: choreId });
   if (error) {
-    throw new Error("Kunde inte ta bort sysslan. Kontrollera att du är ägare och försök igen.");
+    throw new UserError("Kunde inte ta bort sysslan. Kontrollera att du är ägare och försök igen.");
   }
   if (data !== choreId) {
-    throw new Error("Kunde inte bekräfta borttagningen. Uppdatera listan innan du försöker igen.");
+    throw new UserError("Kunde inte bekräfta borttagningen. Uppdatera listan innan du försöker igen.");
   }
 }
 
@@ -201,14 +202,9 @@ export async function insertGroup(
   const { data, error } = await supabase.from("chore_groups")
     .insert({ household_id: householdId, name, rotation_days: rotationDays })
     .select("id").single();
-  if (error || !data) throw new Error("Kunde inte skapa gruppen. Försök igen.");
+  if (error || !data) throw new UserError("Kunde inte skapa gruppen. Försök igen.");
 
   const { error: choreError } = await supabase.from("chores")
     .update({ chore_group_id: data.id }).in("id", choreIds);
-  if (choreError) throw new Error("Gruppen skapades men sysslorna kunde inte läggas till. Försök igen.");
-}
-
-export function choreError(error: unknown): string {
-  return error instanceof Error && /^(Du måste|Kunde inte|Gruppen)/.test(error.message)
-    ? error.message : "Kunde inte ansluta. Kontrollera anslutningen och appens inställningar.";
+  if (choreError) throw new UserError("Gruppen skapades men sysslorna kunde inte läggas till. Försök igen.");
 }

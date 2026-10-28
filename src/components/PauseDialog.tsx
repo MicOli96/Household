@@ -1,11 +1,12 @@
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useState } from "react";
 import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
-import { pauseError, PauseSummary } from "../data/pauses";
+import { PauseSummary } from "../data/pauses";
 import { fromDateString, toDateString } from "../utils/dates";
 import { isPausedToday } from "../utils/pauses";
 import { useTheme } from "../theme/ThemeProvider";
 import { AppModal, PillButton, SegmentedControl } from "./ui";
+import { errorMessage } from "../lib/errors";
 
 type Props = {
   name: string;
@@ -55,7 +56,7 @@ export function PauseDialog({ name, pauses, onClose, onAdd, onStop }: Props) {
     try {
       await action();
     } catch (reason) {
-      setError(pauseError(reason));
+      setError(errorMessage(reason));
     } finally {
       setSaving(false);
     }

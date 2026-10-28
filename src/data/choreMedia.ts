@@ -1,6 +1,7 @@
 import { File } from "expo-file-system";
 import { Platform } from "react-native";
 
+import { UserError } from "../lib/errors";
 import { requireUser, supabase } from "../lib/supabase";
 import type { ChoreRow } from "./types";
 
@@ -71,14 +72,14 @@ export async function saveChoreMedia(
   try {
     body = await readLocalFile(file.uri);
   } catch {
-    throw new Error("Kunde inte läsa filen på telefonen. Försök igen.");
+    throw new UserError("Kunde inte läsa filen på telefonen. Försök igen.");
   }
 
   const { error: uploadError } = await supabase.storage
     .from(BUCKET)
     .upload(path, body, { contentType, upsert: false });
   if (uploadError) {
-    throw new Error("Kunde inte ladda upp filen. Kontrollera anslutningen och försök igen.");
+    throw new UserError("Kunde inte ladda upp filen. Kontrollera anslutningen och försök igen.");
   }
 
   const previous = kind === "image" ? chore.imagePath : chore.audioPath;
@@ -89,7 +90,7 @@ export async function saveChoreMedia(
   });
   if (error) {
     await supabase.storage.from(BUCKET).remove([path]);
-    throw new Error("Kunde inte spara filen till sysslan. Bara medlemmar i hushållet kan lägga till filer.");
+    throw new UserError("Kunde inte spara filen till sysslan. Bara medlemmar i hushållet kan lägga till filer.");
   }
 
   // Den gamla filen behövs inte längre. Misslyckas det ligger den bara kvar.
@@ -99,6 +100,6 @@ export async function saveChoreMedia(
 /** Bucketen är privat, så filerna visas med en länk som gäller en timme. */
 export async function choreMediaUrl(path: string): Promise<string> {
   const { data, error } = await supabase.storage.from(BUCKET).createSignedUrl(path, 60 * 60);
-  if (error || !data) throw new Error("Kunde inte hämta filen. Försök igen.");
+  if (error || !data) throw new UserError("Kunde inte hämta filen. Försök igen.");
   return data.signedUrl;
 }

@@ -4,10 +4,11 @@ import { useCallback, useRef, useState } from "react";
 import { Alert, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { AppModal, Card, Icon, PillButton, TextField } from "../../components/ui";
 import { useHouseholdData } from "../../data/HouseholdData";
-import { createHousehold, householdError, listHouseholds, listPendingHouseholds, saveNewMemberProfile, validateHouseholdName } from "../../data/households";
+import { createHousehold, listHouseholds, listPendingHouseholds, saveNewMemberProfile, validateHouseholdName } from "../../data/households";
 import { getMyName, NAME_MAX_LENGTH, validateName } from "../../data/profile";
 import { useRefreshOnFocus } from "../../hooks/useRefreshOnFocus";
 import { useTheme } from "../../theme/ThemeProvider";
+import { errorMessage } from "../../lib/errors";
 
 export default function Households() {
   const { colors } = useTheme();
@@ -33,7 +34,7 @@ export default function Households() {
   const households = approved.data ?? [];
   const pending = waiting.data ?? [];
   const loading = approved.isLoading || waiting.isLoading;
-  const loadError = approved.error || waiting.error ? householdError(approved.error ?? waiting.error) : "";
+  const loadError = approved.error || waiting.error ? errorMessage(approved.error ?? waiting.error) : "";
 
   const { refetch: refetchApproved } = approved;
   const { refetch: refetchWaiting } = waiting;
@@ -95,7 +96,7 @@ export default function Households() {
       // Ett nyskapat hushåll öppnas av sig självt (#104).
       open(household.id);
     } catch (error) {
-      setNameError(householdError(error));
+      setNameError(errorMessage(error));
     } finally {
       submitting.current = false;
     }

@@ -16,15 +16,15 @@ import {
   denyRequest,
   getHousehold,
   getMembers,
-  householdError,
   MemberSummary,
   renameHousehold,
   setMemberOwner,
 } from "../../data/households";
-import { addPause, getPauses, pauseError, PauseSummary, stopPause } from "../../data/pauses";
+import { addPause, getPauses, PauseSummary, stopPause } from "../../data/pauses";
 import { useRefreshOnFocus } from "../../hooks/useRefreshOnFocus";
 import { isPausedToday } from "../../utils/pauses";
 import { useTheme } from "../../theme/ThemeProvider";
+import { errorMessage } from "../../lib/errors";
 
 // Fliken Hushåll (#104): det öppnade hushållets namn, kod och medlemmar.
 // Byt namn och medlemsmenyn (gör till ägare, pausa) är modaler (AppModal), inte egna skärmar.
@@ -53,7 +53,7 @@ export default function Household() {
   const members = membersQuery.data ?? [];
   const pauses = pausesQuery.data ?? [];
   const queryError = householdQuery.error ?? membersQuery.error;
-  const error = queryError ? householdError(queryError) : "";
+  const error = queryError ? errorMessage(queryError) : "";
 
   // Planerade pauser som inte har börjat räknas inte här.
   const pausedUserIds = pauses.filter(isPausedToday).map((pause) => pause.userId);
@@ -110,7 +110,7 @@ export default function Household() {
   const [memberError, setMemberError] = useState("");
   // Utan pauserna kan "Pausad" saknas i listan, så felet visas på samma ställe.
   const memberMessage =
-    memberError || (pausesQuery.error ? pauseError(pausesQuery.error) : "");
+    memberError || (pausesQuery.error ? errorMessage(pausesQuery.error) : "");
 
   // Medlemmarna finns både i listan här och i hushållets data, som dagsvyn,
   // Tilldela och rotationsgrupperna använder. Båda hämtas om efter en ändring.
@@ -124,7 +124,7 @@ export default function Household() {
     mutationFn: (member: MemberSummary) =>
       setMemberOwner(householdId as string, member.userId, !member.isOwner),
     onSuccess: refreshMembers,
-    onError: (reason) => setMemberError(householdError(reason)),
+    onError: (reason) => setMemberError(errorMessage(reason)),
   });
 
   function toggleOwner(member: MemberSummary) {
@@ -144,7 +144,7 @@ export default function Household() {
       approve
         ? approveRequest(householdId as string, request.userId)
         : denyRequest(householdId as string, request.userId),
-    onError: (reason) => setRequestError(householdError(reason)),
+    onError: (reason) => setRequestError(errorMessage(reason)),
     onSettled: refreshMembers,
   });
 

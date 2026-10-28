@@ -3,9 +3,9 @@ import { useRef, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { ChoreForm } from "../../../components/ChoreForm";
 import { ConfirmDialog, PillButton } from "../../../components/ui";
-import { choreError } from "../../../data/chores";
 import { useChore, useHouseholdData } from "../../../data/HouseholdData";
 import { useTheme } from "../../../theme/ThemeProvider";
+import { errorMessage } from "../../../lib/errors";
 
 // Redigering (#34), borttagning (#35) och arkivering med varning (#37).
 export default function EditChore() {
@@ -31,7 +31,7 @@ export default function EditChore() {
       setShowDeleteDialog(false);
       router.dismissTo("/");
     } catch (reason) {
-      setActionError(choreError(reason));
+      setActionError(errorMessage(reason));
     } finally {
       actionRef.current = false;
       setIsArchiving(false);
@@ -48,7 +48,7 @@ export default function EditChore() {
       setShowDeleteDialog(false);
       router.dismissTo("/");
     } catch (reason) {
-      setActionError(choreError(reason));
+      setActionError(errorMessage(reason));
     } finally {
       actionRef.current = false;
       setIsDeleting(false);
@@ -94,11 +94,7 @@ export default function EditChore() {
         initial={{ name: chore.name, description: chore.description,
           intervalDays: chore.intervalDays, weight: chore.weight }}
         onSave={async (values) => {
-          try {
-            await editChore(chore.id, values);
-          } catch (reason) {
-            throw new Error(choreError(reason));
-          }
+          await editChore(chore.id, values);
           router.back();
         }}
         onClose={() => router.back()}

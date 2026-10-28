@@ -1,6 +1,7 @@
 import "react-native-url-polyfill/auto";
 import "@/lib/localStorage";
 import { createClient } from "@supabase/supabase-js";
+import { UserError } from "./errors";
 
 // Adressen och nyckeln kommer från .env i projektets rot.
 
@@ -31,6 +32,6 @@ export const supabase = createClient(url, key, {
 export async function requireUser() {
   const { data, error } = await supabase.auth.getSession();
   const user = data.session?.user;
-  if (error || !user) throw new Error("Du måste vara inloggad. Öppna Logga in och försök igen.");
+  if (error || !user) throw new UserError("Du måste vara inloggad. Öppna Logga in och försök igen.");
   return user;
 }

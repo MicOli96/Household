@@ -2,10 +2,10 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { Avatar, CheckRow, PillButton } from "../../../components/ui";
-import { choreError } from "../../../data/chores";
 import { useChore, useHouseholdData } from "../../../data/HouseholdData";
 import type { Chore } from "../../../data/types";
 import { useTheme } from "../../../theme/ThemeProvider";
+import { errorMessage } from "../../../lib/errors";
 
 // Tilldela syssla (#13). Öppnas som modal från "Tilldela syssla" i sysslans vy.
 // Ägaren bockar i vilka medlemmar som har sysslan.
@@ -74,7 +74,7 @@ function AssignForm({ chore }: { chore: Chore }) {
       await setAssignees(chore.id, [...selected]);
       router.back();
     } catch (reason) {
-      setError(choreError(reason));
+      setError(errorMessage(reason));
       setSaving(false);
     }
   }

@@ -2,7 +2,6 @@ import { router } from "expo-router";
 import { StyleSheet, Text, View } from "react-native";
 import { ChoreForm } from "../../components/ChoreForm";
 import { PillButton } from "../../components/ui";
-import { choreError } from "../../data/chores";
 import { useHouseholdData } from "../../data/HouseholdData";
 import { useTheme } from "../../theme/ThemeProvider";
 
@@ -32,11 +31,7 @@ export default function NewChore() {
   return (
     <ChoreForm
       onSave={async (values) => {
-        try {
-          await addChore(values);
-        } catch (reason) {
-          throw new Error(choreError(reason));
-        }
+        await addChore(values);
         router.back();
       }}
       onClose={() => router.back()}

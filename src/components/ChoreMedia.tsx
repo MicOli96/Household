@@ -12,12 +12,12 @@ import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
 import { useState } from "react";
 import { ActivityIndicator, Linking, StyleSheet, Text, View } from "react-native";
-import { choreError } from "../data/chores";
 import { choreMediaUrl, ChoreMediaKind, LocalMediaFile } from "../data/choreMedia";
 import { useHouseholdData } from "../data/HouseholdData";
 import type { ChoreRow } from "../data/types";
 import { useTheme } from "../theme/ThemeProvider";
 import { Card, PillButton } from "./ui";
+import { errorMessage } from "../lib/errors";
 
 type Props = {
   chore: Pick<ChoreRow, "id" | "householdId" | "imagePath" | "audioPath">;
@@ -39,7 +39,7 @@ export function ChoreMedia({ chore }: Props) {
     try {
       await addChoreMedia(chore, kind, file);
     } catch (reason) {
-      setError(choreError(reason));
+      setError(errorMessage(reason));
     } finally {
       setSaving(null);
     }

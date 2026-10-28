@@ -3,6 +3,7 @@ import "@/lib/localStorage";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createContext, ReactNode, useCallback, useContext, useMemo, useState } from "react";
 import { currentRotationMember } from "../utils/rotation";
+import { errorMessage, UserError } from "../lib/errors";
 import {
   archiveChore,
   fetchHouseholdRows,
@@ -100,7 +101,7 @@ export function HouseholdDataProvider({ children }: { children: ReactNode }) {
   const rows = rowsQuery.data ?? emptyRows;
   const loading = rowsQuery.isLoading;
   const error = rowsQuery.error
-    ? (rowsQuery.error instanceof Error ? rowsQuery.error.message : "Kunde inte hämta sysslorna.")
+    ? errorMessage(rowsQuery.error)
     : "";
 
   const reload = useCallback(() => {
@@ -119,7 +120,7 @@ export function HouseholdDataProvider({ children }: { children: ReactNode }) {
   }, [userId]);
 
   function requireHousehold(): string {
-    if (!householdId) throw new Error("Öppna ett hushåll under Mina hushåll först.");
+    if (!householdId) throw new UserError("Öppna ett hushåll under Mina hushåll först.");
     return householdId;
   }
 

@@ -1,8 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
 import { useEffect, useRef, useState } from "react";
-import { householdError, joinHousehold, saveNewMemberProfile, validateHouseholdCode } from "../data/households";
+import { joinHousehold, saveNewMemberProfile, validateHouseholdCode } from "../data/households";
 import { getMyName, validateName } from "../data/profile";
+import { errorMessage } from "../lib/errors";
 
 export function useJoinHouseholdForm() {
   const queryClient = useQueryClient();
@@ -61,7 +62,7 @@ export function useJoinHouseholdForm() {
       }
       router.replace({ pathname: "/households/pending", params: { id: householdId } });
     } catch (reason) {
-      if (mounted.current) setError(householdError(reason));
+      if (mounted.current) setError(errorMessage(reason));
     } finally {
       submitting.current = false;
     }

@@ -12,10 +12,11 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Avatar, PillButton, TextField } from "../components/ui";
 import { useHouseholdData } from "../data/HouseholdData";
-import { getMyProfile, householdError, saveMyProfile } from "../data/households";
+import { getMyProfile, saveMyProfile } from "../data/households";
 import { getMyName, NAME_MAX_LENGTH, saveMyName } from "../data/profile";
 import { useTheme } from "../theme/ThemeProvider";
 import { avatars, type AvatarEmoji } from "../theme/avatars";
+import { errorMessage } from "../lib/errors";
 
 const avatarOptions = Object.keys(avatars) as AvatarEmoji[];
 
@@ -43,7 +44,7 @@ export default function Profile() {
   const loadError = !householdId
     ? "Öppna profilen från ett hushåll."
     : myProfileQuery.error
-      ? householdError(myProfileQuery.error)
+      ? errorMessage(myProfileQuery.error)
       : "";
 
   const saveMutation = useMutation({
@@ -61,7 +62,7 @@ export default function Profile() {
     },
   });
   const saving = saveMutation.isPending;
-  const saveError = saveMutation.error ? householdError(saveMutation.error) : "";
+  const saveError = saveMutation.error ? errorMessage(saveMutation.error) : "";
   const error = saveError || loadError;
 
   async function save() {
