@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Pressable, StyleSheet, Text } from "react-native";
-import { validateHouseholdName } from "../data/households";
+import { HOUSEHOLD_NAME_MAX_LENGTH, validateHouseholdName } from "../data/households";
 import { useTheme } from "../theme/ThemeProvider";
 import { AppModal, PillButton, TextField } from "./ui";
 import { errorMessage } from "../lib/errors";
@@ -50,7 +50,7 @@ export function RenameHouseholdDialog({ currentName, onClose, onSave }: Props) {
           setError("");
         }}
         placeholder="Hushållets namn"
-        maxLength={100}
+        maxLength={HOUSEHOLD_NAME_MAX_LENGTH}
         autoFocus
         returnKeyType="done"
         onSubmitEditing={save}

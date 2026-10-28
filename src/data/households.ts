@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { UserError } from "../lib/errors";
 import { requireUser, supabase } from "../lib/supabase";
 import { avatars, type AvatarEmoji } from "../theme/avatars";
@@ -29,10 +30,26 @@ function toAvatar(avatarId: number | null | undefined): AvatarEmoji | null {
   return avatarEmojis[avatarId - 1] ?? null;
 }
 
+export const HOUSEHOLD_NAME_MAX_LENGTH = 100;
+
+/** Samma gränser som households.name: varchar(100), inte tomt. */
+const householdNameSchema = z.string().trim()
+  .min(1, { error: "Ange ett namn för hushållet." })
+  .max(HOUSEHOLD_NAME_MAX_LENGTH, { error: `Namnet får innehålla högst ${HOUSEHOLD_NAME_MAX_LENGTH} tecken.` });
+
+/** Koden skrivs utan hänsyn till stora och små bokstäver. */
+const householdCodeSchema = z.string().trim().toUpperCase()
+  .min(1, { error: "Ange en hushållskod." })
+  .regex(/^[A-Z0-9]{1,10}$/, { error: "Ange en kod med högst 10 bokstäver eller siffror." });
+
+/** Returnerar det första felet, eller en tom sträng om värdet är godkänt. */
+function firstError(schema: z.ZodType, value: string): string {
+  const result = schema.safeParse(value);
+  return result.success ? "" : result.error.issues[0].message;
+}
+
 export function validateHouseholdName(value: string): string {
-  if (!value.trim()) return "Ange ett namn för hushållet.";
-  if (value.trim().length > 100) return "Namnet får innehålla högst 100 tecken.";
-  return "";
+  return firstError(householdNameSchema, value);
 }
 
 export async function createHousehold(name: string): Promise<HouseholdSummary> {
@@ -50,12 +67,7 @@ export function householdCode(value: string): string {
 }
 
 export function validateHouseholdCode(value: string): string {
-  const code = householdCode(value);
-  if (!code) return "Ange en hushållskod.";
-  if (!/^[A-Z0-9]{1,10}$/.test(code)) {
-    return "Ange en kod med högst 10 bokstäver eller siffror.";
-  }
-  return "";
+  return firstError(householdCodeSchema, value);
 }
 
 export async function joinHousehold(value: string): Promise<string> {

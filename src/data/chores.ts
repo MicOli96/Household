@@ -155,8 +155,8 @@ export async function insertChore(householdId: string, chore: NewChore): Promise
 
 /** Sparar ändringar i en syssla (#34). Databasen släpper bara igenom ägare. */
 export async function updateChore(choreId: string, chore: NewChore): Promise<void> {
-  if (!chore.name.trim()) throw new UserError("Kunde inte spara sysslan utan titel.");
-  if (chore.description.length > 500) throw new UserError("Kunde inte spara sysslan, beskrivningen är för lång.");
+  const invalid = Object.values(validateChore(chore))[0];
+  if (invalid) throw new UserError(`Kunde inte spara sysslan. ${invalid}`);
   await requireUser();
   const { error } = await supabase.from("chores")
     .update({

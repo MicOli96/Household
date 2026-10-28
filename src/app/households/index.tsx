@@ -4,7 +4,7 @@ import { useCallback, useRef, useState } from "react";
 import { Alert, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { AppModal, Card, Icon, PillButton, TextField } from "../../components/ui";
 import { useHouseholdData } from "../../data/HouseholdData";
-import { createHousehold, listHouseholds, listPendingHouseholds, saveNewMemberProfile, validateHouseholdName } from "../../data/households";
+import { createHousehold, HOUSEHOLD_NAME_MAX_LENGTH, listHouseholds, listPendingHouseholds, saveNewMemberProfile, validateHouseholdName } from "../../data/households";
 import { getMyName, NAME_MAX_LENGTH, validateName } from "../../data/profile";
 import { useRefreshOnFocus } from "../../hooks/useRefreshOnFocus";
 import { useTheme } from "../../theme/ThemeProvider";
@@ -160,7 +160,7 @@ export default function Households() {
         </>}>
         <TextField accessibilityLabel="Hushållets namn" placeholder="Hushållets namn" value={householdName}
           onChangeText={(value) => { setHouseholdName(value); setNameError(""); }}
-          editable={!isCreating} error={nameError} />
+          maxLength={HOUSEHOLD_NAME_MAX_LENGTH} editable={!isCreating} error={nameError} />
         <TextField accessibilityLabel="Ditt namn" placeholder="Ditt namn" value={memberName}
           onChangeText={(value) => { setTypedMemberName(value); setMemberNameError(""); }}
           maxLength={NAME_MAX_LENGTH} autoCapitalize="words"
