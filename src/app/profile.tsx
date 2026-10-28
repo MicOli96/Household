@@ -112,7 +112,6 @@ export default function Profile() {
               onSubmitEditing={save}
               editable={!saving && !!householdId}
               style={styles.nameInput}
-              error={error || undefined}
             />
 
             {householdId ? (

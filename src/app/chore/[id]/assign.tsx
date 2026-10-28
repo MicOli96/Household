@@ -4,6 +4,7 @@ import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { Avatar, CheckRow, PillButton } from "../../../components/ui";
 import { choreError } from "../../../data/chores";
 import { useChore, useHouseholdData } from "../../../data/HouseholdData";
+import type { Chore } from "../../../data/types";
 import { useTheme } from "../../../theme/ThemeProvider";
 
 // Tilldela syssla (#13). Öppnas som modal från "Tilldela syssla" i sysslans vy.
@@ -12,12 +13,15 @@ export default function AssignChore() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { colors } = useTheme();
   const chore = useChore(id);
-  const { members, groups, setAssignees } = useHouseholdData();
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
-  const [selected, setSelected] = useState(
-    () => new Set(chore?.assignees.map((m) => m.userId) ?? []),
-  );
+  const { groups, loading } = useHouseholdData();
+
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <Text style={{ color: colors.textMuted }}>Hämtar sysslan...</Text>
+      </View>
+    );
+  }
 
   if (!chore) {
     return (
@@ -42,6 +46,18 @@ export default function AssignChore() {
     );
   }
 
+  return <AssignForm chore={chore} />;
+}
+
+// Visas först när sysslan är hämtad, så att valet börjar med dem som har
+// sysslan nu. Annars börjar valet tomt och Spara tar bort alla tilldelningar.
+function AssignForm({ chore }: { chore: Chore }) {
+  const { colors } = useTheme();
+  const { members, setAssignees } = useHouseholdData();
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [selected, setSelected] = useState(() => new Set(chore.assignees.map((m) => m.userId)));
+
   function toggle(userId: string) {
     setSelected((prev) => {
       const next = new Set(prev);
@@ -55,7 +71,7 @@ export default function AssignChore() {
     if (saving) return;
     setSaving(true);
     try {
-      await setAssignees(chore!.id, [...selected]);
+      await setAssignees(chore.id, [...selected]);
       router.back();
     } catch (reason) {
       setError(choreError(reason));

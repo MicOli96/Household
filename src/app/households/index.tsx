@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { router, Stack } from "expo-router";
 import { useCallback, useRef, useState } from "react";
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { AppModal, Card, Icon, PillButton, TextField } from "../../components/ui";
 import { useHouseholdData } from "../../data/HouseholdData";
 import { createHousehold, householdError, listHouseholds, listPendingHouseholds, saveNewMemberProfile, validateHouseholdName } from "../../data/households";
@@ -86,10 +86,11 @@ export default function Households() {
       setHouseholdName("");
       setTypedMemberName(null);
       if (!profileSaved) {
-        Alert.alert(
-          "Ditt namn kunde inte sparas",
-          `Hushållet ”${household.name}” har skapats. Ändra ditt namn i profilen.`,
-        );
+        const title = "Ditt namn kunde inte sparas";
+        const message = `Hushållet ”${household.name}” har skapats. Ändra ditt namn i profilen.`;
+        // Alert gör ingenting på webben, där används webbläsarens egen ruta.
+        if (Platform.OS === "web") window.alert(`${title}\n\n${message}`);
+        else Alert.alert(title, message);
       }
       // Ett nyskapat hushåll öppnas av sig självt (#104).
       open(household.id);
