@@ -112,11 +112,18 @@ export default function Household() {
   const memberMessage =
     memberError || (pausesQuery.error ? pauseError(pausesQuery.error) : "");
 
+  // Medlemmarna finns både i listan här och i hushållets data, som dagsvyn,
+  // Tilldela och rotationsgrupperna använder. Båda hämtas om efter en ändring.
+  function refreshMembers() {
+    queryClient.invalidateQueries({ queryKey: ["members", householdId] });
+    queryClient.invalidateQueries({ queryKey: ["chores", householdId] });
+  }
+
   // Gör medlemmen till ägare, eller tar bort ägarrollen om man råkat ge den (#19).
   const ownerMutation = useMutation({
     mutationFn: (member: MemberSummary) =>
       setMemberOwner(householdId as string, member.userId, !member.isOwner),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["members", householdId] }),
+    onSuccess: refreshMembers,
     onError: (reason) => setMemberError(householdError(reason)),
   });
 
@@ -138,7 +145,7 @@ export default function Household() {
         ? approveRequest(householdId as string, request.userId)
         : denyRequest(householdId as string, request.userId),
     onError: (reason) => setRequestError(householdError(reason)),
-    onSettled: () => queryClient.invalidateQueries({ queryKey: ["members", householdId] }),
+    onSettled: refreshMembers,
   });
 
   function answerRequest(request: MemberSummary, approve: boolean) {
