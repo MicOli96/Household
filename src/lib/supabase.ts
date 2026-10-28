@@ -23,9 +23,14 @@ export const supabase = createClient(url, key, {
   },
 });
 
-/** Felmeddelandet är skrivet för att visas i appen när ingen är inloggad. */
+/**
+ * Den inloggade användaren. Läses från den sparade sessionen, så det blir
+ * inget extra anrop till servern före varje fråga. Databasen kontrollerar
+ * ändå själv vem som frågar. Felmeddelandet visas i appen när ingen är inloggad.
+ */
 export async function requireUser() {
-  const { data, error } = await supabase.auth.getUser();
-  if (error || !data.user) throw new Error("Du måste vara inloggad. Öppna Logga in och försök igen.");
-  return data.user;
+  const { data, error } = await supabase.auth.getSession();
+  const user = data.session?.user;
+  if (error || !user) throw new Error("Du måste vara inloggad. Öppna Logga in och försök igen.");
+  return user;
 }
