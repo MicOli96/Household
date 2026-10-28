@@ -151,13 +151,21 @@ export function ChoreForm({ initial, onSave, onClose }: Props) {
         ) : null}
       </ScrollView>
 
-      {/* Listen längst ner med Spara och Stäng, som i Figma. */}
+      {/* Listen längst ner med Stäng till vänster och Spara till höger. */}
       <View
         style={[
           styles.footer,
           { backgroundColor: colors.card, borderTopColor: colors.border, paddingBottom: insets.bottom },
         ]}
       >
+        <Pressable
+          style={({ pressed }) => [styles.footerButton, pressed && styles.pressed]}
+          onPress={onClose}
+        >
+          <CircleIcon symbol="×" color={colors.text} />
+          <Text style={[styles.footerText, { color: colors.text }]}>Stäng</Text>
+        </Pressable>
+        <View style={[styles.divider, { backgroundColor: colors.border }]} />
         <Pressable
           style={({ pressed }) => [
             styles.footerButton,
@@ -170,14 +178,6 @@ export function ChoreForm({ initial, onSave, onClose }: Props) {
           <Text style={[styles.footerText, { color: colors.text }]}>
             {saving ? "Sparar..." : "Spara"}
           </Text>
-        </Pressable>
-        <View style={[styles.divider, { backgroundColor: colors.border }]} />
-        <Pressable
-          style={({ pressed }) => [styles.footerButton, pressed && styles.pressed]}
-          onPress={onClose}
-        >
-          <CircleIcon symbol="×" color={colors.text} />
-          <Text style={[styles.footerText, { color: colors.text }]}>Stäng</Text>
         </Pressable>
       </View>
     </View>
