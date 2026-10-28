@@ -31,6 +31,31 @@ function timestamps(row: TimestampColumns) {
   };
 }
 
+// Supabase skickar högst så här många rader per fråga (max_rows), även om
+// fler matchar. Gjorda sysslor blir fler än så, så de hämtas i omgångar.
+const PAGE_SIZE = 1000;
+
+function completionsPage(householdId: string, from: number) {
+  return supabase.from("completions").select("*, chores!inner(household_id)")
+    .eq("chores.household_id", householdId).is("deleted_at", null)
+    // En fast ordning gör att omgångarna inte överlappar eller hoppar över rader.
+    .order("created_at").order("id")
+    .range(from, from + PAGE_SIZE - 1);
+}
+
+type CompletionRows = NonNullable<Awaited<ReturnType<typeof completionsPage>>["data"]>;
+
+/** Alla gjorda sysslor i hushållet, inte bara de första 1000. */
+async function fetchCompletions(householdId: string) {
+  const rows: CompletionRows = [];
+  for (let from = 0; ; from += PAGE_SIZE) {
+    const { data, error } = await completionsPage(householdId, from);
+    if (error) return { data: null, error };
+    rows.push(...data);
+    if (data.length < PAGE_SIZE) return { data: rows, error: null };
+  }
+}
+
 export async function fetchHouseholdRows(householdId: string): Promise<HouseholdRows> {
   const { id: userId } = await requireUser();
   const [members, chores, groups, assignments, completions] = await Promise.all([
@@ -46,8 +71,7 @@ export async function fetchHouseholdRows(householdId: string): Promise<Household
       .eq("household_id", householdId).is("deleted_at", null).order("created_at"),
     supabase.from("chore_assignments").select("*, chores!inner(household_id)")
       .eq("chores.household_id", householdId).is("deleted_at", null),
-    supabase.from("completions").select("*, chores!inner(household_id)")
-      .eq("chores.household_id", householdId).is("deleted_at", null),
+    fetchCompletions(householdId),
   ]);
   if (members.error || chores.error || groups.error || assignments.error || completions.error) {
     throw new UserError("Kunde inte hämta sysslorna. Försök igen.");
