@@ -1,14 +1,14 @@
-import { CompletedBy } from "../../components/CompletedBy";
 import { router, Stack, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { CompletedBy } from "../../components/CompletedBy";
 import { ChoreMedia } from "../../components/ChoreMedia";
 import { Card, Icon, PillButton } from "../../components/ui";
 import { choreError } from "../../data/chores";
 import { useChore, useHouseholdData } from "../../data/HouseholdData";
 import { useTheme } from "../../theme/ThemeProvider";
 import { daysSinceDone, isOverdue } from "../../utils/chores";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 // Detaljvyn för en syssla. Krav: "När en användare väljer en syssla ska
 // beskrivningen av sysslan visas och det ska även med ett enkelt tryck gå
@@ -61,15 +61,15 @@ export default function ChoreDetail() {
             // Bara ägare kan redigera sysslan (#34).
             headerRight: currentMember?.isOwner
               ? () => (
-                <Pressable
-                  onPress={() => router.push(`/chore/${chore.id}/edit`)}
-                  hitSlop={12}
-                  accessibilityRole="button"
-                  accessibilityLabel="Redigera sysslan"
-                  style={styles.headerButton}
-                >
-                  <Icon name="edit" color={colors.primaryText} />
-                </Pressable>
+                  <Pressable
+                    onPress={() => router.push(`/chore/${chore.id}/edit`)}
+                    hitSlop={12}
+                    accessibilityRole="button"
+                    accessibilityLabel="Redigera sysslan"
+                    style={styles.headerButton}
+                  >
+                    <Icon name="edit" color={colors.primaryText} />
+                  </Pressable>
               )
               : undefined,
           }}
@@ -115,12 +115,14 @@ export default function ChoreDetail() {
         <ChoreMedia chore={chore} />
       </ScrollView>
       <View
-        style={{
-          padding: 16,
-          paddingBottom: insets.bottom + 16,
-          backgroundColor: colors.card,
-          gap: 8,
-        }}
+        style={[
+          styles.footer,
+          {
+            paddingBottom: insets.bottom + 16,
+            backgroundColor: colors.card,
+            borderTopColor: colors.border,
+          },
+        ]}
       >
         {error ? <Text style={{ color: colors.danger }}>{error}</Text> : null}
         <PillButton
@@ -165,6 +167,11 @@ const styles = StyleSheet.create({
   },
   lastDone: {
     fontSize: 16,
+  },
+  footer: {
+    padding: 16,
+    gap: 8,
+    borderTopWidth: 1,
   },
   doneButton: {
     paddingVertical: 18,
