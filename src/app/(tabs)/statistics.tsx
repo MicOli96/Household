@@ -14,7 +14,7 @@ import { distribution, periodsWithStatistics, withoutPausedDays } from "../../ut
 // och förra månaden. Perioder utan gjorda sysslor visas inte (#44).
 export default function Statistics() {
   const { colors } = useTheme();
-  const { householdId, completions: allCompletions, allChores, members } = useHouseholdData();
+  const { householdId, completions: allCompletions, allChores, allMembers } = useHouseholdData();
   // Nyckeln börjar som pausnyckeln i hushållsvyn, så den hämtas om när någon pausas.
   const pausesQuery = useQuery({
     queryKey: ["pauses", householdId, "all"],
@@ -33,7 +33,7 @@ export default function Statistics() {
   const current = Math.max(0, Math.min(index, periods.length - 1));
   const period = periods[current];
   const { total, perChore } = period
-    ? distribution(completions, allChores, members, period, pausesQuery.data ?? [])
+    ? distribution(completions, allChores, allMembers, period, pausesQuery.data ?? [])
     : { total: [], perChore: [] };
   const hasPrevious = current > 0;
   const hasNext = current < periods.length - 1;

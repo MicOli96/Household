@@ -132,6 +132,25 @@ export async function getHousehold(id: string): Promise<HouseholdSummary> {
   return data;
 }
 
+export async function leaveHousehold(householdId: string): Promise<void> {
+  const { id: userId } = await requireUser();
+  const { data, error } = await supabase.from("household_members")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("household_id", householdId)
+    .eq("user_id", userId)
+    .is("deleted_at", null)
+    .select("user_id")
+    .maybeSingle();
+
+  if (error) {
+    if (error.message === "Hushållet måste ha minst en ägare") {
+      throw new Error("Du är enda ägaren, så gör någon annan till ägare först.");
+    }
+    throw new Error("Kunde inte lämna hushållet. Försök igen.");
+  }
+  if (!data) throw new Error("Du verkar inte längre vara medlem i hushållet.");
+}
+
 export async function getMyProfile(householdId: string): Promise<MyProfile> {
   const { id: userId } = await requireUser();
 
@@ -257,6 +276,9 @@ export async function setMemberOwner(
     .update({ is_owner: isOwner })
     .eq("household_id", householdId).eq("user_id", userId)
     .select("user_id").maybeSingle();
+  if (error?.message === "Hushållet måste ha minst en ägare") {
+    throw new Error("Du är enda ägaren, så gör någon annan till ägare först.");
+  }
   if (error || !data) throw new Error("Kunde inte ändra ägarrollen. Bara ägare kan utse ägare.");
 }
 
@@ -305,6 +327,6 @@ export async function getMembers(householdId: string): Promise<MemberSummary[]> 
 
 export function householdError(error: unknown): string {
   // Importfel och tekniska fel ska inte visa konfigurationsdetaljer i gränssnittet.
-  return error instanceof Error && /^(Du måste|Du är redan|Kunde inte|Hushållet|Skapandet|Ange ett|Ange en|Ange ditt|Namnet|Välj en|Den avataren|Välj ett)/.test(error.message)
+  return error instanceof Error && /^(Du måste|Du är redan|Du är enda ägaren|Du verkar inte längre|Kunde inte|Hushållet|Skapandet|Ange ett|Ange en|Ange ditt|Namnet|Välj en|Den avataren|Välj ett)/.test(error.message)
     ? error.message : "Kunde inte ansluta. Kontrollera anslutningen och appens inställningar.";
 }
