@@ -3,6 +3,7 @@ import { FlatList, StyleSheet, Text, View } from "react-native";
 import { ChoreCard } from "../../components/ChoreCard";
 import { PillButton } from "../../components/ui";
 import { useHouseholdData } from "../../data/HouseholdData";
+import { useRefreshOnFocus } from "../../hooks/useRefreshOnFocus";
 import { useTheme } from "../../theme/ThemeProvider";
 
 // Dagsvyn: listar hushållets sysslor och visar vad som behöver göras.
@@ -11,6 +12,8 @@ import { useTheme } from "../../theme/ThemeProvider";
 export default function DailyView() {
   const { colors } = useTheme();
   const { chores, currentMember, loading, error, reload } = useHouseholdData();
+  // Hämtar om när man kommer tillbaka till fliken, så att det andra har gjort syns.
+  useRefreshOnFocus(reload);
 
   return (
     <View style={styles.container}>
