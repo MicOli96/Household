@@ -1,8 +1,7 @@
+import { CompletedBy } from "../../components/CompletedBy";
 import { router, Stack, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { CompletedBy } from "../../components/CompletedBy";
 import { ChoreMedia } from "../../components/ChoreMedia";
 import { Card, Icon, PillButton } from "../../components/ui";
 import { choreError } from "../../data/chores";
@@ -16,7 +15,6 @@ import { daysSinceDone, isOverdue } from "../../utils/chores";
 export default function ChoreDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { colors } = useTheme();
-  const insets = useSafeAreaInsets();
   const [done, setDone] = useState(false);
   const [error, setError] = useState("");
   const chore = useChore(id);
@@ -50,91 +48,76 @@ export default function ChoreDetail() {
   }
 
   return (
-    <View style={{ flex: 1 }}>
-      <ScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={styles.container}
-      >
-        <Stack.Screen
-          options={{
-            title: chore.name,
-            // Bara ägare kan redigera sysslan (#34).
-            headerRight: currentMember?.isOwner
-              ? () => (
-                  <Pressable
-                    onPress={() => router.push(`/chore/${chore.id}/edit`)}
-                    hitSlop={12}
-                    accessibilityRole="button"
-                    accessibilityLabel="Redigera sysslan"
-                    style={styles.headerButton}
-                  >
-                    <Icon name="edit" color={colors.primaryText} />
-                  </Pressable>
+    <ScrollView contentContainerStyle={styles.container}>
+      <Stack.Screen
+        options={{
+          title: chore.name,
+          // Bara ägare kan redigera sysslan (#34).
+          headerRight: currentMember?.isOwner
+            ? () => (
+                <Pressable
+                  onPress={() => router.push(`/chore/${chore.id}/edit`)}
+                  hitSlop={12}
+                  accessibilityRole="button"
+                  accessibilityLabel="Redigera sysslan"
+                  style={styles.headerButton}
+                >
+                  <Icon name="edit" color={colors.primaryText} />
+                </Pressable>
               )
-              : undefined,
-          }}
-        />
+            : undefined,
+        }}
+      />
 
-        <Card style={styles.info}>
-          <View style={styles.infoContent}>
-            <Text style={[styles.label, { color: colors.textMuted }]}>Beskrivning</Text>
-            <Text style={[styles.description, { color: colors.text }]}>
-              {chore.description}
-            </Text>
-            <Text style={styles.meta}>
-              <Text style={{ color: colors.textMuted }}>Återkommer: </Text>
-              <Text style={{ color: colors.primaryText }}>var {chore.intervalDays}:e dag</Text>
-            </Text>
-            <Text style={styles.meta}>
-              <Text style={{ color: colors.textMuted }}>Värde: </Text>
-              <Text style={{ color: colors.primaryText }}>{chore.weight}</Text>
-            </Text>
-            <Text style={styles.meta}>
-              <Text style={{ color: colors.textMuted }}>Tilldelad: </Text>
-              {chore.assignees.length > 0
-                ? <Text style={{ color: colors.primaryText }}>{chore.assignees.map((m) => m.name).join(", ")}</Text>
-                : <Text style={{ color: colors.primaryText }}>ingen</Text>}
-            </Text>
-          </View>
-        </Card>
-
-        {/* Tilldelningen flyttades hit från dagsvyn och syns bara för ägare (#77). */}
-        {currentMember?.isOwner && (
-          <PillButton
-            label="Tilldela syssla"
-            onPress={() => router.push(`/chore/${chore.id}/assign`)}
-          />
-        )}
-
-        <View style={styles.section}>
-          <Text style={[styles.label, { color: colors.textMuted }]}>SENAST GJORD</Text>
-          <Text style={[styles.lastDone, { color: isOverdue(chore) ? colors.danger : colors.text }]}>
-            {lastDone}
+      <Card style={styles.info}>
+        <View style={styles.infoContent}>
+          <Text style={[styles.label, { color: colors.textMuted }]}>Beskrivning</Text>
+          <Text style={[styles.description, { color: colors.text }]}>
+            {chore.description}
           </Text>
-          <CompletedBy members={chore.lastCompletedBy} size={32} />
+          <Text style={styles.meta}>
+            <Text style={{ color: colors.textMuted }}>Återkommer: </Text>
+            <Text style={{ color: colors.primaryText }}>var {chore.intervalDays}:e dag</Text>
+          </Text>
+          <Text style={styles.meta}>
+            <Text style={{ color: colors.textMuted }}>Värde: </Text>
+            <Text style={{ color: colors.primaryText }}>{chore.weight}</Text>
+          </Text>
+          <Text style={styles.meta}>
+            <Text style={{ color: colors.textMuted }}>Tilldelad: </Text>
+            {chore.assignees.length > 0
+              ? <Text style={{ color: colors.primaryText }}>{chore.assignees.map((m) => m.name).join(", ")}</Text>
+              : <Text style={{ color: colors.primaryText }}>ingen</Text>}
+          </Text>
         </View>
+      </Card>
 
-        <ChoreMedia chore={chore} />
-      </ScrollView>
-      <View
-        style={[
-          styles.footer,
-          {
-            paddingBottom: insets.bottom + 16,
-            backgroundColor: colors.card,
-            borderTopColor: colors.border,
-          },
-        ]}
-      >
-        {error ? <Text style={{ color: colors.danger }}>{error}</Text> : null}
+      {/* Tilldelningen flyttades hit från dagsvyn och syns bara för ägare (#77). */}
+      {currentMember?.isOwner && (
         <PillButton
-          label={done ? "✓  Markerad som gjord" : "✓  Markera som gjord"}
-          variant="primary"
-          onPress={markAsDone}
-          style={styles.doneButton}
+          label="Tilldela syssla"
+          onPress={() => router.push(`/chore/${chore.id}/assign`)}
         />
+      )}
+
+      <View style={styles.section}>
+        <Text style={[styles.label, { color: colors.textMuted }]}>SENAST GJORD</Text>
+        <Text style={[styles.lastDone, { color: isOverdue(chore) ? colors.danger : colors.text }]}>
+          {lastDone}
+        </Text>
+        <CompletedBy members={chore.lastCompletedBy} size={32} />
       </View>
-    </View>
+
+      <ChoreMedia chore={chore} />
+
+      {error ? <Text style={{ color: colors.danger }}>{error}</Text> : null}
+      <PillButton
+        label={done ? "✓  Markerad som gjord" : "✓  Markera som gjord"}
+        variant="primary"
+        onPress={markAsDone}
+        style={styles.doneButton}
+      />
+    </ScrollView>
   );
 }
 
@@ -170,12 +153,9 @@ const styles = StyleSheet.create({
   lastDone: {
     fontSize: 16,
   },
-  footer: {
-    padding: 16,
-    gap: 8,
-    borderTopWidth: 1,
-  },
   doneButton: {
+    marginTop: "auto",
+    marginBottom: 24,
     paddingVertical: 18,
   },
 });
