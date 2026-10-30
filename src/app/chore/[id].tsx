@@ -81,17 +81,19 @@ export default function ChoreDetail() {
             <Text style={[styles.description, { color: colors.text }]}>
               {chore.description}
             </Text>
-            <Text style={[styles.meta, { color: colors.textMuted }]}>
-              Återkommer: var {chore.intervalDays}:e dag
+            <Text style={styles.meta}>
+              <Text style={{ color: colors.textMuted }}>Återkommer: </Text>
+              <Text style={{ color: colors.primaryText }}>var {chore.intervalDays}:e dag</Text>
             </Text>
-            <Text style={[styles.meta, { color: colors.textMuted }]}>
-              Värde: {chore.weight}
+            <Text style={styles.meta}>
+              <Text style={{ color: colors.textMuted }}>Värde: </Text>
+              <Text style={{ color: colors.primaryText }}>{chore.weight}</Text>
             </Text>
-            <Text style={[styles.meta, { color: colors.textMuted }]}>
-              Tilldelad:{" "}
+            <Text style={styles.meta}>
+              <Text style={{ color: colors.textMuted }}>Tilldelad: </Text>
               {chore.assignees.length > 0
-                ? chore.assignees.map((m) => m.name).join(", ")
-                : "ingen"}
+                ? <Text style={{ color: colors.primaryText }}>{chore.assignees.map((m) => m.name).join(", ")}</Text>
+                : <Text style={{ color: colors.primaryText }}>ingen</Text>}
             </Text>
           </View>
         </Card>
