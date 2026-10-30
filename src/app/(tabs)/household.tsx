@@ -78,8 +78,6 @@ export default function Household() {
   // Den inloggade är ägare om dess egen rad bland medlemmarna har isOwner.
   const isOwner = members.some((m) => m.isMe && m.isOwner);
   const isApprovedMember = members.some((m) => m.isMe && m.isApproved);
-  const isLastApprovedMember =
-    isApprovedMember && members.filter((member) => member.isApproved).length === 1;
 
   // Förfrågningar: de som har skickat en förfrågan men inte är godkända än (#17).
   const requests = members.filter((m) => !m.isApproved);
@@ -287,15 +285,11 @@ export default function Household() {
 
           <ConfirmDialog
             visible={leaving}
-            title={isLastApprovedMember ? "Ta bort hushåll?" : "Lämna hushåll?"}
-            message={
-              isLastApprovedMember
-                ? `Du är den sista godkända medlemmen i ”${household.name}”. Om du fortsätter tas hushållet bort från appen och väntande förfrågningar avslutas. Det går inte att ångra.`
-                : `Vill du lämna ”${household.name}”? Du kan gå med igen med koden, men då måste en ägare godkänna dig.`
-            }
+            title="Lämna hushåll?"
+            message={`Vill du lämna ”${household.name}”? Du kan gå med igen med koden, men då måste en ägare godkänna dig.`}
             error={leaveMutation.error ? householdError(leaveMutation.error) : undefined}
             busy={leaveMutation.isPending}
-            confirmLabel={isLastApprovedMember ? "Ta bort hushåll" : "Lämna"}
+            confirmLabel="Lämna"
             onConfirm={() => leaveMutation.mutate()}
             onCancel={() => setLeaving(false)}
           />
