@@ -33,6 +33,8 @@ type HouseholdDataValue = {
   error: string;
   reload: () => void;
   members: Member[];
+  /** Godkända medlemmar inklusive de som har lämnat, för historisk statistik. */
+  allMembers: Member[];
   currentMember: Member | null;
   /** Sysslorna i dagsvyn, utan de arkiverade. */
   chores: Chore[];
@@ -171,6 +173,7 @@ export function HouseholdDataProvider({ children }: { children: ReactNode }) {
     error,
     reload,
     members,
+    allMembers: rows.members,
     currentMember,
     chores,
     allChores: active(rows.choreRows),

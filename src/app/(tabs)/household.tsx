@@ -9,7 +9,7 @@ import { MemberMenu } from "../../components/MemberMenu";
 import { PauseDialog } from "../../components/PauseDialog";
 import { RenameHouseholdDialog } from "../../components/RenameHouseholdDialog";
 import { RequestList } from "../../components/RequestList";
-import { PillButton } from "../../components/ui";
+import { ConfirmDialog, PillButton } from "../../components/ui";
 import { useHouseholdData } from "../../data/HouseholdData";
 import {
   approveRequest,
@@ -17,6 +17,7 @@ import {
   getHousehold,
   getMembers,
   householdError,
+  leaveHousehold,
   MemberSummary,
   renameHousehold,
   setMemberOwner,
@@ -36,7 +37,7 @@ import { useTheme } from "../../theme/ThemeProvider";
 // Byt namn och medlemsmenyn (gör till ägare, pausa) är modaler (AppModal), inte egna skärmar.
 export default function Household() {
   const { colors } = useTheme();
-  const { householdId } = useHouseholdData();
+  const { householdId, openHousehold } = useHouseholdData();
   const queryClient = useQueryClient();
 
   // Id:t ingår i nycklarna, så att varje hushåll får en egen låda i cachen.
@@ -76,6 +77,9 @@ export default function Household() {
 
   // Den inloggade är ägare om dess egen rad bland medlemmarna har isOwner.
   const isOwner = members.some((m) => m.isMe && m.isOwner);
+  const isApprovedMember = members.some((m) => m.isMe && m.isApproved);
+  const isLastApprovedMember =
+    isApprovedMember && members.filter((member) => member.isApproved).length === 1;
 
   // Förfrågningar: de som har skickat en förfrågan men inte är godkända än (#17).
   const requests = members.filter((m) => !m.isApproved);
@@ -183,6 +187,21 @@ export default function Household() {
     setPausingMember(null);
   }
 
+  const [leaving, setLeaving] = useState(false);
+  const leaveMutation = useMutation({
+    mutationFn: () => leaveHousehold(householdId as string),
+    onSuccess: () => {
+      setLeaving(false);
+      openHousehold(null);
+      queryClient.invalidateQueries({ queryKey: ["households"] });
+      queryClient.removeQueries({ queryKey: ["household", householdId] });
+      queryClient.removeQueries({ queryKey: ["members", householdId] });
+      queryClient.removeQueries({ queryKey: ["pauses", householdId] });
+      queryClient.removeQueries({ queryKey: ["chores", householdId] });
+      router.dismissTo("/households");
+    },
+  });
+
   // Går hushållet inte att hämta (t.ex. om det är borttaget) ska man ändå
   // kunna byta till ett annat härifrån.
   if (!household) {
@@ -255,6 +274,33 @@ export default function Household() {
       )}
 
       <PillButton label="Byt hushåll" onPress={() => router.push("/households")} />
+      {isApprovedMember ? (
+        <>
+          <PillButton
+            label="Lämna hushåll"
+            variant="danger"
+            onPress={() => {
+              leaveMutation.reset();
+              setLeaving(true);
+            }}
+          />
+
+          <ConfirmDialog
+            visible={leaving}
+            title={isLastApprovedMember ? "Ta bort hushåll?" : "Lämna hushåll?"}
+            message={
+              isLastApprovedMember
+                ? `Du är den sista godkända medlemmen i ”${household.name}”. Om du fortsätter tas hushållet bort från appen och väntande förfrågningar avslutas. Det går inte att ångra.`
+                : `Vill du lämna ”${household.name}”? Du kan gå med igen med koden, men då måste en ägare godkänna dig.`
+            }
+            error={leaveMutation.error ? householdError(leaveMutation.error) : undefined}
+            busy={leaveMutation.isPending}
+            confirmLabel={isLastApprovedMember ? "Ta bort hushåll" : "Lämna"}
+            onConfirm={() => leaveMutation.mutate()}
+            onCancel={() => setLeaving(false)}
+          />
+        </>
+      ) : null}
 
       {renaming && (
         <RenameHouseholdDialog
