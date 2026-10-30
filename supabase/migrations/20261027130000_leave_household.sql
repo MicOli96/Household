@@ -1,5 +1,5 @@
--- Hindra ett hushåll med godkända medlemmar från att bli utan ägare när
--- den sista ägaren lämnar eller tar bort sin egen ägarroll.
+-- Hindra ett hushåll med godkända medlemmar från att bli utan ägare och ta
+-- bort hushållet när den sista godkända medlemmen lämnar.
 create or replace function public.prevent_last_owner_leave()
 returns trigger
 language plpgsql
@@ -36,6 +36,33 @@ begin
         and m.deleted_at is null
     ) then
       raise exception 'Hushållet måste ha minst en ägare';
+    end if;
+  end if;
+
+  if old.is_approved and old.deleted_at is null and new.deleted_at is not null then
+    -- Serialisera även när den som lämnar inte är ägare.
+    perform 1
+    from public.households h
+    where h.id = old.household_id
+    for update;
+
+    if not exists (
+      select 1
+      from public.household_members m
+      where m.household_id = old.household_id
+        and m.is_approved
+        and m.deleted_at is null
+    ) then
+      update public.households
+      set deleted_at = now()
+      where id = old.household_id
+        and deleted_at is null;
+
+      update public.household_members
+      set deleted_at = now()
+      where household_id = old.household_id
+        and not is_approved
+        and deleted_at is null;
     end if;
   end if;
 
